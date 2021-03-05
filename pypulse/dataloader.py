@@ -28,9 +28,9 @@ def load_spectrum(Teff=4500, wavelength_range=(3000, 7000)):
 
 
 if __name__ == "__main__":
-    wavelength_range = (3000, 10000)
+    wavelength_range = (3000, 30000)
     spectrum, wavelength, _ = load_spectrum(wavelength_range=wavelength_range)
-    spectrum_low, _, _ = load_spectrum(
+    spectrum_low, wavelength, _ = load_spectrum(
         Teff=3000, wavelength_range=wavelength_range)
     plt.plot(wavelength, spectrum)
     plt.plot(wavelength, spectrum_low)
