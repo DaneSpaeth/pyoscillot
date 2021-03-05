@@ -2,18 +2,19 @@ from astropy.io import fits
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data/phoenix_spectra")
+DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
 
 
-def load_spectrum(Teff=4500, wavelength_range=(3000, 7000)):
+def phoenix_spectrum(Teff=4500, wavelength_range=(3000, 7000)):
     """Return phenix spectrum and header."""
-    file = DATAROOT / \
+    file = DATAROOT / "phoenix_spectra" /\
         f"lte0{Teff}-3.00-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
     with fits.open(file) as hdul:
         header = hdul[0].header
         spectrum = hdul[0].data
 
-    wavelength_file = DATAROOT / "WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+    wavelength_file = DATAROOT / "phoenix_spectra" / \
+        "WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
 
     with fits.open(wavelength_file) as hdul:
         wavelength = hdul[0].data
@@ -25,6 +26,18 @@ def load_spectrum(Teff=4500, wavelength_range=(3000, 7000)):
         wavelength = wavelength[wavelength_mask]
 
     return spectrum, wavelength, header
+
+
+def carmenes_template():
+    """ Return spec, sig, cont and wave of Carmenes template."""
+    template = DATAROOT / "template.fits"
+    with fits.open(template) as hdul:
+        spec = hdul[1].data
+        cont = hdul[2].data
+        sig = hdul[3].data
+        wave = hdul[4].data
+
+    return (spec, cont, sig, wave)
 
 
 if __name__ == "__main__":

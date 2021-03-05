@@ -163,7 +163,6 @@ def add_doppler_shift(rest_spectrum, rest_wavelength, doppler_shift):
         shift_spectrum = np.zeros(len(rest_spectrum) + shift_idx)
         shift_spectrum[shift_idx:] = rest_spectrum
         shift_spectrum = shift_spectrum[:-shift_idx]
-        print(shift_idx)
         return shift_spectrum
     elif doppler_shift < 0:
         shift_idx = np.argmin(
@@ -175,7 +174,6 @@ def add_doppler_shift(rest_spectrum, rest_wavelength, doppler_shift):
         shift_spectrum[:shift_idx] = rest_spectrum[len(
             rest_spectrum) - shift_idx:]
         shift_spectrum = shift_spectrum[:len(rest_spectrum)]
-        print(shift_idx)
         return shift_spectrum
 
 
