@@ -1,6 +1,7 @@
 from datetime import datetime, date, timedelta
 import numpy as np
 from scipy import interpolate
+from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 from sim import add_doppler_shift, cut_to_maxshift
 from dataloader import phoenix_spectrum, carmenes_template
@@ -10,7 +11,7 @@ from barycorrpy import get_BC_vel
 from astropy.time import Time
 
 
-def create_rv_series(P=600, N=20, K=10000):
+def create_rv_series(P=600, N=20, K=200):
     """ Create a fake RV series.
 
         :param P: period in days
@@ -29,7 +30,9 @@ def create_rv_series(P=600, N=20, K=10000):
     K_sample = K * np.sin(2 * np.pi * phase_sample)
 
     hip = 73620
+    print(K_sample)
     K_sample = add_barycentric_correction(K_sample, time_sample, hip)
+    print(K_sample)
 
     # Load one rest_spectrum, all units in Angstrom
     min_wave = 5000
@@ -37,14 +40,19 @@ def create_rv_series(P=600, N=20, K=10000):
     center_wave = (max_wave + min_wave) / 2
     wavelength_range = (min_wave - 10, max_wave + 10)
     rest_spectrum, rest_wavelength, _ = phoenix_spectrum(
-        Teff=4500, wavelength_range=wavelength_range)
+        Teff=4800, wavelength_range=wavelength_range)
 
     # Shift in Angstom. Approximation, fixed wavelength
-    shift_sample = K_sample / 3e8 * center_wave
+    # shift_sample = K_sample / 3e8 * center_wave
 
+    # shift_wavelengths = []
+    # for shift in shift_sample:
+    #     shift_wavelengths.append(rest_wavelength + shift)
+    c = 299792458  # m/s
+    # Add the Doppler shifts
     shift_wavelengths = []
-    for shift in shift_sample:
-        shift_wavelengths.append(rest_wavelength + shift)
+    for v in K_sample:
+        shift_wavelengths.append(rest_wavelength + v / c * rest_wavelength)
 
     new_specs = []
     for shift_wavelength in shift_wavelengths:
@@ -81,7 +89,7 @@ def add_barycentric_correction(K_array, time_list, star):
 
     caha = observatories.calar_alto
     lat = float(caha["lat"].replace(" N", ""))
-    lon = float((caha["lon"].replace(" W", "")))
+    lon = -float((caha["lon"].replace(" W", "")))
     alt = 2168.
 
     bcs = []
@@ -91,7 +99,9 @@ def add_barycentric_correction(K_array, time_list, star):
                             alt=alt, ephemeris='de430')
         bcs.append(float(result[0]))
     bcs = np.array(bcs)
-    return K_array + bcs
+    print("BARYCENTRIC CORRECTIONS")
+    print(bcs)
+    return K_array - bcs
 
 
 def interpolate_carmenes(spectrum, wavelength):
@@ -108,6 +118,15 @@ def interpolate_carmenes(spectrum, wavelength):
         # Reduce the level to something similar to CARMENES
         order_spec = order_spec * \
             np.nanmean(spec[order]) / np.nanmean(order_spec)
+
+        order_cont = cont[order] / np.mean(cont[order])
+        order_spec = order_spec * order_cont
+
+        # order_spec = gaussian_filter1d(order_spec, 5)
+
+        # Set the old oders that were nan back to nan
+        nan_mask = np.isnan(sig[order])
+        order_spec[nan_mask] = np.nan
 
         new_spec.append(order_spec)
     new_spec = np.array(new_spec)

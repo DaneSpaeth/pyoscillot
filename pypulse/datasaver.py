@@ -9,7 +9,10 @@ DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
 def save_spectrum(spectrum, new_header, name):
     """ Save a Carmenes spectrum from spectrum."""
     template = DATAROOT / "template.fits"
-    outfile = DATAROOT / "fake_spectra" / f"{name}.fits"
+    if not name.endswith("fits"):
+        name += ".fits"
+
+    outfile = DATAROOT / "fake_spectra" / name
 
     print(f"Copy template to {outfile}")
     copy2(template, outfile)
@@ -33,17 +36,35 @@ def save_spectrum(spectrum, new_header, name):
 
 if __name__ == "__main__":
 
+    from scipy.signal import medfilt
     # save_spectrum(None, None, {"OBJECT": "TEST"}, "test")
     template = DATAROOT / "template.fits"
     with fits.open(template) as hdul:
-        print(hdul.info())
-        fake_spec = np.zeros((61, 4096))
+        header = hdul[0].header
         spec = hdul[1].data
         cont = hdul[2].data
         sig = hdul[3].data
         wave = hdul[4].data
 
-    plt.plot(wave[20], spec[20])
+    for key in header:
+        if "BERV" in key:
+            print(key)
+
+    fake = DATAROOT / "fake_spectra" / "car-20190717T00h00m00s-sci-fake-vis_A.fits"
+    with fits.open(fake) as hdul:
+        fspec = hdul[1].data
+        fcont = hdul[2].data
+        fsig = hdul[3].data
+        fwave = hdul[4].data
+
+    order = 40
+    plt.plot(wave[order], fspec[order])
+    plt.plot(wave[order], spec[order])
+
+    N = 501
+    rolling_avg = np.convolve(spec[order], np.ones(N) / N, mode='same')
+    rolling_med = medfilt(spec[order], kernel_size=N)
+    # plt.plot(wave[order], fspec[order] * rolling_med / np.mean(rolling_med))
     plt.show()
     #     hdul.flush()
 
