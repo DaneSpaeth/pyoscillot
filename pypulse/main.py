@@ -50,7 +50,6 @@ def create_rv_series(P=600, N=20, K=10000):
     for shift_wavelength in shift_wavelengths:
         spec, wave = interpolate_carmenes(rest_spectrum, shift_wavelength)
         new_specs.append(spec)
-        break
 
     for idx, time in enumerate(time_sample):
         new_header = get_new_header(time)
@@ -58,7 +57,6 @@ def create_rv_series(P=600, N=20, K=10000):
         filename = f"car-{timestr}-sci-fake-vis_A.fits"
 
         save_spectrum(new_specs[idx], new_header, filename)
-        exit()
 
 
 def get_new_header(time):
@@ -106,6 +104,10 @@ def interpolate_carmenes(spectrum, wavelength):
         order_spec = []
         func = interpolate.interp1d(wavelength, spectrum)
         order_spec = func(wave[order])
+
+        # Reduce the level to something similar to CARMENES
+        order_spec = order_spec * \
+            np.nanmean(spec[order]) / np.nanmean(order_spec)
 
         new_spec.append(order_spec)
     new_spec = np.array(new_spec)
