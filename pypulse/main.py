@@ -11,7 +11,7 @@ from barycorrpy import get_BC_vel
 from astropy.time import Time
 
 
-def create_rv_series(P=600, N=20, K=200):
+def create_rv_series(P=600, N=20, K=200, spot=False):
     """ Create a fake RV series.
 
         :param P: period in days
@@ -30,9 +30,7 @@ def create_rv_series(P=600, N=20, K=200):
     K_sample = K * np.sin(2 * np.pi * phase_sample)
 
     hip = 73620
-    print(K_sample)
     K_sample = add_barycentric_correction(K_sample, time_sample, hip)
-    print(K_sample)
 
     # Load one rest_spectrum, all units in Angstrom
     min_wave = 5000

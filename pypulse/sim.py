@@ -32,7 +32,7 @@ def stellar_line():
 class GridStar():
     """ Simulate a star with a grid."""
 
-    def __init__(self, N=500, Teff=4500, vsini=1000, add_spot=False):
+    def __init__(self, N=500, Teff=4800, vsini=1000, rot_period=30):
         """ Initialize grid."""
         if not N % 2:
             N += 1
@@ -40,31 +40,25 @@ class GridStar():
         self.Teff = Teff
         self.grid = np.zeros((N, N))
         self.rotation = self.grid
+        self.rotation_period = rot_period
         self.pulsation = self.grid
         self.center = (int(N / 2), int(N / 2))
 
         self.star = create_circular_mask(N, N)
         self.add_rotation(vsini=vsini)
         self.temperature = Teff * self.star
-        if add_spot:
-            print("Add spot")
-            self.add_star_spot(400, 250, radius=200, deltaT=1500)
-        self.sim_lines()
 
     def add_rotation(self, vsini):
         """ Add Rotation, vsini in m/s"""
         pos_map = self.star
         rel_hor_dist = self.grid
         one_line = np.arange(0, self.N, dtype=int) - self.center[0]
-        print(one_line)
 
         for i in range(rel_hor_dist.shape[0]):
             rel_hor_dist[i, :] = one_line
 
         self.rotation = (rel_hor_dist * self.star) / \
             np.max(rel_hor_dist) * vsini
-
-        print(np.max(self.rotation))
 
     def sim_lines(self):
         num_lin = 1000
@@ -79,11 +73,11 @@ class GridStar():
         min_wave = 6432.45
         max_wave = 6432.8
         wavelength_range = (min_wave - 1, max_wave + 1)
-        rest_spectrum, wavelength, _ = load.load_spectrum(
-            Teff=self.Teff, wavelength_range=wavelength_range)
+        rest_spectrum, wavelength, _ = load.phoenix_spectrum(
+            Teff=self.Teff, logg=2.5, feh=-0.5, wavelength_range=wavelength_range)
         # TODO make spot temp adjustable
-        spot_spectrum, _, _ = load.load_spectrum(
-            Teff=3000, wavelength_range=wavelength_range)
+        spot_spectrum, _, _ = load.phoenix_spectrum(
+            Teff=3000, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
         self.spectrum = np.zeros(len(wavelength))
 
         for row in range(self.N):
@@ -114,11 +108,17 @@ class GridStar():
 
         # self.spectrum = np.sum(lines, axis=(0, 1))
 
-    def add_star_spot(self, x, y, radius=50, deltaT=1000):
+    def add_spot(self, phase=0, radius=50, deltaT=1800, reset=True, ):
         """ Add a circular starspot at position x,y."""
+        y = self.center[1]
+        x = 0 + (phase * 2) % 2 * self.N
         self.star_spot_mask = create_circular_mask(
             self.N, self.N, center=(x, y), radius=radius)
+        # Make sure to reset the temp before adding another spot
+        if reset:
+            self.temperature[self.star] = self.Teff
         self.temperature[self.star_spot_mask] -= deltaT
+        self.temperature[np.logical_not(self.star)] = 0
 
 
 def bisector(wavelength, spectrum):
@@ -189,34 +189,7 @@ def cut_to_maxshift(spectrum, wavelength, min_wave, max_wave):
 
 if __name__ == "__main__":
 
-    # max_shift = 0.0000001
-
-    # wavelength_range = (6432 - np.abs(max_shift), 6434 + np.abs(max_shift))
-    # rest_spectrum, rest_wavelength, _ = load.load_spectrum(
-    #     Teff=4500, wavelength_range=wavelength_range)
-
-    # shift_spectrum = add_doppler_shift(
-    #     rest_spectrum, rest_wavelength, max_shift)
-
-    # plt.plot(rest_wavelength, rest_spectrum)
-    # plt.plot(rest_wavelength, shift_spectrum)
-    # plt.show()
-    # exit()
-
-    s = GridStar(vsini=30000)
-    spotstar = GridStar(vsini=0, add_spot=False)
-    # s2 = GridStar(vsini=10000)
-    fig, ax = plt.subplots(1, 2)
-    ax[0].plot(s.wavelength, s.spectrum, label="Rotation")
-    ax[0].plot(spotstar.wavelength, spotstar.spectrum, label="No Rotation")
-    ax[0].legend()
-    # plt.plot(s2.wavelength, s2.spectrum, color="Red")
-    bisector_waves, bisector_flux = bisector(s.wavelength, s.spectrum)
-    spot_bisector_waves, spot_bisector_flux = bisector(
-        spotstar.wavelength, spotstar.spectrum)
-    # ax[0].scatter(bisector_waves, bisector_flux)
-    ax[1].plot(bisector_waves, bisector_flux)
-    ax[1].plot(spot_bisector_waves, spot_bisector_flux)
-    # plt.imshow(s.spectrum)
-    # plt.imshow(s.star_spot_mask)
+    star = GridStar()
+    star.add_spot(phase=0.0)
+    plt.imshow(star.temperature)
     plt.show()
