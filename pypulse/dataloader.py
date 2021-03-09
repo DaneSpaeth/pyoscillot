@@ -25,7 +25,7 @@ def phoenix_spectrum(Teff=4800, logg=2.5, feh=-0.5, wavelength_range=(3000, 7000
         spectrum = spectrum[wavelength_mask]
         wavelength = wavelength[wavelength_mask]
 
-    return spectrum, wavelength, header
+    return wavelength, spectrum, header
 
 
 def carmenes_template():

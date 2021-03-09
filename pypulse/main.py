@@ -2,15 +2,15 @@ from datetime import datetime, date, timedelta
 import numpy as np
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter1d
-import matplotlib.pyplot as plt
 from dataloader import phoenix_spectrum, carmenes_template
 from datasaver import save_spectrum
-from exopy import observatories
+from plapy import observatories
+from plapy.constants import C
 from barycorrpy import get_BC_vel
 from astropy.time import Time
 
 
-def create_rv_series(P=600, N=20, K=0, spot=False):
+def create_rv_series(P=600, N=20, K=0):
     """ Create a fake RV series.
 
         :param P: period in days
@@ -34,22 +34,14 @@ def create_rv_series(P=600, N=20, K=0, spot=False):
     # Load one rest_spectrum, all units in Angstrom
     min_wave = 5000
     max_wave = 12000
-    center_wave = (max_wave + min_wave) / 2
     wavelength_range = (min_wave - 10, max_wave + 10)
-    rest_spectrum, rest_wavelength, _ = phoenix_spectrum(
+    rest_wavelength, rest_spectrum, , _ = phoenix_spectrum(
         Teff=4800, wavelength_range=wavelength_range)
 
-    # Shift in Angstom. Approximation, fixed wavelength
-    # shift_sample = K_sample / 3e8 * center_wave
-
-    # shift_wavelengths = []
-    # for shift in shift_sample:
-    #     shift_wavelengths.append(rest_wavelength + shift)
-    c = 299792458  # m/s
     # Add the Doppler shifts
     shift_wavelengths = []
     for v in K_sample:
-        shift_wavelengths.append(rest_wavelength + v / c * rest_wavelength)
+        shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
 
     new_specs = []
     for shift_wavelength in shift_wavelengths:

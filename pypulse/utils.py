@@ -1,0 +1,142 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import interpolate
+
+
+def create_circular_mask(h, w, center=None, radius=None):
+    """ Create a circular mask.
+
+        From https://stackoverflow.com/questions/44865023/how-can-i-create-a-circular-mask-for-a-numpy-array
+    """
+
+    if center is None:
+        # use the middle of the image
+        center = (int(w / 2), int(h / 2))
+    if radius is None:
+        # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w - center[0], h - center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y - center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
+
+
+def gaussian(x, mu=0, sigma=0.001):
+    """ Return a gaussian at position x.
+
+        :param float or array x: Position or array of positions at which to
+                                 evaluate the Gaussian.
+    """
+    return 1 / (np.sqrt(2 * np.pi) * sigma) * np.exp(-np.square(x - mu) / (2 * sigma**2))
+
+
+def bisector(wavelength, spectrum):
+    """ Calculate the bisector of the line.
+
+        Still work in progress. One must be careful what to pass here.
+
+        :param wavelength: Array of wavelengths
+        :param spectrum: Array of spectrum
+
+        :returns: Array of bisector wavelengths, array of bisector flux
+    """
+    bisector_waves = []
+    bisector_flux = []
+    search_for = np.linspace(np.min(spectrum), 0.8, 25)
+    max_idx = np.argmin(spectrum)
+    left_spectrum = spectrum[0:max_idx]
+    print(wavelength[max_idx])
+    left_wavelength = wavelength[0:max_idx]
+    right_spectrum = spectrum[max_idx:]
+    right_wavelength = wavelength[max_idx:]
+    for s in search_for:
+        diff_left = np.abs(left_spectrum - s)
+        diff_right = np.abs(right_spectrum - s)
+        left_idx = np.argmin(diff_left)
+        right_idx = np.argmin(diff_right)
+        left_wave = left_wavelength[np.argmin(diff_left)]
+        right_wave = right_wavelength[np.argmin(diff_right)]
+
+        bisector_wave = (right_wave + left_wave) / 2
+        bisector_flux.append(s)
+        bisector_waves.append(bisector_wave)
+
+    return np.array(bisector_waves), np.array(bisector_flux)
+
+
+def add_doppler_shift(rest_spectrum, rest_wavelength, doppler_shift):
+    """ Return shifted spectrum
+
+        Wavelengths and shift in Angstrom.
+
+        Assume that the spectrum outside the shifted area must not be correct.
+    """
+    if doppler_shift == 0:
+        return rest_spectrum
+    elif doppler_shift > 0:
+        shift_idx = np.argmin(
+            np.abs(rest_wavelength - (rest_wavelength[0] + doppler_shift)))
+        if not shift_idx:
+            return rest_spectrum
+        shift_spectrum = np.zeros(len(rest_spectrum) + shift_idx)
+        shift_spectrum[shift_idx:] = rest_spectrum
+        shift_spectrum = shift_spectrum[:-shift_idx]
+        return shift_spectrum
+    elif doppler_shift < 0:
+        shift_idx = np.argmin(
+            np.abs(rest_wavelength - (rest_wavelength[-1] + doppler_shift)))
+        if shift_idx == len(rest_spectrum) - 1:
+            return rest_spectrum
+        shift_spectrum = np.zeros(
+            len(rest_spectrum) + len(rest_spectrum) - shift_idx)
+        shift_spectrum[:shift_idx] = rest_spectrum[len(
+            rest_spectrum) - shift_idx:]
+        shift_spectrum = shift_spectrum[:len(rest_spectrum)]
+        return shift_spectrum
+
+
+def cut_to_maxshift(spectrum, wavelength, min_wave, max_wave):
+    """ Cut the spectrum such that the maximal shift is masked."""
+    min_idx = np.argmin(np.abs(wavelength - min_wave))
+    max_idx = np.argmin(np.abs(wavelength - max_wave))
+    spectrum = spectrum[min_idx:max_idx]
+    wavelength = wavelength[min_idx:max_idx]
+
+    return spectrum, wavelength
+
+
+def interpolate_to_restframe(wavelength, spectrum, rest_wavelength):
+    """ Interpolate the wavelength and spectrum to the rest_wavelength."""
+    # CAUTION: At the moment I allow to extrapolate here
+    func = interpolate.interp1d(wavelength, spectrum, fill_value="extrapolate")
+    shift_spec = func(rest_wavelength)
+
+    return shift_spec
+
+
+if __name__ == "__main__":
+
+    import dataloader as load
+    import matplotlib.pyplot as plt
+    from plapy.constants import C
+
+    wave_range = (5500, 5550)
+    rest_wavelength, rest_spectrum, _ = load.phoenix_spectrum(
+        wavelength_range=wave_range)
+    v = 10000
+    shift = v / C * rest_wavelength
+    shift_wavelength = rest_wavelength + shift
+
+    interpol_wave, interpol_spec = interpolate_to_restframe(
+        shift_wavelength, rest_spectrum, rest_wavelength)
+
+    assert not np.any(
+        interpol_wave - rest_wavelength), "Interpolated wavelength is not equal to the rest wavelength"
+
+    comb_spec = (rest_spectrum + interpol_spec) / 2
+    plt.plot(rest_wavelength, rest_spectrum)
+    plt.plot(rest_wavelength, comb_spec)
+
+    plt.show()
