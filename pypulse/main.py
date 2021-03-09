@@ -10,13 +10,8 @@ from barycorrpy import get_BC_vel
 from astropy.time import Time
 
 
-def create_rv_series(P=600, N=20, K=0):
-    """ Create a fake RV series.
-
-        :param P: period in days
-        :param N: Number of datapoints
-        :param K: Amplitude in m/s
-    """
+def get_planet_spectra(P=600, N=20, K=0):
+    """ Return a list of wavelengths and fluxes for a planetary signal."""
     # At the moment, fix today as last observation date
     today = date.today()
     stop = datetime.combine(today, datetime.min.time())
@@ -35,17 +30,31 @@ def create_rv_series(P=600, N=20, K=0):
     min_wave = 5000
     max_wave = 12000
     wavelength_range = (min_wave - 10, max_wave + 10)
-    rest_wavelength, rest_spectrum, , _ = phoenix_spectrum(
+    rest_wavelength, rest_spectrum, _ = phoenix_spectrum(
         Teff=4800, wavelength_range=wavelength_range)
 
     # Add the Doppler shifts
     shift_wavelengths = []
+    spectra = []
     for v in K_sample:
         shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
+        spectra.append(rest_spectrum)
+
+    return shift_wavelengths, spectra, time_sample
+
+
+def create_rv_series(P=600, N=20, K=200):
+    """ Create a fake RV series.
+
+        :param P: period in days
+        :param N: Number of datapoints
+        :param K: Amplitude in m/s
+    """
+    shift_wavelengths, spectra, time_sample = get_planet_spectra(P=P, N=N, K=K)
 
     new_specs = []
-    for shift_wavelength in shift_wavelengths:
-        spec, wave = interpolate_carmenes(rest_spectrum, shift_wavelength)
+    for shift_wavelength, spectrum in zip(shift_wavelengths, spectra):
+        spec, wave = interpolate_carmenes(spectrum, shift_wavelength)
         new_specs.append(spec)
 
     for idx, time in enumerate(time_sample):
@@ -73,9 +82,7 @@ def get_new_header(time):
 def add_barycentric_correction(K_array, time_list, star):
     """ Add the barycentric correction to the K_list."""
     tmean = 53.0455
-    print(time_list)
     time_list = [t + timedelta(seconds=tmean) for t in time_list]
-    print(time_list)
     jdutc_times = [Time(t, scale="utc") for t in time_list]
     for jdutc in jdutc_times:
         jdutc.format = "jd"
@@ -92,8 +99,6 @@ def add_barycentric_correction(K_array, time_list, star):
                             alt=alt, ephemeris='de430')
         bcs.append(float(result[0]))
     bcs = np.array(bcs)
-    print("BARYCENTRIC CORRECTIONS")
-    print(bcs)
     return K_array - bcs
 
 
