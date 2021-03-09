@@ -47,8 +47,9 @@ if __name__ == "__main__":
         wave = hdul[4].data
 
     for key in header:
-        if "BERV" in key:
-            print(key)
+        print(key)
+
+    exit()
 
     fake = DATAROOT / "fake_spectra" / "car-20190717T00h00m00s-sci-fake-vis_A.fits"
     with fits.open(fake) as hdul:

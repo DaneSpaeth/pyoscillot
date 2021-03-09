@@ -3,7 +3,6 @@ import numpy as np
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
-from sim import add_doppler_shift, cut_to_maxshift
 from dataloader import phoenix_spectrum, carmenes_template
 from datasaver import save_spectrum
 from exopy import observatories
@@ -11,7 +10,7 @@ from barycorrpy import get_BC_vel
 from astropy.time import Time
 
 
-def create_rv_series(P=600, N=20, K=200, spot=False):
+def create_rv_series(P=600, N=20, K=0, spot=False):
     """ Create a fake RV series.
 
         :param P: period in days
@@ -81,6 +80,10 @@ def get_new_header(time):
 
 def add_barycentric_correction(K_array, time_list, star):
     """ Add the barycentric correction to the K_list."""
+    tmean = 53.0455
+    print(time_list)
+    time_list = [t + timedelta(seconds=tmean) for t in time_list]
+    print(time_list)
     jdutc_times = [Time(t, scale="utc") for t in time_list]
     for jdutc in jdutc_times:
         jdutc.format = "jd"
@@ -120,7 +123,7 @@ def interpolate_carmenes(spectrum, wavelength):
         order_cont = cont[order] / np.mean(cont[order])
         order_spec = order_spec * order_cont
 
-        # order_spec = gaussian_filter1d(order_spec, 5)
+        order_spec = gaussian_filter1d(order_spec, 5)
 
         # Set the old oders that were nan back to nan
         nan_mask = np.isnan(sig[order])
