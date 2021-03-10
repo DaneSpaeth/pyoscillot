@@ -46,6 +46,10 @@ if __name__ == "__main__":
         sig = hdul[3].data
         wave = hdul[4].data
 
+    print(wave[0])
+    print(wave[-1])
+    exit()
+
     for key in header:
         print(key)
 

@@ -2,6 +2,7 @@ import numpy as np
 from utils import create_circular_mask, interpolate_to_restframe
 import dataloader as load
 from plapy.constants import C
+from scipy.special import sph_harm
 
 
 class GridStar():
@@ -40,10 +41,11 @@ class GridStar():
         self.rotation = (rel_hor_dist * self.star) / \
             np.max(rel_hor_dist) * vsini
 
-    def add_spot(self, phase=0.25, radius=20, deltaT=1800, reset=True, ):
+    def add_spot(self, phase=0.25, radius=50, deltaT=1800, reset=True, ):
         """ Add a circular starspot at position x,y."""
         y = int(self.center[1])
-        x = int(0 + (phase * 2) % 2 * self.N)
+        # x = int((phase * 2) % 2 * self.N)
+        x = int(phase % 1 * self.N)
         print(f"Add circular spot with rad={radius} at {x},{y}")
 
         self.spot = create_circular_mask(
@@ -83,10 +85,10 @@ class GridStar():
                     else:
                         local_spectrum = rest_spectrum
                     if not v_c[row, col]:
-                        print(f"Skip Star Element {row, col}")
+                        # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
                     else:
-                        print(f"Calculate Star Element {row, col}")
+                        # print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
                             v_c[row, col] * rest_wavelength
@@ -101,16 +103,41 @@ class GridStar():
         self.spectrum = total_spectrum
         return rest_wavelength, total_spectrum
 
+    def add_pulsation(self, n=1, l=3, m=3):
+        """ Add a pulsation to the star."""
+        phi = np.linspace(0, np.pi, 100)
+        theta = np.linspace(0, np.pi, 100)
+        phi, theta = np.meshgrid(phi, theta)
+
+        self.pulsation = np.zeros(self.grid.shape)
+        for row in range(self.N):
+            for col in range(self.N):
+                if not self.star[row, col]:
+                    self.pulsation[row, col] = 0
+                else:
+                    dx = col - self.center[0]
+                    dy = row - self.center[1]
+                    phi = np.arcsin(dy / self.N * 2)
+                    theta = np.arcsin(dx / self.N * 2)
+
+                    harm = sph_harm(m, l, phi, theta)
+
+                    self.pulsation[row, col] = harm
+
+        # The Cartesian coordinates of the unit sphere
+        x = np.sin(phi) * np.cos(theta)
+        y = np.sin(phi) * np.sin(theta)
+        z = np.cos(phi)
+
+        # Calculate the spherical harmonic Y(l,m) and normalize to [0,1]
+        harm = sph_harm(m, l, theta, phi).real
+        print(harm.shape)
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     star = GridStar(N=100, vsini=0)
-    star.add_spot(phase=0.05)
+    star.add_pulsation()
 
-    wave, spec = star.spectrum(5500, 5550)
-
-    norot = GridStar(N=100, vsini=0)
-    no_wave, no_spec = norot.spectrum(5500, 5550)
-    plt.plot(wave, spec)
-    plt.plot(no_wave, no_spec)
+    plt.imshow(star.pulsation)
     plt.show()
