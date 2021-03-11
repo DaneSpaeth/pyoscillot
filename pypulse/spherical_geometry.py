@@ -9,15 +9,17 @@ from scipy.interpolate import griddata
 def get_circular_phi_theta_x_y_z():
     """ Sample x and z for a spherical star."""
     N = 250
-    phi = np.linspace(0, np.pi, N)
-    factor = 2
-    theta = np.linspace(0, factor * np.pi, factor * N)
+    # Theta: Polar Angle
+    theta = np.linspace(0, np.pi, N)
+
+    # Phi: Azimuthal angle
+    phi = np.linspace(0, 2 * np.pi, 2 * N)
     phi, theta = np.meshgrid(phi, theta)
 
     # The Cartesian coordinates of the unit sphere
-    x = np.sin(phi) * np.cos(theta)
-    y = np.sin(phi) * np.sin(theta)
-    z = np.cos(phi)
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
 
     return phi, theta, x, y, z
 
@@ -32,7 +34,7 @@ def create_starmask(N=1000):
     return star_mask
 
 
-def pulsation_rad(l=1, m=1, N=1000, project=True, inclination=90):
+def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     """ Get radial component of pulsation.
 
 
@@ -44,21 +46,18 @@ def pulsation_rad(l=1, m=1, N=1000, project=True, inclination=90):
     """
     phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
     # Calculate the spherical harmonic Y(l,m)
-    harmonic = sph_harm(m, l, theta, phi)
+    harmonic = sph_harm(m, l, phi, theta)
 
     # plot_3d(x, y, z)
 
-    if project:
-        # Add in line of sight
-        harmonic = harmonic * np.sin(theta)
-
     # TODO maybe normalize?
-    grid = project_2d(x, y, z, harmonic, N, inclination)
+    grid = project_2d(x, y, z, phi, theta, harmonic, N, inclination,
+                      line_of_sight=line_of_sight)
 
     return grid
 
 
-def project_2d(x, y, z, values, N, inclination=90):
+def project_2d(x, y, z, phi, theta, values, N, inclination=90, line_of_sight=True):
     """ https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853"""
 
     y = y
@@ -90,7 +89,7 @@ def project_2d(x, y, z, values, N, inclination=90):
     z_proj = z_proj / np.nanmax(z_proj)
 
     dN = 2 / N
-    border = 100
+    border = 10
     x_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
     z_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
     xx, zz = np.meshgrid(x_grid, z_grid, sparse=False)
@@ -101,7 +100,31 @@ def project_2d(x, y, z, values, N, inclination=90):
     coords = np.array(coords)
     nan_mask = np.logical_not(np.isnan(x_proj.flatten()))
     coords = coords[nan_mask]
+    x_proj = x_proj.flatten()[nan_mask]
+    z_proj = z_proj.flatten()[nan_mask]
     values = values.flatten()[nan_mask]
+
+    if line_of_sight:
+        theta = theta.flatten()[nan_mask]
+        phi = phi.flatten()[nan_mask]
+
+        # Line of sight unit vecotr
+        los = np.array(
+            (0,
+             np.cos(np.radians(90 - inclination)),
+             -np.sin(np.radians(90 - inclination))))
+
+        scalar_prods = []
+        for p, t in zip(phi, theta):
+            # Unit vector of r
+            r_unit = np.array((np.sin(t) * np.cos(p),
+                               np.sin(t) * np.sin(p),
+                               np.cos(t)))
+
+            scalar_prods.append(np.dot(r_unit, los))
+        scalar_prods = np.array(scalar_prods)
+        values = values * scalar_prods
+
     grid = griddata(coords, values, (xx, zz),
                     method='linear', fill_value=np.nan)
     return grid
@@ -117,12 +140,16 @@ def plot_3d(x, y, z):
 
 
 if __name__ == "__main__":
-    rad = pulsation_rad(l=5, m=5, N=1000, project=False, inclination=60)
+    rad = pulsation_rad(l=5, m=5, N=1000, line_of_sight=False, inclination=60)
+    rad_incl = pulsation_rad(
+        l=5, m=5, N=1000, line_of_sight=True, inclination=60)
     # rad = create_starmask()
-    fig, ax = plt.subplots(1)
+    fig, ax = plt.subplots(2)
 
-    ax.imshow(rad.real, cmap="seismic", origin='lower')
+    ax[0].imshow(rad.real, cmap="seismic",
+                 origin='lower', vmin=-0.5, vmax=0.5)
     # rad = rad * np.exp(1j * 2 * np.pi * nu * t)
-    # ax[1].imshow(rad_incl.real, cmap="seismic", )
+    ax[1].imshow(rad_incl.real, cmap="seismic",
+                 origin="lower", vmin=-0.5, vmax=0.5)
 
     plt.show()
