@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation as Rot
 from scipy.interpolate import griddata
 
 
-def get_circular_phi_theta_x_y_z(inclination=90):
+def get_circular_phi_theta_x_y_z():
     """ Sample x and z for a spherical star."""
     N = 250
     phi = np.linspace(0, np.pi, N)
@@ -15,8 +15,6 @@ def get_circular_phi_theta_x_y_z(inclination=90):
     phi, theta = np.meshgrid(phi, theta)
 
     # The Cartesian coordinates of the unit sphere
-    # phi_incl = np.mod(phi + np.radians(inclination - 90), np.pi)
-    # print(phi_incl)
     x = np.sin(phi) * np.cos(theta)
     y = np.sin(phi) * np.sin(theta)
     z = np.cos(phi)
@@ -24,12 +22,12 @@ def get_circular_phi_theta_x_y_z(inclination=90):
     return phi, theta, x, y, z
 
 
-def create_starmask(N=100):
+def create_starmask(N=1000):
     """ Return a starmask."""
     _, _, x, y, z = get_circular_phi_theta_x_y_z()
 
     star = np.ones(x.shape)
-    star_mask = project_2d(x, y, z, star)
+    star_mask = project_2d(x, y, z, star, N)
     star_mask[np.isnan(star_mask)] = 0
     return star_mask
 
@@ -44,7 +42,7 @@ def pulsation_rad(l=1, m=1, N=1000, project=True, inclination=90):
         :param bool project: If True: Project the component onto the line of
                                       sight
     """
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z(inclination)
+    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
     # Calculate the spherical harmonic Y(l,m)
     harmonic = sph_harm(m, l, theta, phi)
 
@@ -55,42 +53,12 @@ def pulsation_rad(l=1, m=1, N=1000, project=True, inclination=90):
         harmonic = harmonic * np.sin(theta)
 
     # TODO maybe normalize?
-    grid = project_2d_new(x, y, z, harmonic, N)
+    grid = project_2d(x, y, z, harmonic, N, inclination)
 
     return grid
 
 
-def project_2d(x, y, z, values, N=100):
-    """ Project the 2d array value on the unitsphere.
-
-        At the moment no inclination
-    """
-    # Remember that both x and z span from -1 to 1
-    # So factor two comes in and also the -1 factor in x_diff and z_diff
-    dN = 2 / N
-    grid = np.zeros((N, N))
-    for row in range(N):
-        for col in range(N):
-            x_grid = dN * row - 1
-            z_grid = dN * col - 1
-            x_diff = np.abs(x - x_grid)
-            z_diff = np.abs(z - z_grid)
-            x_mask = np.where(x_diff < dN, 1, 0)
-            z_mask = np.where(z_diff < dN, 1, 0)
-            mask = np.logical_and(x_mask, z_mask)
-            x_value = x[mask]
-            z_value = z[mask]
-            value = values[mask]
-            if not len(value):
-                value = np.nan
-            else:
-                value = np.mean(value)
-            grid[col, row] = value
-
-    return grid
-
-
-def project_2d_new(x, y, z, values, N=1000, inclination=30):
+def project_2d(x, y, z, values, N, inclination=90):
     """ https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853"""
 
     y = y
@@ -122,8 +90,9 @@ def project_2d_new(x, y, z, values, N=1000, inclination=30):
     z_proj = z_proj / np.nanmax(z_proj)
 
     dN = 2 / N
-    x_grid = np.arange(-1 - dN, 1 + 2 * dN, dN)
-    z_grid = np.arange(-1 - dN, 1 + 2 * dN, dN)
+    border = 100
+    x_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
+    z_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
     xx, zz = np.meshgrid(x_grid, z_grid, sparse=False)
 
     coords = []
@@ -133,7 +102,7 @@ def project_2d_new(x, y, z, values, N=1000, inclination=30):
     nan_mask = np.logical_not(np.isnan(x_proj.flatten()))
     coords = coords[nan_mask]
     values = values.flatten()[nan_mask]
-    grid = griddata(coords, values.real, (xx, zz),
+    grid = griddata(coords, values, (xx, zz),
                     method='linear', fill_value=np.nan)
     return grid
 
@@ -148,8 +117,8 @@ def plot_3d(x, y, z):
 
 
 if __name__ == "__main__":
-    rad = pulsation_rad(l=3, m=3, N=1000, project=False)
-    # rad_incl = create_starmask()
+    rad = pulsation_rad(l=5, m=5, N=1000, project=False, inclination=60)
+    # rad = create_starmask()
     fig, ax = plt.subplots(1)
 
     ax.imshow(rad.real, cmap="seismic", origin='lower')
