@@ -48,16 +48,47 @@ def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     # Calculate the spherical harmonic Y(l,m)
     harmonic = sph_harm(m, l, phi, theta)
 
+    # TODO maybe normalize?
+    harmonic = harmonic / np.nanmax(harmonic)
+
     # plot_3d(x, y, z)
 
-    # TODO maybe normalize?
-    grid = project_2d(x, y, z, phi, theta, harmonic, N, inclination,
+    grid = project_2d(x, y, z, phi, theta, harmonic, N, component="rad",
+                      inclination=inclination,
                       line_of_sight=line_of_sight)
 
     return grid
 
 
-def project_2d(x, y, z, phi, theta, values, N, inclination=90, line_of_sight=True):
+def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
+    """ Get radial component of pulsation.
+
+
+        :param int l: Number of surface lines of nodes
+        :param int m: Number of polar lines of nodes (-l<=m<=l)
+        :param int N: Number of cells to sample
+        :param bool project: If True: Project the component onto the line of
+                                      sight
+    """
+    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+    # Calculate the spherical harmonic Y(l,m)
+    harmonic = sph_harm(m, l, phi, theta)
+    # You need the partial derivative wrt to phi
+    harmonic = 1 / np.sin(theta) * 1j * m * harmonic
+
+    # TODO maybe normalize?
+    harmonic = harmonic / np.nanmax(harmonic)
+
+    # plot_3d(x, y, z)
+
+    grid = project_2d(x, y, z, phi, theta, harmonic, N, component="phi",
+                      inclination=inclination,
+                      line_of_sight=line_of_sight)
+
+    return grid
+
+
+def project_2d(x, y, z, phi, theta, values, N, component="rad", inclination=90, line_of_sight=True):
     """ https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853"""
 
     y = y
@@ -108,7 +139,7 @@ def project_2d(x, y, z, phi, theta, values, N, inclination=90, line_of_sight=Tru
         theta = theta.flatten()[nan_mask]
         phi = phi.flatten()[nan_mask]
 
-        # Line of sight unit vecotr
+        # Line of sight unit vector
         los = np.array(
             (0,
              np.cos(np.radians(90 - inclination)),
@@ -116,13 +147,21 @@ def project_2d(x, y, z, phi, theta, values, N, inclination=90, line_of_sight=Tru
 
         scalar_prods = []
         for p, t in zip(phi, theta):
-            # Unit vector of r
-            r_unit = np.array((np.sin(t) * np.cos(p),
-                               np.sin(t) * np.sin(p),
-                               np.cos(t)))
+            if component == "rad":
+                # Unit vector of r
+                r_unit = np.array((np.sin(t) * np.cos(p),
+                                   np.sin(t) * np.sin(p),
+                                   np.cos(t)))
 
-            scalar_prods.append(np.dot(r_unit, los))
+                scalar_prods.append(np.dot(r_unit, los))
+            elif component == "phi":
+                phi_unit = np.array((-np.sin(p),
+                                     np.cos(p),
+                                     0))
+                scalar_prods.append(np.dot(phi_unit, los))
+
         scalar_prods = np.array(scalar_prods)
+        print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
         values = values * scalar_prods
 
     grid = griddata(coords, values, (xx, zz),
@@ -140,16 +179,28 @@ def plot_3d(x, y, z):
 
 
 if __name__ == "__main__":
-    rad = pulsation_rad(l=5, m=5, N=1000, line_of_sight=False, inclination=60)
-    rad_incl = pulsation_rad(
-        l=5, m=5, N=1000, line_of_sight=True, inclination=60)
-    # rad = create_starmask()
-    fig, ax = plt.subplots(2)
+    l = 5
+    m = 5
+    rad_proj = pulsation_rad(
+        l=l, m=m, N=100, line_of_sight=True, inclination=60)
+    phi_proj = pulsation_phi(
+        l=l, m=m, N=100, line_of_sight=True, inclination=60)
 
-    ax[0].imshow(rad.real, cmap="seismic",
-                 origin='lower', vmin=-0.5, vmax=0.5)
-    # rad = rad * np.exp(1j * 2 * np.pi * nu * t)
-    ax[1].imshow(rad_incl.real, cmap="seismic",
-                 origin="lower", vmin=-0.5, vmax=0.5)
+    pulse = rad_proj + phi_proj
+    # rad_incl = pulsation_rad(
+    # l=5, m=5, N=1000, line_of_sight=True, inclination=60)
+    # rad = create_starmask()
+    fig, ax = plt.subplots(1, 3)
+
+    ax[0].imshow(rad_proj.real, cmap="seismic",
+                 origin='lower', vmin=-1, vmax=1)
+    nu = 1
+    t = 0.25
+    # phi = phi * np.exp(1j * 2 * np.pi * nu * t)
+    ax[1].imshow(phi_proj.real, cmap="seismic",
+                 origin="lower", vmin=-1, vmax=1)
+
+    ax[2].imshow(pulse.real, cmap="seismic",
+                 origin="lower", vmin=-1, vmax=1)
 
     plt.show()
