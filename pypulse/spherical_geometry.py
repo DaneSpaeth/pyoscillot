@@ -24,17 +24,17 @@ def get_circular_phi_theta_x_y_z():
     return phi, theta, x, y, z
 
 
-def create_starmask(N=1000):
+def create_starmask(N=1000, border=10):
     """ Return a starmask."""
-    _, _, x, y, z = get_circular_phi_theta_x_y_z()
+    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
 
     star = np.ones(x.shape)
-    star_mask = project_2d(x, y, z, star, N)
+    star_mask = project_2d(x, y, z, phi, theta, star, N, border=border)
     star_mask[np.isnan(star_mask)] = 0
     return star_mask
 
 
-def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
+def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=10):
     """ Get radial component of pulsation.
 
 
@@ -55,12 +55,13 @@ def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
 
     grid = project_2d(x, y, z, phi, theta, displ, N, component="rad",
                       inclination=inclination,
-                      line_of_sight=line_of_sight)
+                      line_of_sight=line_of_sight,
+                      border=border)
 
     return grid
 
 
-def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
+def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=10):
     """ Get phi component of pulsation.
 
 
@@ -83,12 +84,13 @@ def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
 
     grid = project_2d(x, y, z, phi, theta, displ, N, component="phi",
                       inclination=inclination,
-                      line_of_sight=line_of_sight)
+                      line_of_sight=line_of_sight,
+                      border=border)
 
     return grid
 
 
-def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
+def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=10):
     """ Get theta component of pulsation.
 
 
@@ -120,12 +122,13 @@ def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
 
     grid = project_2d(x, y, z, phi, theta, displ, N, component="theta",
                       inclination=inclination,
-                      line_of_sight=line_of_sight)
+                      line_of_sight=line_of_sight,
+                      border=border)
 
     return grid
 
 
-def project_2d(x, y, z, phi, theta, values, N, component="rad", inclination=90, line_of_sight=True):
+def project_2d(x, y, z, phi, theta, values, N, border=10, component=None, inclination=90, line_of_sight=False):
     """ https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853"""
 
     y = y
@@ -157,7 +160,6 @@ def project_2d(x, y, z, phi, theta, values, N, component="rad", inclination=90, 
     z_proj = z_proj / np.nanmax(z_proj)
 
     dN = 2 / N
-    border = 10
     x_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
     z_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
     xx, zz = np.meshgrid(x_grid, z_grid, sparse=False)
@@ -220,7 +222,7 @@ def plot_3d(x, y, z):
     exit()
 
 
-def calculate_pulsation(l, m, V_p, k, nu, t, inclination=90):
+def calculate_pulsation(l, m, V_p, k, nu, t, inclination=90, N=100, border=10):
     """ Calculate the total pulsation.
 
         Calculates all values with line of sight projection.
@@ -234,12 +236,12 @@ def calculate_pulsation(l, m, V_p, k, nu, t, inclination=90):
 
         :returns: Total velocity grid
     """
-    rad = pulsation_rad(l=l, m=m, N=100, line_of_sight=True,
-                        inclination=inclination)
-    phi = pulsation_phi(l=l, m=m, N=100, line_of_sight=True,
-                        inclination=inclination)
+    rad = pulsation_rad(l=l, m=m, N=N, line_of_sight=True,
+                        inclination=inclination, border=border)
+    phi = pulsation_phi(l=l, m=m, N=N, line_of_sight=True,
+                        inclination=inclination, border=border)
     theta = pulsation_theta(
-        l=l, m=m, N=100, line_of_sight=True, inclination=inclination)
+        l=l, m=m, N=N, line_of_sight=True, inclination=inclination, border=border)
     rad = V_p * rad * np.exp(1j * 2 * np.pi * nu * t)
     phi = k * V_p * phi * np.exp(1j * 2 * np.pi * nu * t)
     theta = k * V_p * theta * np.exp(1j * 2 * np.pi * nu * t)

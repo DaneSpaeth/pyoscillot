@@ -3,6 +3,7 @@ from utils import create_circular_mask, interpolate_to_restframe
 import dataloader as load
 from plapy.constants import C
 from scipy.special import sph_harm
+from spherical_geometry import create_starmask, calculate_pulsation
 
 
 class GridStar():
@@ -17,14 +18,18 @@ class GridStar():
         """
         if not N % 2:
             N += 1
-        self.N = N
+        self.orig_N = N
         self.Teff = Teff
-        self.grid = np.zeros((N, N))
+        self.border = 0
+        self.star = create_starmask(N=N, border=self.border)
+        self.N = self.star.shape[0]
+        self.grid = np.zeros(self.star.shape)
+        print(self.grid.shape)
         self.rotation = self.grid
         self.pulsation = self.grid
-        self.center = (int(N / 2), int(N / 2))
+        self.center = (
+            int(self.star.shape[0] / 2), int(self.star.shape[1] / 2))
 
-        self.star = create_circular_mask(N, N)
         self.spot = False
         self.add_rotation(vsini=vsini)
         self.temperature = Teff * self.star
@@ -56,7 +61,7 @@ class GridStar():
         self.temperature[self.spot] -= deltaT
         self.temperature[np.logical_not(self.star)] = 0
 
-    def spectrum(self, min_wave=5000, max_wave=12000):
+    def calc_spectrum(self, min_wave=5000, max_wave=12000):
         """ Return Spectrum (potentially Doppler broadened) from min to max.
 
             :param float min_wave: Minimum Wavelength (Angstrom)
@@ -74,24 +79,26 @@ class GridStar():
                 Teff=3000, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
 
         # Calc v over c
-        v_c = self.rotation / C
+        v_c_rot = self.rotation / C
+        v_c_pulse = self.pulsation.real / C
 
         total_spectrum = np.zeros(len(rest_spectrum))
-        for row in range(self.N):
-            for col in range(self.N):
+        for row in range(self.grid.shape[0]):
+            for col in range(self.grid.shape[1]):
                 if self.star[row, col]:
                     if self.temperature[row, col] == 3000:
                         local_spectrum = spot_spectrum
                     else:
                         local_spectrum = rest_spectrum
-                    if not v_c[row, col]:
-                        # print(f"Skip Star Element {row, col}")
+                    if not v_c_rot[row, col] and not v_c_pulse[row, col]:
+                        print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
                     else:
-                        # print(f"Calculate Star Element {row, col}")
+                        print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
-                            v_c[row, col] * rest_wavelength
+                            v_c_rot[row, col] * rest_wavelength + \
+                            v_c_pulse[row, col] * rest_wavelength
                         # Interpolate the spectrum to the same rest wavelenght grid
                         interpol_spectrum = interpolate_to_restframe(local_wavelength,
                                                                      local_spectrum, rest_wavelength)
@@ -103,41 +110,34 @@ class GridStar():
         self.spectrum = total_spectrum
         return rest_wavelength, total_spectrum
 
-    def add_pulsation(self, n=1, l=3, m=3):
+    def add_pulsation(self, l=2, m=2, phase=0):
         """ Add a pulsation to the star."""
-        phi = np.linspace(0, np.pi, 100)
-        theta = np.linspace(0, np.pi, 100)
-        phi, theta = np.meshgrid(phi, theta)
-
-        self.pulsation = np.zeros(self.grid.shape)
-        for row in range(self.N):
-            for col in range(self.N):
-                if not self.star[row, col]:
-                    self.pulsation[row, col] = 0
-                else:
-                    dx = col - self.center[0]
-                    dy = row - self.center[1]
-                    phi = np.arcsin(dy / self.N * 2)
-                    theta = np.arcsin(dx / self.N * 2)
-
-                    harm = sph_harm(m, l, phi, theta)
-
-                    self.pulsation[row, col] = harm
-
-        # The Cartesian coordinates of the unit sphere
-        x = np.sin(phi) * np.cos(theta)
-        y = np.sin(phi) * np.sin(theta)
-        z = np.cos(phi)
-
-        # Calculate the spherical harmonic Y(l,m) and normalize to [0,1]
-        harm = sph_harm(m, l, theta, phi).real
-        print(harm.shape)
+        pulsation_period = 600  # days
+        nu = 1 / pulsation_period
+        t = phase * pulsation_period
+        V_p = 400
+        k = 1.2
+        self.pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
+            l, m, V_p, k, nu, t, N=self.orig_N, border=self.border)
+        print(self.pulsation.shape)
 
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N=100, vsini=0)
-    star.add_pulsation()
+    star = GridStar(N=50, vsini=0)
+    wave_rest, spec_rest = star.calc_spectrum(7000, 7050)
+    star.add_pulsation(phase=0)
 
-    plt.imshow(star.pulsation)
+    wave_0, spec_0 = star.calc_spectrum(7000, 7050)
+
+    star = GridStar(N=50, vsini=0)
+    star.add_pulsation(phase=0.5)
+    wave_05, spec_05 = star.calc_spectrum(7000, 7050)
+
+    # plt.imshow(star.pulsation.real, cmap="seismic",
+    #           origin="lower", vmin=-400, vmax=400)
+    plt.plot(wave_rest, spec_rest, label="Restframe")
+    plt.plot(wave_0, spec_0, label="Phase 0")
+    plt.plot(wave_05, spec_05, label="Phase 0.5")
+    plt.legend()
     plt.show()
