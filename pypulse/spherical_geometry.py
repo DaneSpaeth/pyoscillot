@@ -49,7 +49,7 @@ def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     displ = sph_harm(m, l, phi, theta)
 
     # TODO maybe normalize?
-    displ = displ / np.nanmax(displ)
+    # displ = displ / np.nanmax(displ)
 
     # plot_3d(x, y, z)
 
@@ -77,7 +77,7 @@ def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     displ = 1 / np.sin(theta) * 1j * m * harmonic
 
     # TODO maybe normalize?
-    displ = displ / np.nanmax(displ)
+    # displ = displ / np.nanmax(displ)
 
     # plot_3d(x, y, z)
 
@@ -114,7 +114,7 @@ def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     displ = part_deriv
 
     # TODO maybe normalize?
-    displ = displ / np.nanmax(displ)
+    # displ = displ / np.nanmax(displ)
 
     # plot_3d(x, y, z)
 
@@ -220,39 +220,52 @@ def plot_3d(x, y, z):
     exit()
 
 
+def calculate_pulsation(l, m, V_p, k, nu, t, inclination=90):
+    """ Calculate the total pulsation.
+
+        Calculates all values with line of sight projection.
+
+
+        V_p: Amplitude of pulsation in m/s
+        k: ratio of phi and theta amplitude wrt to radial amplitude
+           1.2 for g-mode (compare to Hatzes1996)
+        nu: frequency of pulsation (1/P) in 1/d
+        t: time in days
+
+        :returns: Total velocity grid
+    """
+    rad = pulsation_rad(l=l, m=m, N=100, line_of_sight=True,
+                        inclination=inclination)
+    phi = pulsation_phi(l=l, m=m, N=100, line_of_sight=True,
+                        inclination=inclination)
+    theta = pulsation_theta(
+        l=l, m=m, N=100, line_of_sight=True, inclination=inclination)
+    rad = V_p * rad * np.exp(1j * 2 * np.pi * nu * t)
+    phi = k * V_p * phi * np.exp(1j * 2 * np.pi * nu * t)
+    theta = k * V_p * theta * np.exp(1j * 2 * np.pi * nu * t)
+
+    pulsation = rad + phi + theta
+
+    return pulsation, rad, phi, theta
+
+
 if __name__ == "__main__":
     l = 2
-    m = 1
-    # rad_proj = pulsation_rad(
-    #     l=l, m=m, N=100, line_of_sight=True, inclination=60)
-    # phi_proj = pulsation_phi(
-    #     l=l, m=m, N=100, line_of_sight=True, inclination=60)
-    theta = pulsation_theta(
-        l=l, m=m, N=1000, line_of_sight=False, inclination=90)
-    theta_proj = pulsation_theta(
-        l=l, m=m, N=1000, line_of_sight=True, inclination=90)
+    m = -2
 
-    # pulse = rad_proj + phi_proj
-    # rad_incl = pulsation_rad(
-    # l=5, m=5, N=1000, line_of_sight=True, inclination=60)
-    # rad = create_starmask()
-    fig, ax = plt.subplots(1, 2)
-    # rad = rad * np.exp(1j * 2 * np.pi * nu * t)
-    ax[0].imshow(theta.real, cmap="seismic",
-                 origin='lower', vmin=-1, vmax=1)
-    ax[1].imshow(theta_proj.real, cmap="seismic",
-                 origin='lower', vmin=-1, vmax=1)
-    plt.show()
-    exit()
+    puls, rad, phi, theta = calculate_pulsation(l, m, 400, 1.2, 1 / 600, 300)
 
-    ax[0].imshow(rad_proj.real, cmap="seismic",
-                 origin='lower', vmin=-1, vmax=1)
-    nu = 1
-    t = 0.25
-    ax[1].imshow(phi_proj.real, cmap="seismic",
-                 origin="lower", vmin=-1, vmax=1)
-
-    ax[2].imshow(pulse.real, cmap="seismic",
-                 origin="lower", vmin=-1, vmax=1)
-
+    fig, ax = plt.subplots(2, 2)
+    ax[0, 0].imshow(rad.real, origin="lower",
+                    cmap="seismic", vmin=-400, vmax=400)
+    ax[0, 0].set_title("Radial component (real part)")
+    ax[0, 1].imshow(phi.real, origin="lower",
+                    cmap="seismic", vmin=-400, vmax=400)
+    ax[0, 1].set_title("Phi component (real part)")
+    ax[1, 0].imshow(theta.real, origin="lower",
+                    cmap="seismic", vmin=-400, vmax=400)
+    ax[1, 0].set_title("Theta component (real part)")
+    ax[1, 1].imshow(puls.real, origin="lower",
+                    cmap="seismic", vmin=-400, vmax=400)
+    ax[1, 1].set_title("Total (real part)")
     plt.show()
