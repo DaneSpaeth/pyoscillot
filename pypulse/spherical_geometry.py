@@ -46,14 +46,14 @@ def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     """
     phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
     # Calculate the spherical harmonic Y(l,m)
-    harmonic = sph_harm(m, l, phi, theta)
+    displ = sph_harm(m, l, phi, theta)
 
     # TODO maybe normalize?
-    harmonic = harmonic / np.nanmax(harmonic)
+    displ = displ / np.nanmax(displ)
 
     # plot_3d(x, y, z)
 
-    grid = project_2d(x, y, z, phi, theta, harmonic, N, component="rad",
+    grid = project_2d(x, y, z, phi, theta, displ, N, component="rad",
                       inclination=inclination,
                       line_of_sight=line_of_sight)
 
@@ -61,7 +61,7 @@ def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
 
 
 def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
-    """ Get radial component of pulsation.
+    """ Get phi component of pulsation.
 
 
         :param int l: Number of surface lines of nodes
@@ -74,14 +74,51 @@ def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
     # Calculate the spherical harmonic Y(l,m)
     harmonic = sph_harm(m, l, phi, theta)
     # You need the partial derivative wrt to phi
-    harmonic = 1 / np.sin(theta) * 1j * m * harmonic
+    displ = 1 / np.sin(theta) * 1j * m * harmonic
 
     # TODO maybe normalize?
-    harmonic = harmonic / np.nanmax(harmonic)
+    displ = displ / np.nanmax(displ)
 
     # plot_3d(x, y, z)
 
-    grid = project_2d(x, y, z, phi, theta, harmonic, N, component="phi",
+    grid = project_2d(x, y, z, phi, theta, displ, N, component="phi",
+                      inclination=inclination,
+                      line_of_sight=line_of_sight)
+
+    return grid
+
+
+def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90):
+    """ Get theta component of pulsation.
+
+
+        :param int l: Number of surface lines of nodes
+        :param int m: Number of polar lines of nodes (-l<=m<=l)
+        :param int N: Number of cells to sample
+        :param bool project: If True: Project the component onto the line of
+                                      sight
+    """
+    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+    # Calculate the spherical harmonic Y(l,m)
+    harmonic = sph_harm(m, l, phi, theta)
+    # You need the partial derivative wrt to theta
+    # Taken from
+    # https://functions.wolfram.com/Polynomials/SphericalHarmonicY/20/ShowAll.html
+    if m < l:
+        part_deriv = m * 1 / np.tan(theta) * harmonic + \
+            np.sqrt((l - m) * (l - m + 1)) * np.exp(-1j * phi) * \
+            sph_harm(m + 1, l, phi, theta)
+    else:
+        part_deriv = m * 1 / np.tan(theta) * harmonic
+
+    displ = part_deriv
+
+    # TODO maybe normalize?
+    displ = displ / np.nanmax(displ)
+
+    # plot_3d(x, y, z)
+
+    grid = project_2d(x, y, z, phi, theta, displ, N, component="theta",
                       inclination=inclination,
                       line_of_sight=line_of_sight)
 
@@ -159,6 +196,11 @@ def project_2d(x, y, z, phi, theta, values, N, component="rad", inclination=90, 
                                      np.cos(p),
                                      0))
                 scalar_prods.append(np.dot(phi_unit, los))
+            elif component == "theta":
+                theta_unit = np.array((np.cos(t) * np.cos(p),
+                                       np.cos(t) * np.sin(p),
+                                       -np.sin(t)))
+                scalar_prods.append(np.dot(theta_unit, los))
 
         scalar_prods = np.array(scalar_prods)
         print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
@@ -179,24 +221,34 @@ def plot_3d(x, y, z):
 
 
 if __name__ == "__main__":
-    l = 5
-    m = 5
-    rad_proj = pulsation_rad(
-        l=l, m=m, N=100, line_of_sight=True, inclination=60)
-    phi_proj = pulsation_phi(
-        l=l, m=m, N=100, line_of_sight=True, inclination=60)
+    l = 2
+    m = 1
+    # rad_proj = pulsation_rad(
+    #     l=l, m=m, N=100, line_of_sight=True, inclination=60)
+    # phi_proj = pulsation_phi(
+    #     l=l, m=m, N=100, line_of_sight=True, inclination=60)
+    theta = pulsation_theta(
+        l=l, m=m, N=1000, line_of_sight=False, inclination=90)
+    theta_proj = pulsation_theta(
+        l=l, m=m, N=1000, line_of_sight=True, inclination=90)
 
-    pulse = rad_proj + phi_proj
+    # pulse = rad_proj + phi_proj
     # rad_incl = pulsation_rad(
     # l=5, m=5, N=1000, line_of_sight=True, inclination=60)
     # rad = create_starmask()
-    fig, ax = plt.subplots(1, 3)
+    fig, ax = plt.subplots(1, 2)
+    # rad = rad * np.exp(1j * 2 * np.pi * nu * t)
+    ax[0].imshow(theta.real, cmap="seismic",
+                 origin='lower', vmin=-1, vmax=1)
+    ax[1].imshow(theta_proj.real, cmap="seismic",
+                 origin='lower', vmin=-1, vmax=1)
+    plt.show()
+    exit()
 
     ax[0].imshow(rad_proj.real, cmap="seismic",
                  origin='lower', vmin=-1, vmax=1)
     nu = 1
     t = 0.25
-    # phi = phi * np.exp(1j * 2 * np.pi * nu * t)
     ax[1].imshow(phi_proj.real, cmap="seismic",
                  origin="lower", vmin=-1, vmax=1)
 
