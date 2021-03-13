@@ -108,7 +108,7 @@ def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border
     # https://functions.wolfram.com/Polynomials/SphericalHarmonicY/20/ShowAll.html
     if m < l:
         part_deriv = m * 1 / np.tan(theta) * harmonic + \
-            np.sqrt((l - m) * (l - m + 1)) * np.exp(-1j * phi) * \
+            np.sqrt((l - m) * (l + m + 1)) * np.exp(-1j * phi) * \
             sph_harm(m + 1, l, phi, theta)
     else:
         part_deriv = m * 1 / np.tan(theta) * harmonic
