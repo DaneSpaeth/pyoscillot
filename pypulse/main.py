@@ -79,7 +79,7 @@ def get_spot_spectra(P=30, N=20):
     import matplotlib.pyplot as plt
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i}")
-        star = GridStar(N=100, vsini=3000)
+        star = GridStar(N_star=100, vsini=3000)
         star.add_spot(phase=phase, radius=25)
 
         # plt.imshow(star.temperature)
@@ -89,7 +89,7 @@ def get_spot_spectra(P=30, N=20):
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # spot
-        rest_wavelength, rest_spectrum = star.spectrum(
+        rest_wavelength, rest_spectrum = star.calc_spectrum(
             MIN_WAVE - 10, MAX_WAVE + 10)
 
         # Add doppler shift due to barycentric correction
@@ -100,18 +100,22 @@ def get_spot_spectra(P=30, N=20):
     return shift_wavelengths, spectra, time_sample
 
 
-def create_rv_series(P=600, N=20, K=200, spot=True):
+def create_rv_series(P=600, N=20, K=200, mode="RV"):
     """ Create a fake RV series.
 
         :param P: period in days
         :param N: Number of datapoints
         :param K: Amplitude in m/s
     """
-    if not spot:
+    print(mode)
+    if mode == "RV":
         shift_wavelengths, spectra, time_sample = get_planet_spectra(
             P=P, N=N, K=K)
-    else:
+    elif mode == "spot":
         shift_wavelengths, spectra, time_sample = get_spot_spectra(P=P, N=N)
+    elif mode == "pulsation":
+        shift_wavelengths, spectra, time_sample = get_pulsation_spectra(
+            P=P, N=N)
 
     new_specs = []
     for shift_wavelength, spectrum in zip(shift_wavelengths, spectra):
@@ -192,5 +196,48 @@ def interpolate_carmenes(spectrum, wavelength):
     return new_spec, wave
 
 
+def get_pulsation_spectra(P=600, N=20):
+    """ Simulate the pulsation spectra."""
+    phase_sample, time_sample = sample_phase(P, N)
+
+    # TODO REMOVE
+    phase_sample = phase_sample[:-1]
+    time_sample = time_sample[:-1]
+    # END TODO
+    # At the moment assume that there is no planetary signal present
+    # But still create K_sample for barycentric correction
+
+    K_sample = np.zeros(len(time_sample))
+
+    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+
+    shift_wavelengths = []
+    spectra = []
+    i = 0
+
+    import matplotlib.pyplot as plt
+    for v, phase in zip(K_sample, phase_sample):
+        print(f"Calculate star {i}")
+        star = GridStar(N_star=100, vsini=3000)
+        star.add_pulsation(l=2, m=2, phase=phase)
+
+        plt.imshow(star.pulsation.real, origin="lower",
+                   cmap="seismic", vmin=-400, vmax=400)
+        plt.savefig(
+            f"/home/dane/Documents/PhD/pypulse/plots/pulsation/{round(phase,3)}.pdf")
+        plt.close()
+
+        # Wavelength in restframe of phoenix spectra but already perturbed by
+        # pulsation
+        rest_wavelength, rest_spectrum = star.calc_spectrum(
+            MIN_WAVE - 10, MAX_WAVE + 10)
+
+        # Add doppler shift due to barycentric correction
+        shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
+        spectra.append(rest_spectrum)
+
+    return shift_wavelengths, spectra, time_sample
+
+
 if __name__ == "__main__":
-    create_rv_series()
+    create_rv_series(N=21, mode="pulsation")

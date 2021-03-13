@@ -160,8 +160,10 @@ def project_2d(x, y, z, phi, theta, values, N, border=10, component=None, inclin
     z_proj = z_proj / np.nanmax(z_proj)
 
     dN = 2 / N
-    x_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
-    z_grid = np.arange(-1 - border * dN, 1 + (border + 1) * dN, dN)
+    print(N)
+    x_grid = np.linspace(-1 - border * dN, 1 + border * dN, N + 2 * border)
+    print(x_grid)
+    z_grid = np.linspace(-1 - border * dN, 1 + border * dN, N + 2 * border)
     xx, zz = np.meshgrid(x_grid, z_grid, sparse=False)
 
     coords = []

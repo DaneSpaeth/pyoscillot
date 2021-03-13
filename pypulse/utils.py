@@ -44,7 +44,7 @@ def bisector(wavelength, spectrum):
     """
     bisector_waves = []
     bisector_flux = []
-    search_for = np.linspace(np.min(spectrum), 0.8, 25)
+    search_for = np.linspace(np.max(spectrum) - 0.1, np.min(spectrum), 200)
     max_idx = np.argmin(spectrum)
     left_spectrum = spectrum[0:max_idx]
     print(wavelength[max_idx])

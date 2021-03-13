@@ -50,7 +50,7 @@ def _read_in_crx(file):
 
 if __name__ == "__main__":
     root = Path(
-        "/home/dane/Documents/PhD/pypulse/data/fake_serval/HIP73620_vis_K200/")
+        "/home/dane/Documents/PhD/pypulse/data/fake_serval/HIP73620_vis/")
     file = root / "HIP73620_vis.rvc.dat"
     time, rv, rve = read_in_rvs(file)
     crx_file = root / "HIP73620_vis.crx.dat"
@@ -71,5 +71,5 @@ if __name__ == "__main__":
                    yerr=crx_dict["crxe"], linestyle="None", marker="o")
     ax[2].set_xlabel("RV [m/s]")
     ax[2].set_ylabel("CRX [m/s/Np]")
-    ax[0].set_title("K=200m/s, no spot")
+    ax[0].set_title("Pulsation, vsini=0, v_p=400m/s, no spot, no temp variation")
     plt.show()
