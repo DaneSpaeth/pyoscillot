@@ -244,20 +244,35 @@ def calculate_pulsation(l, m, V_p, k, nu, t, inclination=90, N=100, border=10):
                         inclination=inclination, border=border)
     theta = pulsation_theta(
         l=l, m=m, N=N, line_of_sight=True, inclination=inclination, border=border)
-    rad = V_p * rad * np.exp(1j * 2 * np.pi * nu * t)
-    phi = k * V_p * phi * np.exp(1j * 2 * np.pi * nu * t)
-    theta = k * V_p * theta * np.exp(1j * 2 * np.pi * nu * t)
+    # Add a factor of 1j. as the pulsations are yet the radial displacements
+    # you need to differentiate the displacements wrt t which introduces
+    # a factor 1j * 2 * np.pi * nu
+    # but we absorb the  2 * np.pi * nu part in the V_p constant
+    # See Kochukhov et al. (2004)
+    rad = 1j * V_p * rad * np.exp(1j * 2 * np.pi * nu * t)
+    phi = 1j * k * V_p * phi * np.exp(1j * 2 * np.pi * nu * t)
+    theta = 1j * k * V_p * theta * np.exp(1j * 2 * np.pi * nu * t)
 
     pulsation = rad + phi + theta
 
     return pulsation, rad, phi, theta
 
 
+def calc_temp_variation(l, m, amplitude, t, phase_shift=0, inclination=90, N=100, border=10):
+    """ Calculate the temperature variation."""
+    rad = pulsation_rad(l=l, m=m, N=N, line_of_sight=False,
+                        inclination=inclination, border=border)
+
+    var = amplitude * (rad * np.exp(1j * phase_shift)).real
+    return var, rad
+
+
 if __name__ == "__main__":
     l = 2
     m = -2
 
-    puls, rad, phi, theta = calculate_pulsation(l, m, 400, 1.2, 1 / 600, 300)
+    nu = (1 / 600) * (1 - 1j)
+    puls, rad, phi, theta = calculate_pulsation(l, m, 400, 1.2, nu, 300)
 
     fig, ax = plt.subplots(2, 2)
     ax[0, 0].imshow(rad.real, origin="lower",

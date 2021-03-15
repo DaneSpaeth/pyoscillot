@@ -3,7 +3,7 @@ from utils import create_circular_mask, interpolate_to_restframe, gaussian, bise
 import dataloader as load
 from plapy.constants import C
 from scipy.special import sph_harm
-from spherical_geometry import create_starmask, calculate_pulsation
+from spherical_geometry import create_starmask, calculate_pulsation, calc_temp_variation
 
 
 class GridStar():
@@ -122,50 +122,35 @@ class GridStar():
     def add_pulsation(self, l=2, m=2, phase=0):
         """ Add a pulsation to the star."""
         # TODO make these values adjustable
-        pulsation_period = 600  # days
-        nu = 1 / pulsation_period
-        t = phase * pulsation_period
+        self.l = l
+        self.m = m
+        self.pulsation_period = 600  # days
+        nu = 1 / self.pulsation_period
+        t = phase * self.pulsation_period
         V_p = 400
         k = 1.2
+        return None
         self.pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
             l, m, V_p, k, nu, t, N=self.N_star, border=self.N_border)
-        print(self.pulsation.shape)
+
+    def add_temp_variation(self, phase=0):
+        t = phase * self.pulsation_period
+        ampl = 100  # K
+        phase_shift = 0  # radians
+        temp_variation, self.rad_no_lineofsight = calc_temp_variation(
+            self.l, self.m, ampl, t, phase_shift=phase_shift, N=self.N_star, border=self.N_border)
+        self.temperature += temp_variation
 
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     star = GridStar(N_star=100, N_border=3, vsini=0)
-    wave, spec = star.calc_spectrum(7000, 7010, mode="gaussian")
-    fig, ax = plt.subplots(1, 2)
-    ax[0].plot(wave, spec, label="No Rotation")
-    bis_wave, bis_flux = bisector(wave, spec)
-    ax[1].plot(bis_wave, bis_flux, label="No Rotation")
 
-    star.add_pulsation()
-    wave, spec = star.calc_spectrum(7000, 7010, mode="gaussian")
-    ax[0].plot(wave, spec, label="Pulsation")
-    bis_wave, bis_flux = bisector(wave, spec)
-    ax[1].plot(bis_wave, bis_flux, label="Pulsation")
-    ax[0].set_xlim(7004, 7006)
-    plt.legend()
-    plt.show()
-    exit()
+    # wave_rest, spec_rest = star.calc_spectrum(7000, 7050)
+    star.add_pulsation(l=4, m=4, phase=0)
+    star.add_temp_variation(phase=0)
 
-    exit()
-
-    wave_rest, spec_rest = star.calc_spectrum(7000, 7050)
-    star.add_pulsation(phase=0)
-
-    wave_0, spec_0 = star.calc_spectrum(7000, 7050)
-
-    star = GridStar(N=50, vsini=0)
-    star.add_pulsation(phase=0.5)
-    wave_05, spec_05 = star.calc_spectrum(7000, 7050)
-
-    # plt.imshow(star.pulsation.real, cmap="seismic",
-    #           origin="lower", vmin=-400, vmax=400)
-    plt.plot(wave_rest, spec_rest, label="Restframe")
-    plt.plot(wave_0, spec_0, label="Phase 0")
-    plt.plot(wave_05, spec_05, label="Phase 0.5")
-    plt.legend()
+    fig, ax = plt.subplots(2)
+    ax[0].imshow(star.temperature)
+    ax[1].imshow(star.rad_no_lineofsight.real)
     plt.show()
