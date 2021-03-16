@@ -34,6 +34,19 @@ def create_starmask(N=1000, border=10):
     return star_mask
 
 
+def create_rotation(v=3000, N=1000, line_of_sight=True, inclination=90, border=10):
+    """ Create a rotation map with fixed rotation and inclination  angle."""
+    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+
+    rotation = v * np.sin(theta)
+    rotation_2d = project_2d(x, y, z, phi, theta, rotation, N,
+                             inclination=inclination,
+                             border=border,
+                             line_of_sight=line_of_sight,
+                             component="phi")
+    return rotation_2d
+
+
 def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=10):
     """ Get radial component of pulsation.
 
@@ -268,23 +281,27 @@ def calc_temp_variation(l, m, amplitude, t, phase_shift=0, inclination=90, N=100
 
 
 if __name__ == "__main__":
-    l = 2
-    m = -2
-
-    nu = (1 / 600) * (1 - 1j)
-    puls, rad, phi, theta = calculate_pulsation(l, m, 400, 1.2, nu, 300)
-
-    fig, ax = plt.subplots(2, 2)
-    ax[0, 0].imshow(rad.real, origin="lower",
-                    cmap="seismic", vmin=-400, vmax=400)
-    ax[0, 0].set_title("Radial component (real part)")
-    ax[0, 1].imshow(phi.real, origin="lower",
-                    cmap="seismic", vmin=-400, vmax=400)
-    ax[0, 1].set_title("Phi component (real part)")
-    ax[1, 0].imshow(theta.real, origin="lower",
-                    cmap="seismic", vmin=-400, vmax=400)
-    ax[1, 0].set_title("Theta component (real part)")
-    ax[1, 1].imshow(puls.real, origin="lower",
-                    cmap="seismic", vmin=-400, vmax=400)
-    ax[1, 1].set_title("Total (real part)")
+    rotation = create_rotation(line_of_sight=True, inclination=1)
+    plt.imshow(rotation, origin="lower", cmap="seismic")
     plt.show()
+
+    # l = 2
+    # m = -2
+
+    # nu = (1 / 600) * (1 - 1j)
+    # puls, rad, phi, theta = calculate_pulsation(l, m, 400, 1.2, nu, 300)
+
+    # fig, ax = plt.subplots(2, 2)
+    # ax[0, 0].imshow(rad.real, origin="lower",
+    #                 cmap="seismic", vmin=-400, vmax=400)
+    # ax[0, 0].set_title("Radial component (real part)")
+    # ax[0, 1].imshow(phi.real, origin="lower",
+    #                 cmap="seismic", vmin=-400, vmax=400)
+    # ax[0, 1].set_title("Phi component (real part)")
+    # ax[1, 0].imshow(theta.real, origin="lower",
+    #                 cmap="seismic", vmin=-400, vmax=400)
+    # ax[1, 0].set_title("Theta component (real part)")
+    # ax[1, 1].imshow(puls.real, origin="lower",
+    #                 cmap="seismic", vmin=-400, vmax=400)
+    # ax[1, 1].set_title("Total (real part)")
+    # plt.show()
