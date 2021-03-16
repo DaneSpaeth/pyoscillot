@@ -3,7 +3,7 @@ from utils import create_circular_mask, interpolate_to_restframe, gaussian, bise
 import dataloader as load
 from plapy.constants import C
 from scipy.special import sph_harm
-from spherical_geometry import create_starmask, calculate_pulsation, calc_temp_variation
+from spherical_geometry import create_starmask, calculate_pulsation, calc_temp_variation, create_spotmask
 
 
 class GridStar():
@@ -50,14 +50,21 @@ class GridStar():
         self.rotation = (rel_hor_dist * self.star) / \
             np.max(rel_hor_dist) * vsini
 
-    def add_spot(self, phase=0.25, radius=50, deltaT=1800, reset=True, ):
-        """ Add a circular starspot at position x,y."""
-        y = int(self.center[1])
-        x = int(phase % 1 * self.N_grid)
-        print(f"Add circular spot with rad={radius} at {x},{y}")
+    def add_spot(self, phase=0.25, altitude=90, radius=25, deltaT=1800, reset=True, ):
+        """ Add a circular starspot at position x,y.
 
-        self.spot = create_circular_mask(
-            self.N_grid, self.N_grid, center=(x, y), radius=radius)
+
+
+            :param phase: Phase ranging from 0 to 1 (0 being left edge,
+                                                     1 being one time around)
+            :param radius: Radius in degree
+            :param altitude: Altitude on star in degree (90 is on equator)
+            :param deltaT: Temp difference to Teff in K
+            :param bool reset: If True, reset the temp before adding another spot
+        """
+        az = phase * 360
+        self.spot = create_spotmask(
+            radius, az, altitude, N=self.N_star, border=self.N_border)
         # Make sure to reset the temp before adding another spot
         if reset:
             self.temperature[self.star] = self.Teff
@@ -129,7 +136,6 @@ class GridStar():
         t = phase * self.pulsation_period
         V_p = 400
         k = 1.2
-        return None
         self.pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
             l, m, V_p, k, nu, t, N=self.N_star, border=self.N_border)
 
@@ -138,19 +144,17 @@ class GridStar():
         ampl = 100  # K
         phase_shift = 0  # radians
         temp_variation, self.rad_no_lineofsight = calc_temp_variation(
-            self.l, self.m, ampl, t, phase_shift=phase_shift, N=self.N_star, border=self.N_border)
+            self.l, self.m, ampl, t, phase_shift=phase_shift,
+            N=self.N_star, border=self.N_border)
         self.temperature += temp_variation
 
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N_star=100, N_border=3, vsini=0)
+    star = GridStar(N_star=1000, N_border=3, vsini=0)
 
-    # wave_rest, spec_rest = star.calc_spectrum(7000, 7050)
-    star.add_pulsation(l=4, m=4, phase=0)
-    star.add_temp_variation(phase=0)
-
-    fig, ax = plt.subplots(2)
-    ax[0].imshow(star.temperature)
-    ax[1].imshow(star.rad_no_lineofsight.real)
-    plt.show()
+    phases = np.linspace(0, 1, 7)
+    for p in phases:
+        star.add_spot(p)
+        plt.imshow(star.temperature, origin="lower")
+        plt.show()
