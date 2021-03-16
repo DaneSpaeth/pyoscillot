@@ -9,6 +9,7 @@ def phoenix_spectrum(Teff=4800, logg=2.5, feh=-0.5, wavelength_range=(3000, 7000
     """Return phenix spectrum and header."""
     file = DATAROOT / "phoenix_spectra" /\
         f"lte0{Teff}-{logg:.2f}-{np.abs(feh)}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
+    print(f"Load file {file}")
     with fits.open(file) as hdul:
         header = hdul[0].header
         spectrum = hdul[0].data
