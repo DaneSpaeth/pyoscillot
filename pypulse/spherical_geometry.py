@@ -66,7 +66,7 @@ def create_rotation(v=3000, N=1000, line_of_sight=True, inclination=90, border=1
     """ Create a rotation map with fixed rotation and inclination  angle."""
     phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
 
-    rotation = v * np.sin(theta)
+    rotation = -v * np.sin(theta)
     rotation_2d = project_2d(x, y, z, phi, theta, rotation, N,
                              inclination=inclination,
                              border=border,
