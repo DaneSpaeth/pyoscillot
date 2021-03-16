@@ -1,9 +1,12 @@
 import numpy as np
-from utils import create_circular_mask, interpolate_to_restframe, gaussian, bisector
+from utils import (create_circular_mask, interpolate_to_restframe,
+                   gaussian, bisector)
 import dataloader as load
 from plapy.constants import C
 from scipy.special import sph_harm
-from spherical_geometry import create_starmask, calculate_pulsation, calc_temp_variation, create_spotmask
+from spherical_geometry import (create_starmask, calculate_pulsation,
+                                calc_temp_variation, create_spotmask,
+                                create_rotation)
 
 
 class GridStar():
@@ -40,15 +43,10 @@ class GridStar():
 
     def add_rotation(self, vsini):
         """ Add Rotation, vsini in m/s"""
-        pos_map = self.star
-        rel_hor_dist = self.grid
-        one_line = np.arange(0, self.N_grid, dtype=int) - self.center[0]
 
-        for i in range(rel_hor_dist.shape[0]):
-            rel_hor_dist[i, :] = one_line
-
-        self.rotation = (rel_hor_dist * self.star) / \
-            np.max(rel_hor_dist) * vsini
+        self.rotation = create_rotation(
+            vsini, N=self.N_star, border=self.N_border, inclination=90,
+            line_of_sight=True)
 
     def add_spot(self, phase=0.25, altitude=90, radius=25, deltaT=1800, reset=True, ):
         """ Add a circular starspot at position x,y.
@@ -151,10 +149,10 @@ class GridStar():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N_star=1000, N_border=3, vsini=0)
+    star = GridStar(N_star=1000, N_border=3, vsini=3000)
 
-    phases = np.linspace(0, 1, 7)
-    for p in phases:
-        star.add_spot(p)
-        plt.imshow(star.temperature, origin="lower")
-        plt.show()
+    # fig, ax = plt.subplots(1, 2)
+    # ax[0].imshow(star.rotation, cmap="seismic", origin="lower")
+    # ax[1].imshow(star.new_rotation, cmap="seismic", origin="lower")
+    plt.imshow(star.rotation - star.new_rotation)
+    plt.show()
