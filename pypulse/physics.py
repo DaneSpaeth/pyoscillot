@@ -58,7 +58,6 @@ def get_interpolated_spectrum(T_local, wavelength_range=(3000, 7000)):
         T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
 
     # Now interpolate with the contrast given by the Planck curves
-    print(T_local)
-    print(T_close)
-    spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
+    if T_local != T_close:
+        spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
     return wave, spec, header
