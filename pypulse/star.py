@@ -7,6 +7,7 @@ from scipy.special import sph_harm
 from spherical_geometry import (create_starmask, calculate_pulsation,
                                 calc_temp_variation, create_spotmask,
                                 create_rotation)
+from physics import get_interpolated_spectrum
 
 
 class GridStar():
@@ -39,7 +40,7 @@ class GridStar():
 
         self.spot = False
         self.add_rotation(vsini=vsini)
-        self.temperature = Teff * self.star
+        self.temperature = (Teff * self.star).astype(float)
 
     def add_rotation(self, vsini):
         """ Add Rotation, vsini in m/s"""
@@ -100,15 +101,15 @@ class GridStar():
         for row in range(self.grid.shape[0]):
             for col in range(self.grid.shape[1]):
                 if self.star[row, col]:
-                    if self.temperature[row, col] == 3000:
-                        local_spectrum = spot_spectrum
-                    else:
-                        local_spectrum = rest_spectrum
+                    T_loc = self.temperature[row, col]
+                    print(
+                        f"Calculate Star Element {row, col} with T_local={T_loc}")
+                    _, local_spectrum, _ = get_interpolated_spectrum(
+                        T_loc, wavelength_range)
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
                         print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
                     else:
-                        print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
@@ -130,29 +131,44 @@ class GridStar():
         self.l = l
         self.m = m
         self.pulsation_period = 600  # days
-        nu = 1 / self.pulsation_period
+        self.nu = 1 / self.pulsation_period
         t = phase * self.pulsation_period
         V_p = 400
         k = 1.2
         self.pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
-            l, m, V_p, k, nu, t, N=self.N_star, border=self.N_border)
+            l, m, V_p, k, self.nu, t, N=self.N_star, border=self.N_border)
 
-    def add_temp_variation(self, phase=0):
+    def add_temp_variation(self, phase=0, reset=True):
+        """ Add a temperature variation."""
+        if reset:
+            self.temperature[self.star] = self.Teff
         t = phase * self.pulsation_period
         ampl = 100  # K
         phase_shift = 0  # radians
         temp_variation, self.rad_no_lineofsight = calc_temp_variation(
-            self.l, self.m, ampl, t, phase_shift=phase_shift,
+            self.l, self.m, ampl, self.nu, t, phase_shift=phase_shift,
             N=self.N_star, border=self.N_border)
+        temp_variation[np.isnan(temp_variation)] = 0
         self.temperature += temp_variation
 
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N_star=1000, N_border=3, vsini=3000)
+    star = GridStar(N_star=100, N_border=3, vsini=0)
 
-    # fig, ax = plt.subplots(1, 2)
-    # ax[0].imshow(star.rotation, cmap="seismic", origin="lower")
-    # ax[1].imshow(star.new_rotation, cmap="seismic", origin="lower")
-    plt.imshow(star.rotation - star.new_rotation)
+    phases = np.linspace(0, 1, 12)
+    star.add_pulsation()
+    star.add_temp_variation()
+    wave, spec = star.calc_spectrum()
+
+    plt.plot(wave, spec)
     plt.show()
+
+    # fig, ax = plt.subplots(3, 4)
+    # for idx, p in enumerate(phases):
+    #     star.add_temp_variation(phase=p)
+    #     row = int(idx / 4)
+    #     col = idx % 4
+    #     ax[row, col].imshow(star.temperature, origin="lower",
+    #                         cmap="seismic", vmin=4700, vmax=4900)
+    # plt.show()
