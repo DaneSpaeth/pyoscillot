@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
+from astropy.convolution import convolve_fft
+from astropy.convolution import Gaussian1DKernel
 
 
 def create_circular_mask(h, w, center=None, radius=None):
@@ -116,7 +118,7 @@ def interpolate_to_restframe(wavelength, spectrum, rest_wavelength):
     return shift_spec
 
 
-def smear(wave, spec, R, w_sample=1):
+def adjust_resolution(wave, spec, R, w_sample=1):
     '''
     Smears a model spectrum with a gaussian kernel to the given resolution, R.
 

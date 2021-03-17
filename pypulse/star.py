@@ -1,6 +1,6 @@
 import numpy as np
 from utils import (create_circular_mask, interpolate_to_restframe,
-                   gaussian, bisector)
+                   gaussian, bisector, adjust_resolution)
 import dataloader as load
 from plapy.constants import C
 from scipy.special import sph_harm
@@ -130,6 +130,10 @@ class GridStar():
         total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
 
         self.wavelength = rest_wavelength
+
+        # Now adjust the resolution to Carmenes
+        total_spectrum = adjust_resolution(
+            rest_wavelength, total_spectrum, R=90000)
         self.spectrum = total_spectrum
         return rest_wavelength, total_spectrum
 
@@ -151,7 +155,7 @@ class GridStar():
         if reset:
             self.temperature[self.star] = self.Teff
         t = phase * self.pulsation_period
-        ampl = 100  # K
+        ampl = 200  # K
         phase_shift = 0  # radians
         temp_variation, self.rad_no_lineofsight = calc_temp_variation(
             self.l, self.m, ampl, self.nu, t, phase_shift=phase_shift,
@@ -166,11 +170,12 @@ if __name__ == "__main__":
 
     phases = np.linspace(0, 1, 12)
     star.add_pulsation(phase=0.2)
+    star.add_temp_variation(phase=0.2)
 
     wave, spec = star.calc_spectrum()
-    ref_wave, ref_spec, _ = load.phoenix_spectrum(
-        4800, wavelength_range=(5000 - 1, 12000 + 1))
-    plt.plot(ref_wave, ref_spec, color="black")
+    # ref_wave, ref_spec, _ = load.phoenix_spectrum(
+    #     4800, wavelength_range=(5000 - 1, 12000 + 1))
+    # plt.plot(ref_wave, ref_spec, color="black")
     plt.plot(wave, spec, alpha=0.7, color="red")
 
     plt.show()
