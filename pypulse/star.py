@@ -7,7 +7,7 @@ from scipy.special import sph_harm
 from spherical_geometry import (create_starmask, calculate_pulsation,
                                 calc_temp_variation, create_spotmask,
                                 create_rotation)
-from physics import get_interpolated_spectrum
+from physics import get_ref_spectra, get_interpolated_spectrum
 
 
 class GridStar():
@@ -36,7 +36,6 @@ class GridStar():
         self.pulsation = self.grid
         self.center = (
             int(self.star.shape[0] / 2), int(self.star.shape[1] / 2))
-        print(self.center)
 
         self.spot = False
         self.add_rotation(vsini=vsini)
@@ -80,36 +79,45 @@ class GridStar():
         """
         wavelength_range = (min_wave - 1, max_wave + 1)
         if mode == "phoenix":
-            rest_wavelength, rest_spectrum, _ = load.phoenix_spectrum(
-                Teff=self.Teff, logg=2.5, feh=-0.5, wavelength_range=wavelength_range)
+            # rest_wavelength, rest_spectrum, _ = load.phoenix_spectrum(
+            #     Teff=self.Teff, logg=2.5, feh=-0.5, wavelength_range=wavelength_range)
+
+            # First get a wavelength grid and dictionarys of the available
+            # Phoenix spectra that are close to the temperature in
+            # self.temperature
+            (rest_wavelength,
+             ref_spectra,
+             ref_headers) = get_ref_spectra(self.temperature,
+                                            wavelength_range=wavelength_range)
         elif mode == "gaussian":
             rest_wavelength = np.linspace(min_wave, max_wave, 10000)
             rest_spectrum = -1 * gaussian(rest_wavelength,
                                           (max_wave + min_wave) / 2,
                                           (max_wave - min_wave) / 100)
 
-        if np.any(self.spot):
-            print("Star has a spot")
-            _, spot_spectrum, _ = load.phoenix_spectrum(
-                Teff=3000, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
+        # if np.any(self.spot):
+        #     print("Star has a spot")
+        #     _, spot_spectrum, _ = load.phoenix_spectrum(
+        #         Teff=3000, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
 
         # Calc v over c
         v_c_rot = self.rotation / C
         v_c_pulse = self.pulsation.real / C
 
-        total_spectrum = np.zeros(len(rest_spectrum))
+        total_spectrum = np.zeros(len(rest_wavelength))
         for row in range(self.grid.shape[0]):
             for col in range(self.grid.shape[1]):
                 if self.star[row, col]:
-                    T_loc = self.temperature[row, col]
-                    print(
-                        f"Calculate Star Element {row, col} with T_local={T_loc}")
-                    _, local_spectrum, _ = get_interpolated_spectrum(
-                        T_loc, wavelength_range)
+                    T_local = self.temperature[row, col]
+                    _, local_spectrum, _ = get_interpolated_spectrum(T_local,
+                                                                     ref_wave=rest_wavelength,
+                                                                     ref_spectra=ref_spectra,
+                                                                     ref_headers=ref_headers)
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
                         print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
                     else:
+                        print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
@@ -154,21 +162,15 @@ class GridStar():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N_star=100, N_border=3, vsini=0)
+    star = GridStar(N_star=50, N_border=3, vsini=3000)
 
     phases = np.linspace(0, 1, 12)
-    star.add_pulsation()
-    star.add_temp_variation()
+    star.add_pulsation(phase=0.2)
+
     wave, spec = star.calc_spectrum()
+    ref_wave, ref_spec, _ = load.phoenix_spectrum(
+        4800, wavelength_range=(5000 - 1, 12000 + 1))
+    plt.plot(ref_wave, ref_spec, color="black")
+    plt.plot(wave, spec, alpha=0.7, color="red")
 
-    plt.plot(wave, spec)
     plt.show()
-
-    # fig, ax = plt.subplots(3, 4)
-    # for idx, p in enumerate(phases):
-    #     star.add_temp_variation(phase=p)
-    #     row = int(idx / 4)
-    #     col = idx % 4
-    #     ax[row, col].imshow(star.temperature, origin="lower",
-    #                         cmap="seismic", vmin=4700, vmax=4900)
-    # plt.show()
