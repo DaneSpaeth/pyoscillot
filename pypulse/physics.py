@@ -32,32 +32,113 @@ def planck_ratio(wav, T_1, T_2):
     return int_1 / int_2
 
 
-def get_interpolated_spectrum(T_local, wavelength_range=(3000, 7000)):
+def get_interpolated_spectrum(T_local,
+                              wavelength_range=(3000, 7000),
+                              ref_wave=None,
+                              ref_spectra=None,
+                              ref_headers=None):
     """ Return a potentially interpolated spectrum. Returns the same format as
         the phoenix spectrum.
 
         At the moment:
         logg=3.0, feh=0.0
     """
-    if not 4450 < T_local < 5150:
+    if not 4350 < T_local < 5450:
         print("Temperature is not in grid")
         exit()
 
-    T_close = round(T_local, -2)
-    print(T_close)
-    # Sadly the 5000K phoenix spectrum is not available
-    T_missing = 5000
-    if T_close == T_missing:
-        if T_local < T_missing:
-            T_close -= 100
-        else:
-            T_close += 100
+    T_close = int(round(T_local, -2))
 
     # Get closest spectrum
-    wave, spec, header = phoenix_spectrum(
-        T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
+    if ref_spectra is None:
+        wave, spec, header = phoenix_spectrum(
+            T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
+    else:
+        print(f"Use the given Reference Spectra at T={T_close}")
+        assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
+        assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
+        wave = ref_wave
+        spec = ref_spectra[T_close]
+        header = ref_headers[T_close]
+        assert wave.shape == spec.shape
 
-    # Now interpolate with the contrast given by the Planck curves
+        # Now interpolate with the contrast given by the Planck curves
     if T_local != T_close:
         spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
     return wave, spec, header
+
+
+def get_ref_spectra(T_grid, wavelength_range=(3000, 7000)):
+    """ Return a wavelength grid and a dict of phoenix spectra and a dict of
+        pheonix headers.
+
+        The dict has the form {Temp1:spectrum1, Temp2:spectrum2}
+
+        This dict and wavelength grid can be used to interpolate the spectra
+        for local T in a later step. Loading them beforhand as a dictionary
+        reduces the amount of disk reading at later stages (i.e. if you
+        read everytime you want to compute a local T spectrum)
+
+        At the moment:
+        logg=3.0, feh=0.0
+
+        :param np.array T_grid: Temperature grid in K. The function
+                                automatically determines the necessary ref spec
+        :param tuple wavelength_range: Wavelength range fro spectrum in A
+
+        :return: tuple of (wavelength grid, T:spec dict, T:header dict)
+
+    """
+    logg = 3.0
+    feh = 0.0
+    T_min = np.nanmin(T_grid[T_grid > 0])
+    T_max = np.nanmax(T_grid[T_grid > 0])
+
+    # Get all needed reference spectra
+    T_close_min = int(round(T_min, -2))
+    T_close_max = int(round(T_max, -2))
+
+    if T_close_min == T_close_max:
+        ref_spectra = {T_close_min: phoenix_spectrum(
+            T_close_min, logg=logg, feh=feh, wavelength_range=wavelength_range)[1]}
+    else:
+        Ts = np.linspace(T_close_min, T_close_max,
+                         int((T_close_max - T_close_min) / 100) + 1, dtype=int)
+
+        ref_spectra = {}
+        ref_headers = {}
+        for T in Ts:
+            _, ref_spectra[T], ref_headers[T] = phoenix_spectrum(
+                T, logg=logg, feh=feh, wavelength_range=wavelength_range)
+
+    # Load one wavelength reference
+    wave, _, _ = phoenix_spectrum(
+        Ts[0], logg=logg, feh=feh, wavelength_range=wavelength_range)
+
+    return wave, ref_spectra, ref_headers
+
+
+if __name__ == "__main__":
+    T_grid = np.ones((100, 100)) * 4700.0
+    T_grid[10:20, :] = 4400
+    T_grid[20:30, :] = 5201
+
+    wave, ref_spectra, ref_headers = get_ref_spectra(
+        T_grid, wavelength_range=(3000, 12000))
+
+    wave, spec, header = get_interpolated_spectrum(4549,
+                                                   ref_wave=wave,
+                                                   ref_spectra=ref_spectra,
+                                                   ref_headers=ref_headers)
+    wave2, spec2, header2 = get_interpolated_spectrum(4551,
+                                                      ref_wave=wave,
+                                                      ref_spectra=ref_spectra,
+                                                      ref_headers=ref_headers)
+    wave3, spec3, header3 = get_interpolated_spectrum(4553,
+                                                      ref_wave=wave,
+                                                      ref_spectra=ref_spectra,
+                                                      ref_headers=ref_headers)
+    plt.plot(wave3, spec3)
+    plt.plot(wave2, spec2)
+    plt.plot(wave, spec)
+    plt.show()
