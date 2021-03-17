@@ -99,8 +99,10 @@ def get_ref_spectra(T_grid, wavelength_range=(3000, 7000)):
     T_close_max = int(round(T_max, -2))
 
     if T_close_min == T_close_max:
-        ref_spectra = {T_close_min: phoenix_spectrum(
-            T_close_min, logg=logg, feh=feh, wavelength_range=wavelength_range)[1]}
+        wave, spec, header = phoenix_spectrum(
+            T_close_min, logg=logg, feh=feh, wavelength_range=wavelength_range)
+        ref_spectra = {T_close_min: spec}
+        ref_headers = {T_close_min: header}
     else:
         Ts = np.linspace(T_close_min, T_close_max,
                          int((T_close_max - T_close_min) / 100) + 1, dtype=int)
@@ -108,12 +110,9 @@ def get_ref_spectra(T_grid, wavelength_range=(3000, 7000)):
         ref_spectra = {}
         ref_headers = {}
         for T in Ts:
-            _, ref_spectra[T], ref_headers[T] = phoenix_spectrum(
+            wave, ref_spectra[T], ref_headers[T] = phoenix_spectrum(
                 T, logg=logg, feh=feh, wavelength_range=wavelength_range)
-
-    # Load one wavelength reference
-    wave, _, _ = phoenix_spectrum(
-        Ts[0], logg=logg, feh=feh, wavelength_range=wavelength_range)
+            # All waves are the same, so just return the last one
 
     return wave, ref_spectra, ref_headers
 
@@ -126,7 +125,7 @@ if __name__ == "__main__":
     wave, ref_spectra, ref_headers = get_ref_spectra(
         T_grid, wavelength_range=(3000, 12000))
 
-    wave, spec, header = get_interpolated_spectrum(4549,
+    wave, spec, header = get_interpolated_spectrum(4800,
                                                    ref_wave=wave,
                                                    ref_spectra=ref_spectra,
                                                    ref_headers=ref_headers)
@@ -138,7 +137,7 @@ if __name__ == "__main__":
                                                       ref_wave=wave,
                                                       ref_spectra=ref_spectra,
                                                       ref_headers=ref_headers)
-    plt.plot(wave3, spec3)
-    plt.plot(wave2, spec2)
+    # plt.plot(wave3, spec3)
+    # plt.plot(wave2, spec2)
     plt.plot(wave, spec)
     plt.show()
