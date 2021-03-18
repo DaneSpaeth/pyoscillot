@@ -1,6 +1,6 @@
 import numpy as np
 from utils import (create_circular_mask, interpolate_to_restframe,
-                   gaussian, bisector, adjust_resolution)
+                   gaussian, bisector_new, adjust_resolution)
 import dataloader as load
 from plapy.constants import C
 from scipy.special import sph_harm
@@ -77,23 +77,26 @@ class GridStar():
 
             :returns: Array of wavelengths, array of flux value
         """
-        wavelength_range = (min_wave - 1, max_wave + 1)
-        if mode == "phoenix":
-            # rest_wavelength, rest_spectrum, _ = load.phoenix_spectrum(
-            #     Teff=self.Teff, logg=2.5, feh=-0.5, wavelength_range=wavelength_range)
+        wavelength_range = (min_wave - 0.25, max_wave + 0.25)
 
-            # First get a wavelength grid and dictionarys of the available
-            # Phoenix spectra that are close to the temperature in
-            # self.temperature
+        # First get a wavelength grid and dictionarys of the available
+        # Phoenix spectra that are close to the temperature in
+        # self.temperature
+        if mode == "phoenix":
             (rest_wavelength,
              ref_spectra,
              ref_headers) = get_ref_spectra(self.temperature,
                                             wavelength_range=wavelength_range)
         elif mode == "gaussian":
-            rest_wavelength = np.linspace(min_wave, max_wave, 10000)
-            rest_spectrum = -1 * gaussian(rest_wavelength,
-                                          (max_wave + min_wave) / 2,
-                                          (max_wave - min_wave) / 100)
+            print("Gaussian mode")
+            # Does not work with Temperature variations at the moment
+            center = 7000  # A
+
+            rest_wavelength = np.linspace(
+                center - 0.7, center + 0.7, 10000)
+            spec = 1 - gaussian(rest_wavelength, center, 0.2)
+            ref_spectra = {self.Teff: spec}
+            ref_headers = {self.Teff: []}
 
         # if np.any(self.spot):
         #     print("Star has a spot")
@@ -101,23 +104,28 @@ class GridStar():
         #         Teff=3000, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
 
         # Calc v over c
+        print(np.nanmax(self.rotation))
         v_c_rot = self.rotation / C
         v_c_pulse = self.pulsation.real / C
+        print(np.nanmin(v_c_pulse), np.nanmax(v_c_pulse))
 
         total_spectrum = np.zeros(len(rest_wavelength))
         for row in range(self.grid.shape[0]):
             for col in range(self.grid.shape[1]):
                 if self.star[row, col]:
                     T_local = self.temperature[row, col]
-                    _, local_spectrum, _ = get_interpolated_spectrum(T_local,
-                                                                     ref_wave=rest_wavelength,
-                                                                     ref_spectra=ref_spectra,
-                                                                     ref_headers=ref_headers)
+                    if mode == "gaussian":
+                        local_spectrum = ref_spectra[self.Teff]
+                    else:
+                        _, local_spectrum, _ = get_interpolated_spectrum(T_local,
+                                                                         ref_wave=rest_wavelength,
+                                                                         ref_spectra=ref_spectra,
+                                                                         ref_headers=ref_headers)
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
-                        print(f"Skip Star Element {row, col}")
+                        # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
                     else:
-                        print(f"Calculate Star Element {row, col}")
+                        # print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
@@ -132,12 +140,15 @@ class GridStar():
         self.wavelength = rest_wavelength
 
         # Now adjust the resolution to Carmenes
-        total_spectrum = adjust_resolution(
-            rest_wavelength, total_spectrum, R=90000)
+        # total_spectrum = adjust_resolution(
+        #    rest_wavelength, total_spectrum, R=90000)
+        # if mode == "gaussian":
+        total_spectrum += np.abs(total_spectrum.min())
+        total_spectrum = total_spectrum / total_spectrum.max()
         self.spectrum = total_spectrum
         return rest_wavelength, total_spectrum
 
-    def add_pulsation(self, l=2, m=2, phase=0):
+    def add_pulsation(self, l=2, m=2, k=1.2, phase=0):
         """ Add a pulsation to the star."""
         # TODO make these values adjustable
         self.l = l
@@ -146,9 +157,14 @@ class GridStar():
         self.nu = 1 / self.pulsation_period
         t = phase * self.pulsation_period
         V_p = 400
-        k = 1.2
+        # k = 1.2
         self.pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
             l, m, V_p, k, self.nu, t, N=self.N_star, border=self.N_border)
+
+        # TODO REMOVE
+        # self.pulsation = p_rad / np.nanmax(p_rad.real) * V_p
+
+        # print(np.nanmax(self.pulsation.real))
 
     def add_temp_variation(self, phase=0, reset=True):
         """ Add a temperature variation."""
@@ -166,16 +182,75 @@ class GridStar():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N_star=50, N_border=3, vsini=3000)
+    save = False
+    if save:
+        star = GridStar(N_star=50, N_border=1, vsini=3000)
+    else:
+        cols = 5
+        # fig, ax = plt.subplots(1, cols)
+        fig, ax = plt.subplots(1, figsize=(4, 9))
+    # line = 6254.29
+    # wave, spec = star.calc_spectrum(line, line)
+    # spec = spec / np.max(spec)
+    # bis_wave, bis = bisector_new(wave, spec)
 
-    phases = np.linspace(0, 1, 12)
-    star.add_pulsation(phase=0.2)
-    star.add_temp_variation(phase=0.2)
+    # center = wave[spec.argmin()]
+    # plt.plot(bis_wave, bis, marker=".", linestyle="None")
+    # plt.show()
+    # exit()
+    # N = 12
+    # phases = np.linspace(0, 1 - (1 / N), N - 1)
+    phases = np.array([0, 0.25, 0.5, 0.75, 1.0])
+    phases = np.array([0.25, 0.5, 0.75])
+    for idx, p in enumerate(phases):
+        line = 6254.29
+        if save:
+            star.add_pulsation(l=4, m=-4, k=0.15, phase=p)
 
-    wave, spec = star.calc_spectrum()
-    # ref_wave, ref_spec, _ = load.phoenix_spectrum(
-    #     4800, wavelength_range=(5000 - 1, 12000 + 1))
-    # plt.plot(ref_wave, ref_spec, color="black")
-    plt.plot(wave, spec, alpha=0.7, color="red")
+            wave, spec = star.calc_spectrum(line, line)
+            plt.imshow(star.pulsation.real, origin="lower",
+                       vmin=-200, vmax=200, cmap="seismic")
+            plt.savefig(f"arrays/{round(p, 4)}.pdf")
+            # plt.show()
+            # exit()
+            plt.close()
+            if not idx:
+                np.save("arrays/wave.npy", wave)
+            np.save(f"arrays/{round(p,4)}.npy", spec)
+            continue
+        if not idx:
+            wave = np.load("arrays/wave.npy")
+            # wave = wave[::100]
+        spec = np.load(f"arrays/{round(p,4)}.npy")
+        # print(wave
+        # spec = spec[::100]
 
+        # print(len(wave))
+
+        row = int(idx / cols)
+        col = idx % cols
+        center = wave[spec.argmin()]
+
+        # print((wave[-1] - wave[0]) / len(wave) * C / 1e3)
+        bis_wave, bis, center = bisector_new(wave, spec)
+        vs = ((bis_wave - line) / line) * C
+        vs = vs + 280
+        # ax[col].plot(vs, bis)
+        # # ax[row, col].set_xlim(-600, 600)
+        # # ax[row, col].plot((wave - center) / center * C,
+        # #                   spec, label=(center - 7000) / center * C)
+        # ax[col].set_xlabel("V [m/s]")
+        # ax[col].set_xlim(-120, 120)
+        # # ax[row, col].set_xlim(np.min(bis_wave), np.max(bis_wave))
+        # # ax[row, col].axvline(center)
+        # ax[col].legend()
+
+        ax.plot(vs, bis, label=p - 0.25)
+
+    ax.legend()
+    plt.xlabel("V_r (m/s)")
+    plt.ylabel("Relative Flux")
+    plt.title("Bisector for l=4, m=-4, pulsation phases")
     plt.show()
+
+    # plt.show()

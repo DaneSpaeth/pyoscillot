@@ -312,8 +312,16 @@ def calc_temp_variation(l, m, amplitude, nu, t, phase_shift=0, inclination=90, N
 
 
 if __name__ == "__main__":
-    spot = create_spotmask(25, inclination=90)
-    plt.imshow(spot, origin="lower")
+    P = 600
+    nu = 1 / P
+    phases = np.array([0, 0.25, 0.5, 0.75, 1])
+    fig, ax = plt.subplots(1, len(phases))
+    for idx, p in enumerate(phases):
+        t = p * P
+        _, rad, _, _ = calculate_pulsation(
+            2, -2, 200, 0.15, nu, t, inclination=45)
+        ax[idx].imshow(rad.real, vmin=-200, vmax=200,
+                       cmap="seismic", origin="lower")
     plt.show()
 
     # l = 2

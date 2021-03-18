@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from scipy import interpolate
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
+from scipy.interpolate import CubicSpline
+from dataloader import phoenix_spectrum
 
 
 def create_circular_mask(h, w, center=None, radius=None):
@@ -46,26 +48,74 @@ def bisector(wavelength, spectrum):
     """
     bisector_waves = []
     bisector_flux = []
-    search_for = np.linspace(np.max(spectrum) - 0.1, np.min(spectrum), 200)
+    search_for = np.linspace(np.max(spectrum) - 0.05 * np.abs((np.max(spectrum) - np.min(spectrum))),
+                             np.min(spectrum) + 0.01, 50)
     max_idx = np.argmin(spectrum)
     left_spectrum = spectrum[0:max_idx]
-    print(wavelength[max_idx])
+    # print(wavelength[max_idx])
     left_wavelength = wavelength[0:max_idx]
     right_spectrum = spectrum[max_idx:]
     right_wavelength = wavelength[max_idx:]
     for s in search_for:
-        diff_left = np.abs(left_spectrum - s)
-        diff_right = np.abs(right_spectrum - s)
-        left_idx = np.argmin(diff_left)
-        right_idx = np.argmin(diff_right)
-        left_wave = left_wavelength[np.argmin(diff_left)]
-        right_wave = right_wavelength[np.argmin(diff_right)]
+        # print(s)
+        #diff_left = np.abs(left_spectrum - s)
+        # diff_right = np.abs(right_spectrum - s)
+        #left_idx = np.argmin(diff_left)
+        #s = left_spectrum[left_idx]
+        # right_idx = np.argmin(diff_right)
+        #left_wave = left_wavelength[np.argmin(diff_left)]
+        # right_wave = right_wavelength[np.argmin(diff_right)]
+        cs = CubicSpline(left_spectrum[::-1], left_wavelength[::-1])
+        left_wave = cs(s)
+
+        cs = CubicSpline(right_spectrum, right_wavelength,)
+        right_wave = cs(s)
 
         bisector_wave = (right_wave + left_wave) / 2
         bisector_flux.append(s)
         bisector_waves.append(bisector_wave)
 
     return np.array(bisector_waves), np.array(bisector_flux)
+
+
+def bisector_new(wave, spec):
+    """ Calculate the bisector of the line.
+
+        Still work in progress. One must be careful what to pass here.
+
+        :param wavelength: Array of wavelengths
+        :param spectrum: Array of spectrum
+
+        Must be normalized (1 continuum)
+
+        :returns: Array of bisector wavelengths, array of bisector flux
+    """
+    bisector_waves = []
+    bisector_flux = []
+
+    center_idx = spec.argmin()
+    # Amount of datapoints to skip
+    skip = 2
+    left_wave = wave[:center_idx - skip]
+    left_spec = spec[:center_idx - skip]
+    right_wave = wave[center_idx + skip:]
+    right_spec = spec[center_idx + skip:]
+
+    threshold = 0.03
+    right_mask = right_spec < 1 - threshold / 2
+    right_spec = right_spec[right_mask]
+    right_wave = right_wave[right_mask]
+
+    for w, s in zip(reversed(left_wave), reversed(left_spec)):
+        if s > 1 - threshold:
+            break
+        cs = CubicSpline(right_spec, right_wave)
+        right = cs(s)
+
+        bisector_flux.append(s)
+        bisector_waves.append((right + w) / 2)
+
+    return np.array(bisector_waves), np.array(bisector_flux), wave[center_idx]
 
 
 def add_doppler_shift(rest_spectrum, rest_wavelength, doppler_shift):
@@ -172,26 +222,13 @@ def adjust_resolution(wave, spec, R, w_sample=1):
 
 
 if __name__ == "__main__":
-
-    import dataloader as load
-    import matplotlib.pyplot as plt
     from plapy.constants import C
 
-    wave_range = (5500, 5550)
-    rest_wavelength, rest_spectrum, _ = load.phoenix_spectrum(
-        wavelength_range=wave_range)
-    v = 10000
-    shift = v / C * rest_wavelength
-    shift_wavelength = rest_wavelength + shift
-
-    interpol_wave, interpol_spec = interpolate_to_restframe(
-        shift_wavelength, rest_spectrum, rest_wavelength)
-
-    assert not np.any(
-        interpol_wave - rest_wavelength), "Interpolated wavelength is not equal to the rest wavelength"
-
-    comb_spec = (rest_spectrum + interpol_spec) / 2
-    plt.plot(rest_wavelength, rest_spectrum)
-    plt.plot(rest_wavelength, comb_spec)
-
+    line = 6254.29
+    wave, spec, _ = phoenix_spectrum(
+        wavelength_range=(line - 0.25, line + 0.25))
+    spec = spec / np.max(spec)
+    bis_wave, bis = bisector_new(wave, spec)
+    # plt.plot(wave, spec, marker=".", linestyle="None")
+    plt.plot((bis_wave - np.median(bis_wave)) / np.median(bis_wave) * C, bis)
     plt.show()
