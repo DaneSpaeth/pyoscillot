@@ -9,6 +9,7 @@ from plapy.constants import C
 from dataloader import phoenix_spectrum, carmenes_template
 from datasaver import save_spectrum
 from star import GridStar
+from utils import adjust_snr
 
 
 # TODO Make adjustable
@@ -18,7 +19,7 @@ MAX_WAVE = 12000
 # End TODO
 
 
-def sample_phase(P, N):
+def sample_phase(P, N, N_phases=1):
     """ Return a phase sample and the corresponding time sample.
 
         Phase ranges from 0 to 1
@@ -27,10 +28,10 @@ def sample_phase(P, N):
     stop = datetime.combine(date.today(), datetime.min.time())
 
     # Sample one Period
-    P_sample = np.linspace(0, P, N, dtype=int)
+    P_sample = np.linspace(0, N_phases * P, N, dtype=int)
     time_sample = np.array([stop - timedelta(days=int(d))
                             for d in P_sample[::-1]])
-    phase_sample = 1 / P * P_sample
+    phase_sample = (1 / P * P_sample) % 1
 
     return phase_sample, time_sample
 
@@ -40,7 +41,7 @@ def get_planet_spectra(P=600, N=20, K=0):
     phase_sample, time_sample = sample_phase(P, N)
     K_sample = K * np.sin(2 * np.pi * phase_sample)
 
-    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    # K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
 
     # Load one rest_spectrum, all units in Angstrom
     wavelength_range = (MIN_WAVE - 10, MAX_WAVE + 10)
@@ -51,7 +52,11 @@ def get_planet_spectra(P=600, N=20, K=0):
     shift_wavelengths = []
     spectra = []
     for v in K_sample:
-        shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
+        vo = v
+        ve = 0
+        c = 299792458.0
+        a = (1.0 + vo / c) / (1.0 + ve / c)
+        shift_wavelengths.append(rest_wavelength * a)
         spectra.append(rest_spectrum)
 
     return shift_wavelengths, spectra, time_sample
@@ -70,7 +75,7 @@ def get_spot_spectra(P=30, N=20):
 
     K_sample = np.zeros(len(time_sample))
 
-    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    # K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
 
     shift_wavelengths = []
     spectra = []
@@ -146,9 +151,11 @@ def get_new_header(time):
 
 def add_barycentric_correction(K_array, time_list, star):
     """ Add the barycentric correction to the K_list."""
+
     tmean = 53.0455
     time_list = [t + timedelta(seconds=tmean) for t in time_list]
     jdutc_times = [Time(t, scale="utc") for t in time_list]
+
     for jdutc in jdutc_times:
         jdutc.format = "jd"
 
@@ -160,9 +167,21 @@ def add_barycentric_correction(K_array, time_list, star):
     bcs = []
     for jdutc in jdutc_times:
 
-        result = get_BC_vel(JDUTC=jdutc, hip_id=star, lat=lat, longi=lon,
-                            alt=alt, ephemeris='de430')
+        # result = get_BC_vel(JDUTC=jdutc, hip_id=star, lat=lat, longi=lon,
+        #                     alt=alt, ephemeris='de430')
+        result = get_BC_vel(JDUTC=jdutc,
+                            ra=225.72515818125,
+                            dec=2.0913040080555554,
+                            epoch=2451545.0,
+                            pmra=-54.89,
+                            pmdec=13.34,
+                            px=0.0,
+                            lat=37.2236,
+                            longi=-2.5463,
+                            alt=2168.0)
+        print(jdutc, result[0])
         bcs.append(float(result[0]))
+
     bcs = np.array(bcs)
     return K_array - bcs
 
@@ -185,9 +204,12 @@ def interpolate_carmenes(spectrum, wavelength):
         order_cont = cont[order] / np.mean(cont[order])
         order_spec = order_spec * order_cont
 
-        order_spec = gaussian_filter1d(order_spec, 5)
+        order_spec = adjust_snr(order_spec, wave[order], spec[order], sig[order],
+                                snr=3 * np.nanmedian(spec[order] / sig[order]))
 
-        # Set the old oders that were nan back to nan
+        # order_spec = gaussian_filter1d(order_spec, 5)
+
+        # Set the old orders that were nan back to nan
         nan_mask = np.isnan(sig[order])
         order_spec[nan_mask] = np.nan
 
@@ -198,7 +220,7 @@ def interpolate_carmenes(spectrum, wavelength):
 
 def get_pulsation_spectra(P=600, N=20):
     """ Simulate the pulsation spectra."""
-    phase_sample, time_sample = sample_phase(P, N)
+    phase_sample, time_sample = sample_phase(P, N, N_phases=2)
 
     # TODO REMOVE
     phase_sample = phase_sample[:-1]
@@ -209,7 +231,7 @@ def get_pulsation_spectra(P=600, N=20):
 
     K_sample = np.zeros(len(time_sample))
 
-    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    # K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
 
     shift_wavelengths = []
     spectra = []
@@ -218,8 +240,10 @@ def get_pulsation_spectra(P=600, N=20):
     import matplotlib.pyplot as plt
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i}")
-        star = GridStar(N_star=100, vsini=3000)
+        i += 1
+        star = GridStar(N_star=50, vsini=3000)
         star.add_pulsation(l=2, m=2, phase=phase)
+        star.add_temp_variation(phase=phase)
 
         plt.imshow(star.pulsation.real, origin="lower",
                    cmap="seismic", vmin=-400, vmax=400)
@@ -240,4 +264,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(N=21, mode="pulsation")
+    create_rv_series(P=600, N=2, K=0, mode="pulsation")

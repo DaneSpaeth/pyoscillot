@@ -140,3 +140,4 @@ cython_debug/
 # Own stuff
 data/
 plots/
+arrays/
