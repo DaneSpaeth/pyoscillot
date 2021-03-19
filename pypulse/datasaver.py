@@ -3,6 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from shutil import copy2
+from scipy.ndimage import gaussian_filter1d
 DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
 
 
@@ -34,45 +35,43 @@ def save_spectrum(spectrum, new_header, name):
         hdul.flush()
 
 
-if __name__ == "__main__":
-
-    from scipy.signal import medfilt
-    # save_spectrum(None, None, {"OBJECT": "TEST"}, "test")
-    template = DATAROOT / "template.fits"
-    with fits.open(template) as hdul:
+def read_in(file):
+    with fits.open(file) as hdul:
         header = hdul[0].header
         spec = hdul[1].data
         cont = hdul[2].data
         sig = hdul[3].data
         wave = hdul[4].data
 
-    print(wave[0])
-    print(wave[-1])
-    exit()
+    return header, spec, cont, sig, wave
 
-    for key in header:
-        print(key)
 
-    exit()
+if __name__ == "__main__":
 
-    fake = DATAROOT / "fake_spectra" / "car-20190717T00h00m00s-sci-fake-vis_A.fits"
-    with fits.open(fake) as hdul:
-        fspec = hdul[1].data
-        fcont = hdul[2].data
-        fsig = hdul[3].data
-        fwave = hdul[4].data
+    from scipy.signal import medfilt
+    # save_spectrum(None, None, {"OBJECT": "TEST"}, "test")
+    sim = DATAROOT / "car-20171205T00h00m00s-sci-fake-vis_A.fits"
+    template = DATAROOT / "template.fits"
 
-    order = 40
-    plt.plot(wave[order], fspec[order])
-    plt.plot(wave[order], spec[order])
+    header, spec, cont, sig, wave = read_in(sim)
+    t_header, t_spec, t_cont, t_sig, t_wave = read_in(template)
 
-    N = 501
-    rolling_avg = np.convolve(spec[order], np.ones(N) / N, mode='same')
-    rolling_med = medfilt(spec[order], kernel_size=N)
-    # plt.plot(wave[order], fspec[order] * rolling_med / np.mean(rolling_med))
+    idx = 33
+
+    print(wave[idx][np.isnan(spec[idx])])
+
+    sig = gaussian_filter1d(
+        sig, 35)
+
+    snr = spec / sig
+    t_snr = t_spec / t_sig
+    # plt.plot(wave[33], spec[33])
+    fig, ax = plt.subplots(1, 3)
+    ax[0].plot(wave[idx], spec[idx], label=f"Simulated order {idx}")
+    ax[0].plot(t_wave[idx], t_spec[idx], label=f"Template order {idx}")
+    ax[1].plot(t_wave[idx], t_sig[idx], label=f"Template order {idx}")
+    ax[1].plot(wave[idx], sig[idx], label=f"Simulated order {idx}")
+    ax[2].plot(wave[idx], snr[idx], label=f"Simulated order {idx}")
+    ax[2].plot(t_wave[idx], t_snr[idx], label=f"Template order {idx}")
+    plt.legend()
     plt.show()
-    #     hdul.flush()
-
-    # idx = 30
-    # plt.plot(wave[idx], spec[idx])
-    # plt.show()
