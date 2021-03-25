@@ -12,5 +12,7 @@ cd $root_serval
 
 
 star="HIP73620"
-$SERVAL/src/serval.py ${star}"_vis" ${root}/"fake_spectra" -safemode 2 -inst CARM_VIS -targ $star
+# -targ $star
+# -brvref NoBaryCorr
+$SERVAL/src/serval.py ${star}"_vis" ${root}/"fake_spectra" -safemode 2 -inst CARM_VIS  -targ $star
 

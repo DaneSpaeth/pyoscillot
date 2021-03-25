@@ -9,7 +9,7 @@ from plapy.constants import C
 from dataloader import phoenix_spectrum, carmenes_template
 from datasaver import save_spectrum
 from star import GridStar
-from utils import adjust_snr
+from utils import adjust_snr, adjust_resolution
 
 
 # TODO Make adjustable
@@ -41,7 +41,7 @@ def get_planet_spectra(P=600, N=20, K=0):
     phase_sample, time_sample = sample_phase(P, N)
     K_sample = K * np.sin(2 * np.pi * phase_sample)
 
-    # K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
 
     # Load one rest_spectrum, all units in Angstrom
     wavelength_range = (MIN_WAVE - 10, MAX_WAVE + 10)
@@ -204,8 +204,11 @@ def interpolate_carmenes(spectrum, wavelength):
         order_cont = cont[order] / np.mean(cont[order])
         order_spec = order_spec * order_cont
 
-        order_spec = adjust_snr(order_spec, wave[order], spec[order], sig[order],
-                                snr=3 * np.nanmedian(spec[order] / sig[order]))
+        order_spec = adjust_resolution(
+            wave[order], order_spec, R=90000)
+
+        # order_spec = adjust_snr(order_spec, wave[order], spec[order], sig[order],
+        #                         snr=3 * np.nanmedian(spec[order] / sig[order]))
 
         # order_spec = gaussian_filter1d(order_spec, 5)
 
@@ -215,23 +218,24 @@ def interpolate_carmenes(spectrum, wavelength):
 
         new_spec.append(order_spec)
     new_spec = np.array(new_spec)
+
     return new_spec, wave
 
 
 def get_pulsation_spectra(P=600, N=20):
     """ Simulate the pulsation spectra."""
-    phase_sample, time_sample = sample_phase(P, N, N_phases=2)
+    phase_sample, time_sample = sample_phase(P, N, N_phases=1)
 
     # TODO REMOVE
-    phase_sample = phase_sample[:-1]
-    time_sample = time_sample[:-1]
+    # phase_sample = phase_sample[:-1]
+    # time_sample = time_sample[:-1]
     # END TODO
     # At the moment assume that there is no planetary signal present
     # But still create K_sample for barycentric correction
 
     K_sample = np.zeros(len(time_sample))
 
-    # K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
 
     shift_wavelengths = []
     spectra = []
@@ -241,15 +245,18 @@ def get_pulsation_spectra(P=600, N=20):
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i}")
         i += 1
-        star = GridStar(N_star=50, vsini=3000)
+        star = GridStar(N_star=50, N_border=3, Teff=4700, vsini=3000)
         star.add_pulsation(l=2, m=2, phase=phase)
         star.add_temp_variation(phase=phase)
 
-        plt.imshow(star.pulsation.real, origin="lower",
-                   cmap="seismic", vmin=-400, vmax=400)
-        plt.savefig(
-            f"/home/dane/Documents/PhD/pypulse/plots/pulsation/{round(phase,3)}.pdf")
-        plt.close()
+        # star.add_pulsation(l=2, m=1, phase=phase)
+        # star.add_temp_variation(phase=phase)
+
+        # plt.imshow(star.pulsation.real, origin="lower",
+        #            cmap="seismic", vmin=-30, vmax=30)
+        # plt.savefig(
+        #     f"/home/dane/Documents/PhD/pypulse/plots/pulsation_superpos/{round(phase,3)}.pdf")
+        # plt.close()
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
@@ -264,4 +271,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=2, K=0, mode="pulsation")
+    create_rv_series(P=505, N=20, K=0, mode="pulsation")

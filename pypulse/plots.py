@@ -15,7 +15,7 @@ def bisector_plot_Hatzes():
 
     fig, ax = plt.subplots(1, 3, figsize=(12, 9))
     for idx, m in enumerate(ms):
-        folder = ARRAY_ROOT / f"pulse_real_line_m{m}_k12"
+        folder = ARRAY_ROOT / f"pulse_real_line_m{m}_k015"
         for phase in phases:
             if not idx:
                 wave = np.load(folder / "wave.npy")
@@ -58,5 +58,5 @@ def create_g_mode_arrays():
 
 
 if __name__ == "__main__":
-    create_g_mode_arrays()
+    # create_g_mode_arrays()
     bisector_plot_Hatzes()

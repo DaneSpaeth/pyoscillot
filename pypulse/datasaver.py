@@ -48,7 +48,7 @@ def read_in(file):
 
 if __name__ == "__main__":
 
-    from scipy.signal import medfilt
+    from utils import adjust_snr
     # save_spectrum(None, None, {"OBJECT": "TEST"}, "test")
     sim = DATAROOT / "car-20171205T00h00m00s-sci-fake-vis_A.fits"
     template = DATAROOT / "template.fits"
@@ -58,13 +58,9 @@ if __name__ == "__main__":
 
     idx = 33
 
-    print(wave[idx][np.isnan(spec[idx])])
-
-    sig = gaussian_filter1d(
-        sig, 35)
-
     snr = spec / sig
     t_snr = t_spec / t_sig
+
     # plt.plot(wave[33], spec[33])
     fig, ax = plt.subplots(1, 3)
     ax[0].plot(wave[idx], spec[idx], label=f"Simulated order {idx}")

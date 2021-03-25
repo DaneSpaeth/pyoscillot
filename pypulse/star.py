@@ -33,7 +33,7 @@ class GridStar():
         self.star = create_starmask(N=N_star, border=N_border)
         self.grid = np.zeros((self.N_grid, self.N_grid))
         self.rotation = self.grid
-        self.pulsation = self.grid
+        self.pulsation = np.zeros(self.grid.shape, dtype=np.complex)
         self.center = (
             int(self.star.shape[0] / 2), int(self.star.shape[1] / 2))
 
@@ -150,23 +150,24 @@ class GridStar():
         self.pulsation_period = 600  # days
         self.nu = 1 / self.pulsation_period
         t = phase * self.pulsation_period
-        V_p = 400
+        V_p = 10
         # k = 1.2
-        self.pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
+        pulsation, p_rad, p_phi, p_theta = calculate_pulsation(
             l, m, V_p, k, self.nu, t, N=self.N_star, border=self.N_border)
+
+        self.pulsation += pulsation
 
         # TODO REMOVE
         # self.pulsation = p_rad / np.nanmax(p_rad.real) * V_p
 
         # print(np.nanmax(self.pulsation.real))
 
-    def add_temp_variation(self, phase=0, reset=True):
+    def add_temp_variation(self, phase=0, phase_shift=0, reset=True):
         """ Add a temperature variation."""
         if reset:
             self.temperature[self.star] = self.Teff
         t = phase * self.pulsation_period
-        ampl = 200  # K
-        phase_shift = 0  # radians
+        ampl = 50  # K
         temp_variation, self.rad_no_lineofsight = calc_temp_variation(
             self.l, self.m, ampl, self.nu, t, phase_shift=phase_shift,
             N=self.N_star, border=self.N_border)

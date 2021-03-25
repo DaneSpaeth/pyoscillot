@@ -60,16 +60,17 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(3)
 
-    ax[0].scatter(time - 2400000.5, rv)
-    ax[0].set_xlabel("Time")
+    ax[0].errorbar(time - 2400000.5, rv, yerr=rve, linestyle="None", marker="o")
+    ax[0].set_xlabel("Time [MJD]")
     ax[0].set_ylabel("RV [m/s]")
     ax[1].errorbar([b - 2400000.5 for b in crx_dict["bjd"]], crx_dict["crx"],
                    yerr=crx_dict["crxe"], linestyle="None", marker="o")
-    ax[1].set_xlabel("Time")
+    ax[1].set_xlabel("Time [MJD]")
     ax[1].set_ylabel("CRX [m/s/Np]")
+    # ax[1].set_ylim(-100, 100)
     ax[2].errorbar(rv, crx_dict["crx"],
                    yerr=crx_dict["crxe"], linestyle="None", marker="o")
     ax[2].set_xlabel("RV [m/s]")
     ax[2].set_ylabel("CRX [m/s/Np]")
-    # ax[0].set_title("Pulsation, vsini=0, v_p=400m/s, no spot, no temp variation")
+    ax[0].set_title("Small Pulsation/No T variation, dT=0K,l=2,m=-2, V_p=10m/s, vsini=3km/s")
     plt.show()

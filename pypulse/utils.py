@@ -79,13 +79,14 @@ def bisector(wavelength, spectrum):
     return np.array(bisector_waves), np.array(bisector_flux)
 
 
-def bisector_new(wave, spec):
+def bisector_new(wave, spec, skip=2):
     """ Calculate the bisector of the line.
 
         Still work in progress. One must be careful what to pass here.
 
         :param wavelength: Array of wavelengths
         :param spectrum: Array of spectrum
+        :param int skip: Number of datapoints to skip from the bottom of the line
 
         Must be normalized (1 continuum)
 
@@ -95,8 +96,7 @@ def bisector_new(wave, spec):
     bisector_flux = []
 
     center_idx = spec.argmin()
-    # Amount of datapoints to skip
-    skip = 2
+    # Amount of datapoints to skip from the bottom
     left_wave = wave[:center_idx - skip]
     left_spec = spec[:center_idx - skip]
     right_wave = wave[center_idx + skip:]
@@ -249,7 +249,7 @@ def adjust_snr(spec, wave_template, spec_template, sig_template, snr=None):
     current_snr = np.nanmedian(spec / sig_template)
     factor = snr / current_snr
 
-    spec = spec * factor
+    spec = spec * np.abs(factor)
 
     return spec
 
