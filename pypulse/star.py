@@ -77,6 +77,7 @@ class GridStar():
 
             :returns: Array of wavelengths, array of flux value
         """
+        start = time.time()
         wavelength_range = (min_wave - 0.25, max_wave + 0.25)
 
         # First get a wavelength grid and dictionarys of the available
@@ -103,8 +104,12 @@ class GridStar():
         v_c_pulse = self.pulsation.real / C
 
         total_spectrum = np.zeros(len(rest_wavelength))
+        mid = time.time()
+        import sys
+        print(f"Before loop {round(mid-start, 3)}")
         for row in range(self.grid.shape[0]):
             for col in range(self.grid.shape[1]):
+                start = time.time()
                 if self.star[row, col]:
                     T_local = self.temperature[row, col]
                     if mode == "gaussian":
@@ -114,6 +119,8 @@ class GridStar():
                                                                          ref_wave=rest_wavelength,
                                                                          ref_spectra=ref_spectra,
                                                                          ref_headers=ref_headers)
+
+                        print(sys.getsizeof(local_spectrum))
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
                         # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
@@ -124,9 +131,16 @@ class GridStar():
                             v_c_rot[row, col] * rest_wavelength + \
                             v_c_pulse[row, col] * rest_wavelength
                         # Interpolate the spectrum to the same rest wavelength grid
-                        interpol_spectrum = interpolate_to_restframe(local_wavelength,
-                                                                     local_spectrum, rest_wavelength)
+                        mid1 = time.time()
+                        # interpol_spectrum = interpolate_to_restframe(local_wavelength,
+                        #                                             local_spectrum, rest_wavelength)
+                        interpol_spectrum = local_spectrum
+                        mid2 = time.time()
+                        print(f"Interpolation {round(mid2-mid1,3)}")
                         total_spectrum += interpol_spectrum
+
+                    stop = time.time()
+                    print(f"One Loop {round(stop-start,3)}")
 
         total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
 
@@ -177,9 +191,15 @@ class GridStar():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridStar(N_star=100, N_border=3, vsini=3000)
-    star.add_spot()
+    import time
+    start = time.time()
+    star = GridStar(N_star=50, N_border=3, vsini=3000)
+    stop = time.time()
+    print(f"Building the star {round(stop - start, 3)}")
+    # star.add_spot()
+    start = time.time()
     wave, spec = star.calc_spectrum()
-
+    stop = time.time()
+    print(f"Calculating the spectrum {round(stop - start, 3)}")
     plt.plot(wave, spec)
     plt.show()

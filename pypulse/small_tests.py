@@ -7,4 +7,4 @@ from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
 
 wave, spec, h = phoenix_spectrum()
-print(wave)
+print(np.abs(wave[0] - wave[-1]) / len(wave))
