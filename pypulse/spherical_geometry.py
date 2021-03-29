@@ -4,34 +4,49 @@ from scipy.special import sph_harm
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial.transform import Rotation as Rot
 from scipy.interpolate import griddata
+from scipy.spatial.distance import cdist
+import time
 
 
-def get_circular_phi_theta_x_y_z():
+def sph_to_x_y_z(phi, theta):
+    """ Convert spherical coordinates phi, theta to x,y,z."""
+    # The Cartesian coordinates of the unit sphere
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+
+    return x, y, z
+
+
+def get_circular_phi_theta_x_y_z(N=250):
     """ Sample x and z for a spherical star."""
-    N = 250
     # Theta: Polar Angle
     theta = np.linspace(0, np.pi, N)
 
     # Phi: Azimuthal angle
     phi = np.linspace(0, 2 * np.pi, 2 * N)
+    # phi = np.linspace(0, np.pi)
     phi, theta = np.meshgrid(phi, theta)
 
-    # The Cartesian coordinates of the unit sphere
-    x = np.sin(theta) * np.cos(phi)
-    y = np.sin(theta) * np.sin(phi)
-    z = np.cos(theta)
+    x, y, z = sph_to_x_y_z(phi, theta)
 
     return phi, theta, x, y, z
 
 
 def create_starmask(N=1000, border=10):
     """ Return a starmask."""
+    start = time.time()
     phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+    mid = time.time()
 
     star = np.ones(x.shape)
     star_mask = project_2d(x, y, z, phi, theta, star, N, border=border)
     star_mask[np.isnan(star_mask)] = 0
     star_mask = star_mask.astype(np.bool)
+    stop = time.time()
+
+    print(f"Spherical Geometry: {round(mid-start,3)}")
+    print(f"Projection: {round(stop-mid,3)}")
     return star_mask
 
 
@@ -54,6 +69,55 @@ def create_spotmask(rad, theta_spot=90, phi_spot=90, N=1000, border=10, inclinat
     spot_mask_2d = project_2d(x, y, z, phi, theta, spot_mask, N,
                               inclination=(inclination - phi_spot),
                               azimuth=(theta_spot - 90),
+                              border=border,
+                              line_of_sight=False)
+    spot_mask_2d[spot_mask_2d > 0] = 1
+    spot_mask_2d[np.isnan(spot_mask_2d)] = 0
+    spot_mask_2d = spot_mask_2d.astype(np.bool)
+    return spot_mask_2d
+
+
+def create_spotmask_new(rad, theta_pos=90, phi_pos=90, N=1000, border=10, inclination=90):
+    """ Return a spotmask in 2d.
+
+        Idea: The radius defines the angle in theta that is covered by the spot
+              Calculate the distance from the pole in theta with that radius
+              Define a plane by one point on that circle and the normal vector
+              Rotate these two vectors wrt to theta_pos and phi_pos
+              Calculate a mask with all points on the sphere that are above the
+              plane by using the sign of the scalar product of the normal vec
+              and the difference between the point on the plane and each point
+
+              Afterwards project that mask in 2d
+
+
+
+        :param rad: Radius in degree
+        :param N: Number of cells per direction on star
+        :param border: Number of border cells
+    """
+    # Create the star
+    phi, theta, x, y, z = get_circular_phi_theta_x_y_z(N=500)
+
+    z_slice = np.cos(np.radians(rad))
+    # define plane
+    # plane normal
+    normal = np.array([0, 0, 1])
+    # Fixed point in plane
+    p = np.array([0, 0, z_slice])
+
+    # Rotate the two normal vector and the vector to the point in the plane
+    rot = Rot.from_euler('xz', [theta_pos, phi_pos + 90], degrees=True)
+    normal = rot.apply(normal)
+    p = rot.apply(p)
+
+    # above_plane_mask = np.zeros(phi.shape).flatten()
+    vecs = np.array((x.flatten(), y.flatten(), z.flatten())).T
+    above_plane_mask = np.dot(vecs - p, normal) >= 0
+    above_plane_mask = above_plane_mask.reshape(phi.shape)
+
+    spot_mask_2d = project_2d(x, y, z, phi, theta, above_plane_mask, N,
+                              inclination=inclination,
                               border=border,
                               line_of_sight=False)
     spot_mask_2d[spot_mask_2d > 0] = 1
@@ -179,7 +243,6 @@ def project_2d(x, y, z, phi, theta, values, N, border=10, component=None, inclin
     d = 1
 
     rot = Rot.from_euler('xz', [90 - inclination, azimuth], degrees=True)
-    # rot_az = Rot.from_euler('y',  azimuth, degrees=True)
 
     x_rot = np.zeros(x.shape)
     y_rot = np.zeros(y.shape)
@@ -312,35 +375,9 @@ def calc_temp_variation(l, m, amplitude, nu, t, phase_shift=0, inclination=90, N
 
 
 if __name__ == "__main__":
-    P = 600
-    nu = 1 / P
-    phases = np.array([0, 0.25, 0.5, 0.75, 1])
-    fig, ax = plt.subplots(1, len(phases))
-    for idx, p in enumerate(phases):
-        t = p * P
-        _, rad, _, _ = calculate_pulsation(
-            2, -2, 200, 0.15, nu, t, inclination=45)
-        ax[idx].imshow(rad.real, vmin=-200, vmax=200,
-                       cmap="seismic", origin="lower")
+    star_mask = create_starmask()
+    temp = star_mask * 4800
+    spot_mask = create_spotmask_new(15, theta_pos=45, phi_pos=90)
+    temp[spot_mask] = 3000
+    plt.imshow(temp)
     plt.show()
-
-    # l = 2
-    # m = -2
-
-    # nu = (1 / 600) * (1 - 1j)
-    # puls, rad, phi, theta = calculate_pulsation(l, m, 400, 1.2, nu, 300)
-
-    # fig, ax = plt.subplots(2, 2)
-    # ax[0, 0].imshow(rad.real, origin="lower",
-    #                 cmap="seismic", vmin=-400, vmax=400)
-    # ax[0, 0].set_title("Radial component (real part)")
-    # ax[0, 1].imshow(phi.real, origin="lower",
-    #                 cmap="seismic", vmin=-400, vmax=400)
-    # ax[0, 1].set_title("Phi component (real part)")
-    # ax[1, 0].imshow(theta.real, origin="lower",
-    #                 cmap="seismic", vmin=-400, vmax=400)
-    # ax[1, 0].set_title("Theta component (real part)")
-    # ax[1, 1].imshow(puls.real, origin="lower",
-    #                 cmap="seismic", vmin=-400, vmax=400)
-    # ax[1, 1].set_title("Total (real part)")
-    # plt.show()
