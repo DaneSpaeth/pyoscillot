@@ -18,7 +18,7 @@ def sph_to_x_y_z(phi, theta):
     return x, y, z
 
 
-def get_circular_phi_theta_x_y_z(N=250):
+def get_spherical_phi_theta_x_y_z(N=250):
     """ Sample x and z for a spherical star."""
     # Theta: Polar Angle
     theta = np.linspace(0, np.pi, N)
@@ -33,112 +33,6 @@ def get_circular_phi_theta_x_y_z(N=250):
     return phi, theta, x, y, z
 
 
-def create_starmask(N=1000, border=10):
-    """ Return a starmask."""
-    start = time.time()
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
-    mid = time.time()
-
-    star = np.ones(x.shape)
-    star_mask = project_2d(x, y, z, phi, theta, star, N, border=border)
-    star_mask[np.isnan(star_mask)] = 0
-    star_mask = star_mask.astype(np.bool)
-    stop = time.time()
-
-    print(f"Spherical Geometry: {round(mid-start,3)}")
-    print(f"Projection: {round(stop-mid,3)}")
-    return star_mask
-
-
-def create_spotmask(rad, theta_spot=90, phi_spot=90, N=1000, border=10, inclination=90):
-    """ Return a starmask.
-
-        Be clever: Create the spot at the pole of one coordinate system.
-                   Then use inclination and azimuthal during projection to move
-                   the spot around
-
-
-        :param rad: Radius in degree
-        :param N: Number of cells per direction on star
-        :param border: Number of border cells
-    """
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
-
-    spot_mask = np.where(theta < np.radians(180 - rad), 0, 1)
-
-    spot_mask_2d = project_2d(x, y, z, phi, theta, spot_mask, N,
-                              inclination=(inclination - phi_spot),
-                              azimuth=(theta_spot - 90),
-                              border=border,
-                              line_of_sight=False)
-    spot_mask_2d[spot_mask_2d > 0] = 1
-    spot_mask_2d[np.isnan(spot_mask_2d)] = 0
-    spot_mask_2d = spot_mask_2d.astype(np.bool)
-    return spot_mask_2d
-
-
-def create_spotmask_new(rad, theta_pos=90, phi_pos=90, N=1000, border=10, inclination=90):
-    """ Return a spotmask in 2d.
-
-        Idea: The radius defines the angle in theta that is covered by the spot
-              Calculate the distance from the pole in theta with that radius
-              Define a plane by one point on that circle and the normal vector
-              Rotate these two vectors wrt to theta_pos and phi_pos
-              Calculate a mask with all points on the sphere that are above the
-              plane by using the sign of the scalar product of the normal vec
-              and the difference between the point on the plane and each point
-
-              Afterwards project that mask in 2d
-
-
-
-        :param rad: Radius in degree
-        :param N: Number of cells per direction on star
-        :param border: Number of border cells
-    """
-    # Create the star
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z(N=500)
-
-    z_slice = np.cos(np.radians(rad))
-    # define plane
-    # plane normal
-    normal = np.array([0, 0, 1])
-    # Fixed point in plane
-    p = np.array([0, 0, z_slice])
-
-    # Rotate the two normal vector and the vector to the point in the plane
-    rot = Rot.from_euler('xz', [theta_pos, phi_pos + 90], degrees=True)
-    normal = rot.apply(normal)
-    p = rot.apply(p)
-
-    # above_plane_mask = np.zeros(phi.shape).flatten()
-    vecs = np.array((x.flatten(), y.flatten(), z.flatten())).T
-    above_plane_mask = np.dot(vecs - p, normal) >= 0
-    above_plane_mask = above_plane_mask.reshape(phi.shape)
-
-    spot_mask_2d = project_2d(x, y, z, phi, theta, above_plane_mask, N,
-                              inclination=inclination,
-                              border=border,
-                              line_of_sight=False)
-    spot_mask_2d[spot_mask_2d > 0] = 1
-    spot_mask_2d[np.isnan(spot_mask_2d)] = 0
-    spot_mask_2d = spot_mask_2d.astype(np.bool)
-    return spot_mask_2d
-
-
-def create_rotation(v=3000, N=1000, line_of_sight=True, inclination=90, border=10):
-    """ Create a rotation map with fixed rotation and inclination  angle."""
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
-
-    rotation = -v * np.sin(theta)
-    rotation_2d = project_2d(x, y, z, phi, theta, rotation, N,
-                             inclination=inclination,
-                             border=border,
-                             line_of_sight=line_of_sight,
-                             component="phi")
-    return rotation_2d
-
-
 def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=10):
     """ Get radial component of pulsation.
 
@@ -149,7 +43,7 @@ def pulsation_rad(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=1
         :param bool project: If True: Project the component onto the line of
                                       sight
     """
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+    phi, theta, x, y, z = get_spherical_phi_theta_x_y_z()
     # Calculate the spherical harmonic Y(l,m)
     displ = sph_harm(m, l, phi, theta)
 
@@ -176,7 +70,7 @@ def pulsation_phi(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border=1
         :param bool project: If True: Project the component onto the line of
                                       sight
     """
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+    phi, theta, x, y, z = get_spherical_phi_theta_x_y_z()
     # Calculate the spherical harmonic Y(l,m)
     harmonic = sph_harm(m, l, phi, theta)
     # You need the partial derivative wrt to phi
@@ -205,7 +99,7 @@ def pulsation_theta(l=1, m=1, N=1000, line_of_sight=True, inclination=90, border
         :param bool project: If True: Project the component onto the line of
                                       sight
     """
-    phi, theta, x, y, z = get_circular_phi_theta_x_y_z()
+    phi, theta, x, y, z = get_spherical_phi_theta_x_y_z()
     # Calculate the spherical harmonic Y(l,m)
     harmonic = sph_harm(m, l, phi, theta)
     # You need the partial derivative wrt to theta
