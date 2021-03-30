@@ -20,6 +20,7 @@ class ThreeDimStar():
             :param nu: Pulsation frequency (without 2pi factor)
             :param V_p: Pulsation velocity in m/s
             :param k: Ratio between radial component and phi/theta component
+                      1.2 for g-mode (compare to Hatzes1996)
         """
         (self.phi,
          self.theta,
