@@ -159,7 +159,7 @@ class ThreeDimStar():
         self.displacement_theta = displ
         self.pulsation_theta = pulsation
 
-    def add_pulsation(t=0, l=1, m=1):
+    def add_pulsation(self, t=0, l=1, m=1):
         """ Convenience function to add all pulsations in one go.
 
             :param float t: Time at which to evaluate the pulsation
@@ -210,6 +210,7 @@ class TwoDimProjector():
                                     self.star.theta,
                                     values,
                                     self.N,
+                                    inclination=self.inclination,
                                     border=self.border,
                                     line_of_sight=line_of_sight,
                                     component=component)
@@ -313,18 +314,51 @@ class TwoDimProjector():
     def pulsation(self):
         """ Project the complete pulsation of the star onto a 2d plane.
 
+            Difference to previous versions:
+            First we project each individual component onto the line of sight
+            Then we add them up and in the end project them onto the 2d plane
+            In that way the relatively long 2d projection is done only once
+
             Caution: Returns only real part
         """
-        if not self.line_of_sight:
-            print("CAUTION! YOU DO NOT PROJECT ONTO THE LINE OF SIGHT!")
-            exit()
-        rad = self.pulsation_rad()
-        phi = self.pulsation_phi()
-        theta = self.pulsation_theta()
+        # los = line of sight
+        p = star.phi.flatten()
+        t = star.theta.flatten()
+        if self.line_of_sight:
+            rad_los = geo.project_line_of_sight(p,
+                                                t,
+                                                star.pulsation_rad.flatten(),
+                                                "rad",
+                                                inclination=self.inclination)
+            rad_los = rad_los.reshape(star.phi.shape)
 
-        # That is only valid since we projected it onto the line of sight
-        pulsation = rad + phi + theta
-        return pulsation
+            phi_los = geo.project_line_of_sight(p,
+                                                t,
+                                                star.pulsation_phi.flatten(),
+                                                "phi",
+                                                inclination=self.inclination)
+            phi_los = phi_los.reshape(star.phi.shape)
+
+            theta_los = geo.project_line_of_sight(p,
+                                                  t,
+                                                  star.pulsation_theta.flatten(),
+                                                  "theta",
+                                                  inclination=self.inclination)
+            theta_los = theta_los.reshape(star.phi.shape)
+        else:
+            print("CAUTION! ADDING PULSATIONS WITHOUT PROJECTION ONTO THE " +
+                  "LINE OF SIGHT DOES NOT MAKE SENSE!")
+            rad_los = star.pulsation_rad
+            phi_los = star.pulsation_phi
+            theta_los = star.pulsation_theta
+
+        # Only valid since we projected onto the line of sight
+        pulsation_3d_los = rad_los + phi_los + theta_los
+        # Project onto 2d plane
+        # Important! Make sure not to project onto the line of sight again!
+        pulsation_2d = self._project(pulsation_3d_los, line_of_sight=False)
+
+        return pulsation_2d.real
 
 
 def plot_3d(x, y, z, value, scale_down=1):
@@ -346,12 +380,14 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=45, line_of_sight=True)
-    star.add_pulsation_rad(t=0, l=2, m=2)
-    star.add_pulsation_phi(l=2, m=2)
-    star.add_pulsation_theta(l=2, m=2)
+    star = ThreeDimStar(k=100, V_p=1)
+    l = 2
+    m = 2
+    inclination = 90
+    projector = TwoDimProjector(
+        star, inclination=inclination, line_of_sight=True)
+    star.add_pulsation(t=0, l=l, m=m)
 
-    plt.imshow(projector.pulsation(),
-               cmap="seismic", vmin=-50, vmax=50)
+    plt.imshow(projector.pulsation(), cmap="seismic",
+               vmin=-100, vmax=100, origin="lower")
     plt.show()
