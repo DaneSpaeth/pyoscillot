@@ -14,13 +14,17 @@ class ThreeDimStar():
         in onto a grid in the end.
     """
 
-    def __init__(self, nu=1 / 600, V_p=100, k=1.2):
+    def __init__(self, nu=1 / 600, V_p=100, k=1.2, Teff=4800, T_var=0, T_phase=0):
         """ Create a 3d star.
 
             :param nu: Pulsation frequency (without 2pi factor)
             :param V_p: Pulsation velocity in m/s
             :param k: Ratio between radial component and phi/theta component
                       1.2 for g-mode (compare to Hatzes1996)
+            :param int Teff: effective Temperature [K] of star
+            :param float T_var: Amplitude[K] of Temp variation due to pulsation
+            :parm float T_phase: Phase shift of Temp variation wrt to radial
+                                 displacement
         """
         (self.phi,
          self.theta,
@@ -31,6 +35,8 @@ class ThreeDimStar():
         self.nu = nu
         self.V_p = V_p
         self.k = k
+        self.T_var = T_var
+        self.T_phase = T_phase
 
         # Create default maps
         self.starmask = np.ones(self.phi.shape)
@@ -46,7 +52,10 @@ class ThreeDimStar():
         self.pulsation_phi = np.zeros(self.phi.shape, dtype="complex128")
         self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
 
-    def add_spot(self, rad, theta_pos=90, phi_pos=90):
+        self.temperature = Teff * np.ones(self.phi.shape)
+        self.base_temp = self.temperature
+
+    def add_spot(self, rad, theta_pos=90, phi_pos=90, T_spot=4000):
         """ Add a spot to the 3D star.
 
             Idea: The radius defines the angle in theta that is covered by the spot
@@ -83,6 +92,7 @@ class ThreeDimStar():
         above_plane_mask = above_plane_mask.reshape(self.phi.shape)
 
         self.spotmask += above_plane_mask
+        self.temperature[self.spotmask.astype(bool)] = T_spot
 
     def create_rotation(self, v=3000):
         """ Create a 3D rotation map.
@@ -112,6 +122,12 @@ class ThreeDimStar():
 
         self.displacement_rad = displ
         self.pulsation_rad = pulsation
+        # Caution temperature is not reseted
+        temp_variation = (displ * np.exp(1j * self.T_phase)).real
+        temp_variation = self.T_var * \
+            temp_variation / np.nanmax(temp_variation)
+
+        self.temperature = self.base_temp + temp_variation
 
     def add_pulsation_phi(self, t=0, l=1, m=1):
         """ Get phi component of displacement.
@@ -231,6 +247,11 @@ class TwoDimProjector():
         spotmask_2d[np.isnan(spotmask_2d)] = 0
         spotmask_2d = spotmask_2d.astype(np.bool)
         return spotmask_2d
+
+    def temperature(self):
+        """ Project the temperature onto a 2d plane."""
+        tempmap = self._project(self.star.temperature, line_of_sight=False)
+        return tempmap
 
     def rotation(self):
         """ Project rotation onto a 2d plane."""
@@ -371,7 +392,8 @@ def plot_3d(x, y, z, value, scale_down=1):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(x, y, z,
-                    facecolors=cm.seismic(value))
+                    facecolors=cm.seismic(value),
+                    rstride=10, cstride=10)
     ax.set_box_aspect((1, 1, 1))
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
@@ -380,14 +402,10 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar(k=100, V_p=1)
-    l = 2
-    m = 2
-    inclination = 90
-    projector = TwoDimProjector(
-        star, inclination=inclination, line_of_sight=True)
-    star.add_pulsation(t=0, l=l, m=m)
+    star = ThreeDimStar(k=100, V_p=1, T_var=1000)
+    star.add_pulsation(l=2, m=2)
+    projector = TwoDimProjector(star)
+    # star.add_spot(10, phi_pos=90)
 
-    plt.imshow(projector.pulsation(), cmap="seismic",
-               vmin=-100, vmax=100, origin="lower")
+    plt.imshow(projector.temperature())
     plt.show()
