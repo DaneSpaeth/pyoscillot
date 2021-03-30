@@ -33,8 +33,48 @@ def get_spherical_phi_theta_x_y_z(N=250):
     return phi, theta, x, y, z
 
 
-def project_2d(x, y, z, phi, theta, values, N, border=10, component=None, inclination=90, azimuth=0, line_of_sight=False):
-    """ https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853"""
+def project_line_of_sight(phi, theta, values, component, inclination):
+    """ Project the values onto the line of sight."""
+
+    # Line of sight unit vector
+    los = np.array(
+        (0,
+         np.cos(np.radians(90 - inclination)),
+         -np.sin(np.radians(90 - inclination))))
+
+    scalar_prods = []
+    for p, t in zip(phi, theta):
+        if component == "rad":
+            # Unit vector of r
+            r_unit = np.array((np.sin(t) * np.cos(p),
+                               np.sin(t) * np.sin(p),
+                               np.cos(t)))
+
+            scalar_prods.append(np.dot(r_unit, los))
+        elif component == "phi":
+            phi_unit = np.array((-np.sin(p),
+                                 np.cos(p),
+                                 0))
+            scalar_prods.append(np.dot(phi_unit, los))
+        elif component == "theta":
+            theta_unit = np.array((np.cos(t) * np.cos(p),
+                                   np.cos(t) * np.sin(p),
+                                   -np.sin(t)))
+            scalar_prods.append(np.dot(theta_unit, los))
+
+    scalar_prods = np.array(scalar_prods)
+    print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
+    values = values * scalar_prods
+
+    return values
+
+
+def project_2d(x, y, z, phi, theta, values, N,
+               border=10, component=None, inclination=90,
+               azimuth=0, line_of_sight=False):
+    """ Project the 3d geometry onto a 2d plane.
+
+    https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853"""
 
     y = y
     large_number = 1e20
@@ -80,38 +120,10 @@ def project_2d(x, y, z, phi, theta, values, N, border=10, component=None, inclin
     values = values.flatten()[nan_mask]
 
     if line_of_sight:
-        theta = theta.flatten()[nan_mask]
         phi = phi.flatten()[nan_mask]
-
-        # Line of sight unit vector
-        los = np.array(
-            (0,
-             np.cos(np.radians(90 - inclination)),
-             -np.sin(np.radians(90 - inclination))))
-
-        scalar_prods = []
-        for p, t in zip(phi, theta):
-            if component == "rad":
-                # Unit vector of r
-                r_unit = np.array((np.sin(t) * np.cos(p),
-                                   np.sin(t) * np.sin(p),
-                                   np.cos(t)))
-
-                scalar_prods.append(np.dot(r_unit, los))
-            elif component == "phi":
-                phi_unit = np.array((-np.sin(p),
-                                     np.cos(p),
-                                     0))
-                scalar_prods.append(np.dot(phi_unit, los))
-            elif component == "theta":
-                theta_unit = np.array((np.cos(t) * np.cos(p),
-                                       np.cos(t) * np.sin(p),
-                                       -np.sin(t)))
-                scalar_prods.append(np.dot(theta_unit, los))
-
-        scalar_prods = np.array(scalar_prods)
-        print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
-        values = values * scalar_prods
+        theta = theta.flatten()[nan_mask]
+        values = project_line_of_sight(
+            phi, theta, values, component, inclination)
 
     grid = griddata(coords, values, (xx, zz),
                     method='linear', fill_value=np.nan)
