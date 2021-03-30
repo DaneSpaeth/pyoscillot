@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as Rot
 from scipy.special import sph_harm
 import spherical_geometry as geo
+from matplotlib import cm
 
 
 class ThreeDimStar():
@@ -13,20 +14,36 @@ class ThreeDimStar():
         in onto a grid in the end.
     """
 
-    def __init__(self):
+    def __init__(self, nu=1 / 600, V_p=100, k=1.2):
+        """ Create a 3d star.
+
+            :param nu: Pulsation frequency (without 2pi factor)
+            :param V_p: Pulsation velocity in m/s
+            :param k: Ratio between radial component and phi/theta component
+        """
         (self.phi,
          self.theta,
          self.x,
          self.y,
          self.z) = geo.get_spherical_phi_theta_x_y_z()
 
+        self.nu = nu
+        self.V_p = V_p
+        self.k = k
+
         # Create default maps
         self.starmask = np.ones(self.phi.shape)
         self.spotmask = np.zeros(self.phi.shape)
         self.rotation = np.zeros(self.phi.shape)
-        self.displacement_rad = np.zeros(self.phi.shape, dtype='complex128')
-        self.displacement_phi = np.zeros(self.phi.shape, dtype='complex128')
-        self.displacement_theta = np.zeros(self.phi.shape, dtype='complex128')
+        # Displacement describes the actual deformation of the star
+        self.displacement_rad = np.zeros(self.phi.shape, dtype="complex128")
+        self.displacement_phi = np.zeros(self.phi.shape, dtype="complex128")
+        self.displacement_theta = np.zeros(self.phi.shape, dtype="complex128")
+        # Pulsation describes the change of deformation of the star
+        # i.e. the velocity per element
+        self.pulsation_rad = np.zeros(self.phi.shape, dtype="complex128")
+        self.pulsation_phi = np.zeros(self.phi.shape, dtype="complex128")
+        self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
 
     def add_spot(self, rad, theta_pos=90, phi_pos=90):
         """ Add a spot to the 3D star.
@@ -73,22 +90,33 @@ class ThreeDimStar():
         """
         self.rotation = -v * np.sin(self.theta)
 
-    def add_displacement_rad(self, l=1, m=1):
-        """ Add the radial component of displacement.
+    def add_pulsation_rad(self, t=0, l=1, m=1):
+        """ Add the radial component of displacement and pulsation.
 
 
+            :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
         """
         # Calculate the spherical harmonic Y(l,m)
-        displ = sph_harm(m, l, self.phi, self.theta)
+        harm = sph_harm(m, l, self.phi, self.theta)
+        displ = harm * np.exp(1j * 2 * np.pi * self.nu * t)
 
-        self.displacement_rad += displ
+        # Add a factor of 1j. as the pulsations are yet the radial displacements
+        # you need to differentiate the displacements wrt t which introduces
+        # a factor 1j * 2 * np.pi * nu
+        # but we absorb the  2 * np.pi * nu part in the V_p constant
+        # See Kochukhov et al. (2004)
+        pulsation = 1j * self.V_p * displ
 
-    def add_displacement_phi(self, l=1, m=1):
+        self.displacement_rad = displ
+        self.pulsation_rad = pulsation
+
+    def add_pulsation_phi(self, t=0, l=1, m=1):
         """ Get phi component of displacement.
 
 
+            :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
         """
@@ -96,14 +124,18 @@ class ThreeDimStar():
         # Calculate the spherical harmonic Y(l,m)
         harmonic = sph_harm(m, l, self.phi, self.theta)
         # You need the partial derivative wrt to phi
-        displ = 1 / np.sin(self.theta) * 1j * m * harmonic
+        part_deriv = 1 / np.sin(self.theta) * 1j * m * harmonic
+        displ = part_deriv * np.exp(1j * 2 * np.pi * self.nu * t)
 
-        self.displacement_phi += displ
+        pulsation = 1j * self.k * self.V_p * displ
 
-    def add_displacement_theta(self, l=1, m=1):
+        self.displacement_phi = displ
+        self.pulsation_phi = pulsation
+
+    def add_pulsation_theta(self, t=0, l=1, m=1):
         """ Get theta component of displacement.
 
-
+            :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
         """
@@ -119,7 +151,23 @@ class ThreeDimStar():
         else:
             part_deriv = m * 1 / np.tan(self.theta) * harmonic
 
-        self.displacement_theta = part_deriv
+        displ = part_deriv * np.exp(1j * 2 * np.pi * self.nu * t)
+
+        pulsation = 1j * self.k * self.V_p * displ
+
+        self.displacement_theta = displ
+        self.pulsation_theta = pulsation
+
+    def add_pulsation(t=0, l=1, m=1):
+        """ Convenience function to add all pulsations in one go.
+
+            :param float t: Time at which to evaluate the pulsation
+            :param int l: Number of surface lines of nodes
+            :param int m: Number of polar lines of nodes (-l<=m<=l)
+        """
+        self.add_pulsation_rad(t, l, m)
+        self.add_pulsation_phi(t, l, m)
+        self.add_pulsation_theta(t, l, m)
 
 
 class TwoDimProjector():
@@ -142,17 +190,33 @@ class TwoDimProjector():
         self.azimuth = azimuth
         self.line_of_sight = line_of_sight
 
+    def _project(self, values, line_of_sight=False, component=None):
+        """ Helper function to project stuff.
+
+            :param values: Values to project
+            :param line_of_sight: If True, line of sight projection will be
+                                  enabled
+            :param component: Unit direction in which to project if
+                              line of sight is True
+        """
+        if line_of_sight:
+            assert component is not None, "Component missing for projection"
+
+        projection = geo.project_2d(self.star.x,
+                                    self.star.y,
+                                    self.star.z,
+                                    self.star.phi,
+                                    self.star.theta,
+                                    values,
+                                    self.N,
+                                    border=self.border,
+                                    line_of_sight=line_of_sight,
+                                    component=component)
+        return projection
+
     def starmask(self):
         """ Return a 2D projected starmask."""
-        starmask_2d = geo.project_2d(self.star.x,
-                                     self.star.y,
-                                     self.star.z,
-                                     self.star.phi,
-                                     self.star.theta,
-                                     self.star.starmask,
-                                     self.N,
-                                     border=self.border,
-                                     line_of_sight=False)
+        starmask_2d = self._project(self.star.starmask, line_of_sight=False)
         starmask_2d[np.isnan(starmask_2d)] = 0
         starmask_2d = starmask_2d.astype(np.bool)
 
@@ -160,16 +224,7 @@ class TwoDimProjector():
 
     def spotmask(self):
         """ Project the spotmask onto a 2d plane."""
-        spotmask_2d = geo.project_2d(self.star.x,
-                                     self.star.y,
-                                     self.star.z,
-                                     self.star.phi,
-                                     self.star.theta,
-                                     self.star.spotmask,
-                                     self.N,
-                                     inclination=self.inclination,
-                                     border=self.border,
-                                     line_of_sight=False)
+        spotmask_2d = self._project(self.star.spotmask, line_of_sight=False)
         spotmask_2d[spotmask_2d > 0] = 1
         spotmask_2d[np.isnan(spotmask_2d)] = 0
         spotmask_2d = spotmask_2d.astype(np.bool)
@@ -177,17 +232,9 @@ class TwoDimProjector():
 
     def rotation(self):
         """ Project rotation onto a 2d plane."""
-        rotation_2d = geo.project_2d(self.star.x,
-                                     self.star.y,
-                                     self.star.z,
-                                     self.star.phi,
-                                     self.star.theta,
-                                     self.star.rotation,
-                                     self.N,
-                                     inclination=self.inclination,
-                                     border=self.border,
-                                     line_of_sight=self.line_of_sight,
-                                     component="phi")
+        rotation_2d = self._project(self.star.rotation,
+                                    line_of_sight=self.line_of_sight,
+                                    component="phi")
         return np.rint(rotation_2d).astype(int)
 
     def displacement_rad(self):
@@ -196,19 +243,23 @@ class TwoDimProjector():
 
             Caution: Returns only real part
         """
-        displacement_rad_2d = geo.project_2d(self.star.x,
-                                             self.star.y,
-                                             self.star.z,
-                                             self.star.phi,
-                                             self.star.theta,
-                                             self.star.displacement_rad,
-                                             self.N,
-                                             border=self.border,
-                                             inclination=self.inclination,
-                                             component="rad",
-                                             line_of_sight=self.line_of_sight)
+        projection = self._project(self.star.displacement_rad,
+                                   line_of_sight=self.line_of_sight,
+                                   component="rad")
 
-        return displacement_rad_2d.real
+        return projection.real
+
+    def pulsation_rad(self):
+        """ Project the radial pulsation of the star onto a 2d plane.
+
+
+            Caution: Returns only real part
+        """
+        projection = self._project(self.star.pulsation_rad,
+                                   line_of_sight=self.line_of_sight,
+                                   component="rad")
+
+        return projection.real
 
     def displacement_phi(self):
         """ Project the phi displacement of the star onto a 2d plane.
@@ -216,19 +267,23 @@ class TwoDimProjector():
 
             Caution: Returns only real part
         """
-        displacement_phi_2d = geo.project_2d(self.star.x,
-                                             self.star.y,
-                                             self.star.z,
-                                             self.star.phi,
-                                             self.star.theta,
-                                             self.star.displacement_phi,
-                                             self.N,
-                                             border=self.border,
-                                             inclination=self.inclination,
-                                             component="phi",
-                                             line_of_sight=self.line_of_sight)
+        projection = self._project(self.star.displacement_phi,
+                                   line_of_sight=self.line_of_sight,
+                                   component="phi")
 
-        return displacement_phi_2d.real
+        return projection.real
+
+    def pulsation_phi(self):
+        """ Project the phi pulsation of the star onto a 2d plane.
+
+
+            Caution: Returns only real part
+        """
+        projection = self._project(self.star.pulsation_phi,
+                                   line_of_sight=self.line_of_sight,
+                                   component="phi")
+
+        return projection.real
 
     def displacement_theta(self):
         """ Project the theta displacement of the star onto a 2d plane.
@@ -236,28 +291,66 @@ class TwoDimProjector():
 
             Caution: Returns only real part
         """
-        displacement_theta_2d = geo.project_2d(self.star.x,
-                                               self.star.y,
-                                               self.star.z,
-                                               self.star.phi,
-                                               self.star.theta,
-                                               self.star.displacement_theta,
-                                               self.N,
-                                               border=self.border,
-                                               inclination=self.inclination,
-                                               component="theta",
-                                               line_of_sight=self.line_of_sight)
+        projection = self._project(self.star.displacement_theta,
+                                   line_of_sight=self.line_of_sight,
+                                   component="theta")
 
-        return displacement_theta_2d.real
+        return projection.real
+
+    def pulsation_theta(self):
+        """ Project the theta displacement of the star onto a 2d plane.
+
+
+            Caution: Returns only real part
+        """
+        projection = self._project(self.star.pulsation_theta,
+                                   line_of_sight=self.line_of_sight,
+                                   component="theta")
+
+        return projection.real
+
+    def pulsation(self):
+        """ Project the complete pulsation of the star onto a 2d plane.
+
+            Caution: Returns only real part
+        """
+        if not self.line_of_sight:
+            print("CAUTION! YOU DO NOT PROJECT ONTO THE LINE OF SIGHT!")
+            exit()
+        rad = self.pulsation_rad()
+        phi = self.pulsation_phi()
+        theta = self.pulsation_theta()
+
+        # That is only valid since we projected it onto the line of sight
+        pulsation = rad + phi + theta
+        return pulsation
+
+
+def plot_3d(x, y, z, value, scale_down=1):
+    """ Plot the values in 3d."""
+    # Calculate the colors from the values
+    if value.dtype == "complex128":
+        value = value.real
+    vmax, vmin = np.nanmax(value), np.nanmin(value)
+    value = (value - vmin) / (vmax - vmin)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(x, y, z,
+                    facecolors=cm.seismic(value))
+    ax.set_box_aspect((1, 1, 1))
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    plt.show()
 
 
 if __name__ == "__main__":
     star = ThreeDimStar()
     projector = TwoDimProjector(star, inclination=45, line_of_sight=True)
-    star.add_displacement_rad()
-    star.add_displacement_phi(l=2, m=2)
-    star.add_displacement_theta(l=2, m=2)
+    star.add_pulsation_rad(t=0, l=2, m=2)
+    star.add_pulsation_phi(l=2, m=2)
+    star.add_pulsation_theta(l=2, m=2)
 
-    plt.imshow(projector.displacement_theta(), vmin=-
-               1, vmax=1, cmap="seismic", origin="lower")
+    plt.imshow(projector.pulsation(),
+               cmap="seismic", vmin=-50, vmax=50)
     plt.show()
