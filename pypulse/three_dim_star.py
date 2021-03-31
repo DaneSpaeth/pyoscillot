@@ -120,7 +120,7 @@ class ThreeDimStar():
             close_plane_mask = np.abs(np.dot(vecs, normal)) <= 0.0001
             close_plane_mask = close_plane_mask.reshape(self.phi.shape)
 
-            self.temperature[close_plane_mask] = 3000
+            self.temperature[close_plane_mask] = self.Teff - 400
             self.border_mask[close_plane_mask] = 1
         print(
             f"Border Value: {np.sum(self.border_mask)/np.size(self.border_mask)}")

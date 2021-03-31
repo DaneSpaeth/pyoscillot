@@ -246,17 +246,17 @@ def get_pulsation_spectra(P=600, N=20):
         print(f"Calculate star {i}")
         i += 1
         star = GridSpectrumSimulator(
-            N_star=30, N_border=3, Teff=4700, v_rot=3000, T_var=50)
-        star.add_pulsation(l=2, m=2, phase=phase)
+            N_star=30, N_border=3, Teff=4800, v_rot=3000, T_var=50)
+        # star.add_pulsation(l=2, m=2, phase=phase)
 
         # star.add_pulsation(l=2, m=1, phase=phase)
         # star.add_temp_variation(phase=phase)
 
-        # plt.imshow(star.pulsation.real, origin="lower",
-        #            cmap="seismic", vmin=-30, vmax=30)
-        # plt.savefig(
-        #     f"/home/dane/Documents/PhD/pypulse/plots/pulsation_superpos/{round(phase,3)}.pdf")
-        # plt.close()
+        plt.imshow(star.projector.temperature(), origin="lower",
+                   cmap="seismic", vmin=4300, vmax=4800)
+        plt.savefig(
+            f"/home/dane/Documents/PhD/pypulse/plots/granulation/{round(phase,3)}.pdf")
+        plt.close()
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
@@ -271,4 +271,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=10, K=0, mode="pulsation")
+    create_rv_series(P=600, N=5, K=0, mode="pulsation")
