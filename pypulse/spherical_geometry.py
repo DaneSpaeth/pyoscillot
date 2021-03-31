@@ -128,16 +128,3 @@ def project_2d(x, y, z, phi, theta, values, N,
     grid = griddata(coords, values, (xx, zz),
                     method='linear', fill_value=np.nan)
     return grid
-
-
-def calc_temp_variation(l, m, amplitude, nu, t, phase_shift=0, inclination=90, N=100, border=10):
-    """ Calculate the temperature variation."""
-    rad = pulsation_rad(l=l, m=m, N=N, line_of_sight=False,
-                        inclination=inclination, border=border)
-
-    rad = rad * np.exp(1j * 2 * np.pi * nu * t)
-    var = (rad * np.exp(1j * phase_shift)).real
-    # Normalize
-    var = var / np.nanmax(var)
-    var = var * amplitude
-    return var, rad

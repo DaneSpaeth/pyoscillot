@@ -1,19 +1,15 @@
 import numpy as np
-from utils import (create_circular_mask, interpolate_to_restframe,
-                   gaussian, bisector_new, adjust_resolution)
-import dataloader as load
+from utils import (gaussian, adjust_resolution)
 from plapy.constants import C
-from scipy.special import sph_harm
-from spherical_geometry import (create_starmask, calculate_pulsation,
-                                calc_temp_variation, create_spotmask,
-                                create_rotation)
+from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_ref_spectra, get_interpolated_spectrum
 
 
 class GridStar():
     """ Simulate a star with a grid."""
 
-    def __init__(self, N_star=500, N_border=5, Teff=4800, vsini=1000):
+    def __init__(self, N_star=500, N_border=5, Teff=4800, v_rot=3000,
+                 inclination=90):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -30,28 +26,23 @@ class GridStar():
         self.N_grid = N_star + 2 * N_border
         self.N_border = N_border
         self.Teff = Teff
-        self.star = create_starmask(N=N_star, border=N_border)
+        self.three_dim_star = ThreeDimStar()
+        self.projector = TwoDimProjector(self.three_dim_star,
+                                         N=N_star, border=N_border,
+                                         inclination=inclination,
+                                         line_of_sight=True)
+
+        self.starmask = self.projector.starmask()
         self.grid = np.zeros((self.N_grid, self.N_grid))
         self.rotation = self.grid
         self.pulsation = np.zeros(self.grid.shape, dtype=np.complex)
-        self.center = (
-            int(self.star.shape[0] / 2), int(self.star.shape[1] / 2))
 
         self.spot = False
-        self.add_rotation(vsini=vsini)
-        self.temperature = (Teff * self.star).astype(float)
-
-    def add_rotation(self, vsini):
-        """ Add Rotation, vsini in m/s"""
-
-        self.rotation = create_rotation(
-            vsini, N=self.N_star, border=self.N_border, inclination=90,
-            line_of_sight=True)
+        self.three_dim_star.create_rotation(v_rot)
+        self.temperature = (Teff * self.starmask).astype(float)
 
     def add_spot(self, phase=0.25, altitude=90, radius=25, deltaT=1800, reset=True, ):
         """ Add a circular starspot at position x,y.
-
-
 
             :param phase: Phase ranging from 0 to 1 (0 being left edge,
                                                      1 being one time around)
@@ -61,8 +52,8 @@ class GridStar():
             :param bool reset: If True, reset the temp before adding another spot
         """
         az = phase * 360
-        self.spot = create_spotmask(
-            radius, az, altitude, N=self.N_star, border=self.N_border)
+        self.three_dim_star.add_spot(radius, phi_pos=az)
+        self.spot = self.projector.spotmask()
         # Make sure to reset the temp before adding another spot
         if reset:
             self.temperature[self.star] = self.Teff
@@ -77,7 +68,7 @@ class GridStar():
 
             :returns: Array of wavelengths, array of flux value
         """
-        start = time.time()
+
         wavelength_range = (min_wave - 0.25, max_wave + 0.25)
 
         # First get a wavelength grid and dictionarys of the available
@@ -104,13 +95,11 @@ class GridStar():
         v_c_pulse = self.pulsation.real / C
 
         total_spectrum = np.zeros(len(rest_wavelength))
-        mid = time.time()
-        import sys
-        print(f"Before loop {round(mid-start, 3)}")
+
         for row in range(self.grid.shape[0]):
             for col in range(self.grid.shape[1]):
-                start = time.time()
-                if self.star[row, col]:
+
+                if self.starmask[row, col]:
                     T_local = self.temperature[row, col]
                     if mode == "gaussian":
                         local_spectrum = ref_spectra[self.Teff]
@@ -120,7 +109,6 @@ class GridStar():
                                                                          ref_spectra=ref_spectra,
                                                                          ref_headers=ref_headers)
 
-                        print(sys.getsizeof(local_spectrum))
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
                         # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
@@ -131,16 +119,12 @@ class GridStar():
                             v_c_rot[row, col] * rest_wavelength + \
                             v_c_pulse[row, col] * rest_wavelength
                         # Interpolate the spectrum to the same rest wavelength grid
-                        mid1 = time.time()
+
                         # interpol_spectrum = interpolate_to_restframe(local_wavelength,
                         #                                             local_spectrum, rest_wavelength)
                         interpol_spectrum = local_spectrum
-                        mid2 = time.time()
-                        print(f"Interpolation {round(mid2-mid1,3)}")
-                        total_spectrum += interpol_spectrum
 
-                    stop = time.time()
-                    print(f"One Loop {round(stop-start,3)}")
+                        total_spectrum += interpol_spectrum
 
         total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
 
@@ -191,15 +175,9 @@ class GridStar():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    import time
-    start = time.time()
-    star = GridStar(N_star=50, N_border=3, vsini=3000)
-    stop = time.time()
-    print(f"Building the star {round(stop - start, 3)}")
-    # star.add_spot()
-    start = time.time()
+    star = GridStar(N_star=200, N_border=3, v_rot=3000)
+
     wave, spec = star.calc_spectrum()
-    stop = time.time()
-    print(f"Calculating the spectrum {round(stop - start, 3)}")
+    exit()
     plt.plot(wave, spec)
     plt.show()
