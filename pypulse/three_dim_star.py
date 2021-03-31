@@ -37,6 +37,7 @@ class ThreeDimStar():
         self.k = k
         self.T_var = T_var
         self.T_phase = T_phase
+        self.Teff = Teff
 
         # Create default maps
         self.starmask = np.ones(self.phi.shape)
@@ -343,35 +344,35 @@ class TwoDimProjector():
             Caution: Returns only real part
         """
         # los = line of sight
-        p = star.phi.flatten()
-        t = star.theta.flatten()
+        p = self.star.phi.flatten()
+        t = self.star.theta.flatten()
         if self.line_of_sight:
             rad_los = geo.project_line_of_sight(p,
                                                 t,
-                                                star.pulsation_rad.flatten(),
+                                                self.star.pulsation_rad.flatten(),
                                                 "rad",
                                                 inclination=self.inclination)
-            rad_los = rad_los.reshape(star.phi.shape)
+            rad_los = rad_los.reshape(self.star.phi.shape)
 
             phi_los = geo.project_line_of_sight(p,
                                                 t,
-                                                star.pulsation_phi.flatten(),
+                                                self.star.pulsation_phi.flatten(),
                                                 "phi",
                                                 inclination=self.inclination)
-            phi_los = phi_los.reshape(star.phi.shape)
+            phi_los = phi_los.reshape(self.star.phi.shape)
 
             theta_los = geo.project_line_of_sight(p,
                                                   t,
-                                                  star.pulsation_theta.flatten(),
+                                                  self.star.pulsation_theta.flatten(),
                                                   "theta",
                                                   inclination=self.inclination)
-            theta_los = theta_los.reshape(star.phi.shape)
+            theta_los = theta_los.reshape(self.star.phi.shape)
         else:
             print("CAUTION! ADDING PULSATIONS WITHOUT PROJECTION ONTO THE " +
                   "LINE OF SIGHT DOES NOT MAKE SENSE!")
-            rad_los = star.pulsation_rad
-            phi_los = star.pulsation_phi
-            theta_los = star.pulsation_theta
+            rad_los = self.star.pulsation_rad
+            phi_los = self.star.pulsation_phi
+            theta_los = self.star.pulsation_theta
 
         # Only valid since we projected onto the line of sight
         pulsation_3d_los = rad_los + phi_los + theta_los

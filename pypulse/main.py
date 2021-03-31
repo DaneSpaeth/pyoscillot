@@ -4,11 +4,11 @@ from scipy import interpolate
 from scipy.ndimage import gaussian_filter1d
 from barycorrpy import get_BC_vel
 from astropy.time import Time
-from plapy import observatories
+from plapy.obs import observatories
 from plapy.constants import C
 from dataloader import phoenix_spectrum, carmenes_template
 from datasaver import save_spectrum
-from star import GridStar
+from star import GridSpectrumSimulator
 from utils import adjust_snr, adjust_resolution
 
 
@@ -84,7 +84,7 @@ def get_spot_spectra(P=30, N=20):
     import matplotlib.pyplot as plt
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i}")
-        star = GridStar(N_star=100, vsini=3000)
+        star = GridSpectrumSimulator(N_star=100, v_rot=3000)
         star.add_spot(phase=phase, radius=25)
 
         # plt.imshow(star.temperature)
@@ -245,9 +245,9 @@ def get_pulsation_spectra(P=600, N=20):
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i}")
         i += 1
-        star = GridStar(N_star=50, N_border=3, Teff=4700, vsini=3000)
+        star = GridSpectrumSimulator(
+            N_star=30, N_border=3, Teff=4700, v_rot=3000, T_var=50)
         star.add_pulsation(l=2, m=2, phase=phase)
-        star.add_temp_variation(phase=phase)
 
         # star.add_pulsation(l=2, m=1, phase=phase)
         # star.add_temp_variation(phase=phase)
@@ -271,4 +271,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(P=505, N=20, K=0, mode="pulsation")
+    create_rv_series(P=600, N=10, K=0, mode="pulsation")
