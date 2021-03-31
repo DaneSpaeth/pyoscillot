@@ -4,6 +4,7 @@ from scipy.spatial.transform import Rotation as Rot
 from scipy.special import sph_harm
 import spherical_geometry as geo
 from matplotlib import cm
+import random
 
 
 class ThreeDimStar():
@@ -94,6 +95,35 @@ class ThreeDimStar():
 
         self.spotmask += above_plane_mask
         self.temperature[self.spotmask.astype(bool)] = T_spot
+
+    def add_granulation(self, planes=3500):
+        """ First try to add granulation cells to the star.
+
+           :param int cells: Number of cells (not implemented yet)
+        """
+        # Define vectors of all points on sphere
+        vecs = np.array((self.x.flatten(),
+                         self.y.flatten(),
+                         self.z.flatten())).T
+
+        # Define center of sphere
+        center = np.array([0, 0, 0])
+        vecs = vecs - center
+        self.border_mask = np.zeros(self.phi.shape)
+        for n in range(planes):
+            normal = np.array(
+                [random.uniform(-1, 1),
+                 random.uniform(-1, 1),
+                 random.uniform(-1, 1)])
+            normal = normal / np.dot(normal, normal)
+
+            close_plane_mask = np.abs(np.dot(vecs, normal)) <= 0.0001
+            close_plane_mask = close_plane_mask.reshape(self.phi.shape)
+
+            self.temperature[close_plane_mask] = 3000
+            self.border_mask[close_plane_mask] = 1
+        print(
+            f"Border Value: {np.sum(self.border_mask)/np.size(self.border_mask)}")
 
     def create_rotation(self, v=3000):
         """ Create a 3D rotation map.
@@ -389,12 +419,16 @@ def plot_3d(x, y, z, value, scale_down=1):
     if value.dtype == "complex128":
         value = value.real
     vmax, vmin = np.nanmax(value), np.nanmin(value)
+    print(vmax, vmin)
+    if vmax == vmin:
+        vmin = 0
     value = (value - vmin) / (vmax - vmin)
+    print(value.min())
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(x, y, z,
                     facecolors=cm.seismic(value),
-                    rstride=10, cstride=10)
+                    rstride=1, cstride=1)
     ax.set_box_aspect((1, 1, 1))
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
@@ -403,10 +437,10 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar(k=100, V_p=1, T_var=1000)
-    star.add_pulsation(l=2, m=2)
+    star = ThreeDimStar()
+    star.add_granulation()
     projector = TwoDimProjector(star)
-    # star.add_spot(10, phi_pos=90)
-
+    print(star.temperature.min())
+    # plot_3d(star.x, star.y, star.z, star.temperature)
     plt.imshow(projector.temperature())
     plt.show()

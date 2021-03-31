@@ -125,6 +125,11 @@ def project_2d(x, y, z, phi, theta, values, N,
         values = project_line_of_sight(
             phi, theta, values, component, inclination)
 
+    print(values)
+
+    # original
+    method = "linear"
+
     grid = griddata(coords, values, (xx, zz),
-                    method='linear', fill_value=np.nan)
+                    method=method, fill_value=np.nan)
     return grid
