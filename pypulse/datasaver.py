@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from shutil import copy2
 from scipy.ndimage import gaussian_filter1d
-DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
 
+
+# DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
+DATAROOT = Path(__file__).parent.parent / "data"
 
 def save_spectrum(spectrum, new_header, name):
     """ Save a Carmenes spectrum from spectrum."""

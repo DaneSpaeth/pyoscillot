@@ -294,4 +294,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=30, K=10, mode="RV")
+    create_rv_series(P=600, N=5, K=10, mode="RV")
