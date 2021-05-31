@@ -138,8 +138,11 @@ dmypy.json
 cython_debug/
 
 # Own stuff
-data/
-plots/
-arrays/
+data/*
+plots/*
+pypulse/arrays/*
+venv/
 *.gif
 *.pdf
+*.fits
+

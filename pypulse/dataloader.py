@@ -2,7 +2,10 @@ from astropy.io import fits
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
+
+
+# DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
+DATAROOT = Path(__file__).cwd().parent / "data"
 
 
 def phoenix_spectrum(Teff=4800, logg=2.5, feh=-0.5, wavelength_range=(3000, 7000)):
