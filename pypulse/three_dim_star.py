@@ -15,7 +15,7 @@ class ThreeDimStar():
         in onto a grid in the end.
     """
 
-    def __init__(self, nu=1 / 600, V_p=100, k=1.2, Teff=4800, T_var=0, T_phase=0):
+    def __init__(self, nu=1 / 600, V_p=50, k=1.2, Teff=4800, T_var=0, T_phase=0):
         """ Create a 3d star.
 
             :param nu: Pulsation frequency (without 2pi factor)
@@ -40,6 +40,10 @@ class ThreeDimStar():
         self.T_phase = T_phase
         self.Teff = Teff
 
+        self.default_maps()
+
+    def default_maps(self):
+        """ Create default maps."""
         # Create default maps
         self.starmask = np.ones(self.phi.shape)
         self.spotmask = np.zeros(self.phi.shape)
@@ -54,7 +58,7 @@ class ThreeDimStar():
         self.pulsation_phi = np.zeros(self.phi.shape, dtype="complex128")
         self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
 
-        self.temperature = Teff * np.ones(self.phi.shape)
+        self.temperature = self.Teff * np.ones(self.phi.shape)
         self.base_temp = self.temperature
 
     def add_spot(self, rad, theta_pos=90, phi_pos=90, T_spot=4000):
@@ -412,6 +416,26 @@ class TwoDimProjector():
 
         return pulsation_2d.real
 
+    def grid(self):
+        """ Add a 2d projection of a grid."""
+        longitude_lines = np.arange(0, 360, 30)
+        grid = np.zeros(self.star.theta.shape)
+        for longline in longitude_lines:
+
+            grid += np.where(np.abs(self.star.phi -
+                                    np.radians(longline)) < 0.01, 1, 0)
+
+        latitude_lines = np.arange(0, 180, 30)
+        for latline in latitude_lines:
+            grid += np.where(np.abs(self.star.theta -
+                                    np.radians(latline)) < 0.01, 1, 0)
+
+        grid_2d = self._project(grid, line_of_sight=False)
+        grid_2d[grid_2d > 0] = 1
+        grid_2d[np.isnan(grid_2d)] = 0
+        grid_2d = grid_2d.astype(bool)
+        return grid_2d
+
 
 def plot_3d(x, y, z, value, scale_down=1):
     """ Plot the values in 3d."""
@@ -438,9 +462,103 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     star = ThreeDimStar()
-    star.add_granulation()
-    projector = TwoDimProjector(star)
-    print(star.temperature.min())
-    # plot_3d(star.x, star.y, star.z, star.temperature)
-    plt.imshow(projector.temperature())
-    plt.show()
+    projector = TwoDimProjector(star, inclination=60)
+
+    # Create plots
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    ax.imshow(projector.temperature(), origin="lower",
+              cmap="hot", vmin=0, vmax=8000)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/temp.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60)
+    star.create_rotation()
+    rot_map = projector.rotation()
+    rot_map = np.where(np.abs(rot_map) < 1e-5, np.nan, rot_map)
+    ax.imshow(rot_map, origin="lower",
+              cmap="seismic", vmin=-3000, vmax=3000)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/rotation.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation_rad(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_rad_nolos.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation_phi(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_phi_nolos.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation_theta(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_theta_nolos.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation_rad(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_rad_proj.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation_phi(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_phi_proj.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation_theta(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_theta_proj.pdf")
+    plt.close()
+
+    fig, ax = plt.subplots(1, figsize=(8, 8))
+    star = ThreeDimStar()
+    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+    star.add_pulsation(l=2, m=2)
+    ax.imshow(projector.pulsation(), origin="lower",
+              cmap="seismic", vmin=-50, vmax=50)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.savefig("imprs_plots/pulse_all_proj.pdf")
+    plt.close()

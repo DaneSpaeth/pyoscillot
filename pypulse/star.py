@@ -23,13 +23,13 @@ class GridSpectrumSimulator():
         """
         self.three_dim_star = ThreeDimStar(Teff=Teff, T_var=T_var)
         self.three_dim_star.create_rotation(v_rot)
-        self.three_dim_star.add_granulation()
+        # self.three_dim_star.add_granulation()
         self.projector = TwoDimProjector(self.three_dim_star,
                                          N=N_star, border=N_border,
                                          inclination=inclination,
                                          line_of_sight=True)
 
-    def add_spot(self, phase=0.25, altitude=90, radius=25, T_spot=4000, ):
+    def add_spot(self, phase=0.25, altitude=90, radius=25, T_spot=4300, ):
         """ Add a circular starspot at position x,y.
 
             :param phase: Phase ranging from 0 to 1 (0 being left edge,
@@ -135,8 +135,3 @@ class GridSpectrumSimulator():
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     star = GridSpectrumSimulator(N_star=30, N_border=1, v_rot=3000)
-
-    wave, spec = star.calc_spectrum()
-
-    plt.plot(wave, spec)
-    plt.show()

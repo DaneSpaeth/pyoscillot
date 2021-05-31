@@ -10,8 +10,8 @@ def planck(wav, T):
         :param float/np.array wav: Wavelength in m
         :param T: Temperature in K
     """
-    a = 2.0 * const.h * const.C**2
-    b = const.h * const.C / (wav * const.k_b * T)
+    a = 2.0 * const.H * const.C**2
+    b = const.H * const.C / (wav * const.K_b * T)
     intensity = a / ((wav**5) * (np.exp(b) - 1.0))
     return intensity
 

@@ -2,7 +2,7 @@ from datetime import datetime, date, timedelta
 import numpy as np
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter1d
-from barycorrpy import get_BC_vel
+from barycorrpy import get_BC_vel, utc_tdb
 from astropy.time import Time
 from plapy.obs import observatories
 from plapy.constants import C
@@ -41,7 +41,8 @@ def get_planet_spectra(P=600, N=20, K=0):
     phase_sample, time_sample = sample_phase(P, N)
     K_sample = K * np.sin(2 * np.pi * phase_sample)
 
-    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    K_sample, bcs, bjds = add_barycentric_correction(
+        K_sample, time_sample, HIP)
 
     # Load one rest_spectrum, all units in Angstrom
     wavelength_range = (MIN_WAVE - 10, MAX_WAVE + 10)
@@ -56,10 +57,11 @@ def get_planet_spectra(P=600, N=20, K=0):
         ve = 0
         c = 299792458.0
         a = (1.0 + vo / c) / (1.0 + ve / c)
-        shift_wavelengths.append(rest_wavelength * a)
+        print(a)
+        shift_wavelengths.append(np.exp(np.log(rest_wavelength) + np.log(a)))
         spectra.append(rest_spectrum)
 
-    return shift_wavelengths, spectra, time_sample
+    return shift_wavelengths, spectra, time_sample, bcs, bjds
 
 
 def get_spot_spectra(P=30, N=20):
@@ -73,9 +75,14 @@ def get_spot_spectra(P=30, N=20):
     # At the moment assume that there is no planetary signal present
     # But still create K_sample for barycentric correction
 
+    with open("phases.txt", "w") as f:
+        for p in phase_sample:
+            f.write(f"{p}\n")
+
     K_sample = np.zeros(len(time_sample))
 
-    # K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    K_sample, bcs, bjds = add_barycentric_correction(
+        K_sample, time_sample, HIP)
 
     shift_wavelengths = []
     spectra = []
@@ -84,8 +91,8 @@ def get_spot_spectra(P=30, N=20):
     import matplotlib.pyplot as plt
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i}")
-        star = GridSpectrumSimulator(N_star=100, v_rot=3000)
-        star.add_spot(phase=phase, radius=25)
+        star = GridSpectrumSimulator(N_star=100, v_rot=3000, inclination=60)
+        star.add_spot(phase=phase, radius=20)
 
         # plt.imshow(star.temperature)
         # plt.savefig(
@@ -102,7 +109,7 @@ def get_spot_spectra(P=30, N=20):
         spectra.append(rest_spectrum)
 
     # exit()
-    return shift_wavelengths, spectra, time_sample
+    return shift_wavelengths, spectra, time_sample, bcs, bjds
 
 
 def create_rv_series(P=600, N=20, K=200, mode="RV"):
@@ -114,13 +121,17 @@ def create_rv_series(P=600, N=20, K=200, mode="RV"):
     """
     print(mode)
     if mode == "RV":
-        shift_wavelengths, spectra, time_sample = get_planet_spectra(
+        shift_wavelengths, spectra, time_sample, bcs, bjds = get_planet_spectra(
             P=P, N=N, K=K)
     elif mode == "spot":
-        shift_wavelengths, spectra, time_sample = get_spot_spectra(P=P, N=N)
-    elif mode == "pulsation":
-        shift_wavelengths, spectra, time_sample = get_pulsation_spectra(
+        shift_wavelengths, spectra, time_sample, bcs, bjds = get_spot_spectra(
             P=P, N=N)
+    elif mode == "pulsation":
+        shift_wavelengths, spectra, time_sample, bcs, bjds = get_pulsation_spectra(
+            P=P, N=N)
+    else:
+        print("Select a Mode")
+        exit()
 
     new_specs = []
     for shift_wavelength, spectrum in zip(shift_wavelengths, spectra):
@@ -128,15 +139,19 @@ def create_rv_series(P=600, N=20, K=200, mode="RV"):
         new_specs.append(spec)
 
     for idx, time in enumerate(time_sample):
-        new_header = get_new_header(time)
+        new_header = get_new_header(time, bcs[idx], bjds[idx])
         timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
         filename = f"car-{timestr}-sci-fake-vis_A.fits"
 
         save_spectrum(new_specs[idx], new_header, filename)
 
 
-def get_new_header(time):
+def get_new_header(time, bc=None, bjd=None):
     """ Create the new header for the fake Carmenes spectrum.
+
+        :param time: Time of observation
+        :param bc: Barycentric Correction to write into DRS
+        :param bjd: Barycentric Julian Date to write into DRS
 
         Add only keys that should be new.
     """
@@ -144,12 +159,19 @@ def get_new_header(time):
     header_dict = {"DATE-OBS": time.isot.split(".")[0],
                    "CARACAL DATE-OBS": time.isot.split(".")[0],
                    "MJD-OBS": time.mjd,
-                   "CARACAL MJD-OBS": time.mjd}
+                   "CARACAL MJD-OBS": time.mjd,
+                   "CARACAL JD": time.jd - 2400000,
+                   "CARACAL HJD": time.jd - 2400000}
+    # HJD is wrong but not so important at the moment
+    if bc is not None:
+        header_dict["CARACAL BERV"] = bc / 1000
+    if bjd is not None:
+        header_dict["CARACAL BJD"] = bjd - 2400000
 
     return header_dict
 
 
-def add_barycentric_correction(K_array, time_list, star):
+def add_barycentric_correction(K_array, time_list, star, set_0=True):
     """ Add the barycentric correction to the K_list."""
 
     tmean = 53.0455
@@ -165,6 +187,7 @@ def add_barycentric_correction(K_array, time_list, star):
     alt = 2168.
 
     bcs = []
+    bjds = []
     for jdutc in jdutc_times:
 
         # result = get_BC_vel(JDUTC=jdutc, hip_id=star, lat=lat, longi=lon,
@@ -179,11 +202,36 @@ def add_barycentric_correction(K_array, time_list, star):
                             lat=37.2236,
                             longi=-2.5463,
                             alt=2168.0)
-        print(jdutc, result[0])
+        bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc,
+                                             ra=225.72515818125,
+                                             dec=2.0913040080555554,
+                                             epoch=2451545.0,
+                                             pmra=-54.89,
+                                             pmdec=13.34,
+                                             px=0.0,
+                                             lat=37.2236,
+                                             longi=-2.5463,
+                                             alt=2168.0)
         bcs.append(float(result[0]))
+        bjds.append(float(bjd_result[0]))
+
+    # TODO REMOVE
+    # bcs = [2820.5325812227,
+    #        -15846.310544597816,
+    #        -27060.70916396962,
+    #        -26051.298037582645,
+    #        -12911.33497220083,
+    #        6454.55228806959,
+    #        23492.45437757304,
+    #        28959.896104806823,
+    #        20441.512362211084,
+    #        2958.1513769294274]
 
     bcs = np.array(bcs)
-    return K_array - bcs
+    if set_0:
+        bcs *= 0
+        print(bcs)
+    return K_array - bcs, bcs, bjds
 
 
 def interpolate_carmenes(spectrum, wavelength):
@@ -191,10 +239,11 @@ def interpolate_carmenes(spectrum, wavelength):
     (spec, cont, sig, wave) = carmenes_template()
 
     new_spec = []
+    spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
     for order in range(len(wave)):
 
         order_spec = []
-        func = interpolate.interp1d(wavelength, spectrum)
+        func = interpolate.interp1d(wavelength, spectrum, kind="linear")
         order_spec = func(wave[order])
 
         # Reduce the level to something similar to CARMENES
@@ -204,8 +253,9 @@ def interpolate_carmenes(spectrum, wavelength):
         order_cont = cont[order] / np.mean(cont[order])
         order_spec = order_spec * order_cont
 
-        order_spec = adjust_resolution(
-            wave[order], order_spec, R=90000)
+        # orig_resolution=90000
+        # order_spec = adjust_resolution(
+        #    wave[order], order_spec, R=120000, w_sample=50)
 
         # order_spec = adjust_snr(order_spec, wave[order], spec[order], sig[order],
         #                         snr=3 * np.nanmedian(spec[order] / sig[order]))
@@ -235,7 +285,8 @@ def get_pulsation_spectra(P=600, N=20):
 
     K_sample = np.zeros(len(time_sample))
 
-    K_sample = add_barycentric_correction(K_sample, time_sample, HIP)
+    K_sample, bcs, bjds = add_barycentric_correction(
+        K_sample, time_sample, HIP)
 
     shift_wavelengths = []
     spectra = []
@@ -243,19 +294,17 @@ def get_pulsation_spectra(P=600, N=20):
 
     import matplotlib.pyplot as plt
     for v, phase in zip(K_sample, phase_sample):
-        print(f"Calculate star {i}")
+        print(f"Calculate star {i} at phase {phase}")
         i += 1
         star = GridSpectrumSimulator(
-            N_star=30, N_border=3, Teff=4800, v_rot=3000, T_var=50)
-        # star.add_pulsation(l=2, m=2, phase=phase)
+            N_star=100, N_border=3, Teff=4800, v_rot=3000, T_var=50, inclination=60)
 
-        # star.add_pulsation(l=2, m=1, phase=phase)
-        # star.add_temp_variation(phase=phase)
+        star.add_pulsation(l=4, m=4, phase=phase)
 
-        plt.imshow(star.projector.temperature(), origin="lower",
-                   cmap="seismic", vmin=4300, vmax=4800)
+        plt.imshow(star.projector.pulsation(), origin="lower",
+                   cmap="seismic")
         plt.savefig(
-            f"/home/dane/Documents/PhD/pypulse/plots/granulation/{round(phase,3)}.pdf")
+            f"/home/dane/Documents/PhD/pypulse/plots/new_pulsations/{round(phase,3)}.pdf")
         plt.close()
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
@@ -267,8 +316,8 @@ def get_pulsation_spectra(P=600, N=20):
         shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
         spectra.append(rest_spectrum)
 
-    return shift_wavelengths, spectra, time_sample
+    return shift_wavelengths, spectra, time_sample, bcs, bjds
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=5, K=0, mode="pulsation")
+    create_rv_series(P=600, N=30, K=0, mode="pulsation")
