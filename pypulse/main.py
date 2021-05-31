@@ -94,11 +94,6 @@ def get_spot_spectra(P=30, N=20):
         star = GridSpectrumSimulator(N_star=100, v_rot=3000, inclination=60)
         star.add_spot(phase=phase, radius=20)
 
-        # plt.imshow(star.temperature)
-        # plt.savefig(
-        #     f"/home/dane/Documents/PhD/pypulse/plots/{round(phase,3)}.pdf")
-        # continue
-
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # spot
         rest_wavelength, rest_spectrum = star.calc_spectrum(
@@ -108,7 +103,6 @@ def get_spot_spectra(P=30, N=20):
         shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
         spectra.append(rest_spectrum)
 
-    # exit()
     return shift_wavelengths, spectra, time_sample, bcs, bjds
 
 
@@ -119,7 +113,6 @@ def create_rv_series(P=600, N=20, K=200, mode="RV"):
         :param N: Number of datapoints
         :param K: Amplitude in m/s
     """
-    print(mode)
     if mode == "RV":
         shift_wavelengths, spectra, time_sample, bcs, bjds = get_planet_spectra(
             P=P, N=N, K=K)
@@ -215,18 +208,6 @@ def add_barycentric_correction(K_array, time_list, star, set_0=True):
         bcs.append(float(result[0]))
         bjds.append(float(bjd_result[0]))
 
-    # TODO REMOVE
-    # bcs = [2820.5325812227,
-    #        -15846.310544597816,
-    #        -27060.70916396962,
-    #        -26051.298037582645,
-    #        -12911.33497220083,
-    #        6454.55228806959,
-    #        23492.45437757304,
-    #        28959.896104806823,
-    #        20441.512362211084,
-    #        2958.1513769294274]
-
     bcs = np.array(bcs)
     if set_0:
         bcs *= 0
@@ -276,13 +257,6 @@ def get_pulsation_spectra(P=600, N=20):
     """ Simulate the pulsation spectra."""
     phase_sample, time_sample = sample_phase(P, N, N_phases=1)
 
-    # TODO REMOVE
-    # phase_sample = phase_sample[:-1]
-    # time_sample = time_sample[:-1]
-    # END TODO
-    # At the moment assume that there is no planetary signal present
-    # But still create K_sample for barycentric correction
-
     K_sample = np.zeros(len(time_sample))
 
     K_sample, bcs, bjds = add_barycentric_correction(
@@ -320,4 +294,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=30, K=0, mode="pulsation")
+    create_rv_series(P=600, N=30, K=10, mode="RV")
