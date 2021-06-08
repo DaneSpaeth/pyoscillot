@@ -273,7 +273,7 @@ def get_pulsation_spectra(P=600, N=20):
         star = GridSpectrumSimulator(
             N_star=100, N_border=3, Teff=4800, v_rot=3000, T_var=50, inclination=60)
 
-        star.add_pulsation(l=4, m=4, phase=phase)
+        star.add_pulsation(l=1, m=1, phase=phase)
 
         plt.imshow(star.projector.pulsation(), origin="lower",
                    cmap="seismic")
@@ -294,4 +294,4 @@ def get_pulsation_spectra(P=600, N=20):
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=5, K=10, mode="RV")
+    create_rv_series(P=600, N=30, K=0, mode="pulsation")
