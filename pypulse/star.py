@@ -28,6 +28,8 @@ class GridSpectrumSimulator():
                                          N=N_star, border=N_border,
                                          inclination=inclination,
                                          line_of_sight=True)
+        self.spectrum = None
+        self.flux = None
 
     def add_spot(self, phase=0.25, altitude=90, radius=25, T_spot=4300, ):
         """ Add a circular starspot at position x,y.
@@ -123,6 +125,10 @@ class GridSpectrumSimulator():
             total_spectrum = adjust_resolution(
                 rest_wavelength, total_spectrum, R=90000)
         self.spectrum = total_spectrum
+
+        # Also calculate the flux
+        self.calc_flux()
+
         return rest_wavelength, total_spectrum
 
     def add_pulsation(self, l=2, m=2, k=1.2, phase=0):
@@ -131,7 +137,19 @@ class GridSpectrumSimulator():
         t = phase / self.three_dim_star.nu
         self.three_dim_star.add_pulsation(t=t, l=l, m=m)
 
+    def calc_flux(self):
+        """ Calculate the local flux of the star.
+
+            Sum up the total flux of the spectrum that you calculated.
+        """
+        if self.spectrum is None:
+            return 0
+
+        self.flux = np.sum(self.spectrum)
+        return self.flux
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     star = GridSpectrumSimulator(N_star=30, N_border=1, v_rot=3000)
+    star.calc_spectrum()

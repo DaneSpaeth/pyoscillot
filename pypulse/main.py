@@ -86,6 +86,7 @@ def get_spot_spectra(P=30, N=20):
 
     shift_wavelengths = []
     spectra = []
+    fluxes = []
     i = 0
 
     import matplotlib.pyplot as plt
@@ -102,6 +103,9 @@ def get_spot_spectra(P=30, N=20):
         # Add doppler shift due to barycentric correction
         shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
         spectra.append(rest_spectrum)
+        fluxes.append(star.flux)
+        with open("flux_test.txt", "a") as f:
+            f.write(f"{star.flux}\n")
 
     return shift_wavelengths, spectra, time_sample, bcs, bjds
 
@@ -266,6 +270,7 @@ def get_pulsation_spectra(P=600, N=20):
     spectra = []
     i = 0
 
+    fluxes = []
     import matplotlib.pyplot as plt
     for v, phase in zip(K_sample, phase_sample):
         print(f"Calculate star {i} at phase {phase}")
@@ -273,7 +278,7 @@ def get_pulsation_spectra(P=600, N=20):
         star = GridSpectrumSimulator(
             N_star=100, N_border=3, Teff=4800, v_rot=3000, T_var=50, inclination=60)
 
-        star.add_pulsation(l=1, m=1, phase=phase)
+        star.add_pulsation(l=2, m=2, phase=phase)
 
         plt.imshow(star.projector.pulsation(), origin="lower",
                    cmap="seismic")
@@ -290,8 +295,12 @@ def get_pulsation_spectra(P=600, N=20):
         shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
         spectra.append(rest_spectrum)
 
+        fluxes.append(star.flux)
+        with open("flux_test.txt", "a") as f:
+            f.write(f"{phase}    {star.flux}\n")
+
     return shift_wavelengths, spectra, time_sample, bcs, bjds
 
 
 if __name__ == "__main__":
-    create_rv_series(P=600, N=30, K=0, mode="pulsation")
+    create_rv_series(P=505, N=30, K=0, mode="pulsation")
