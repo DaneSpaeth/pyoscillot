@@ -181,6 +181,8 @@ class ThreeDimStar():
 
         pulsation = 1j * self.k * self.V_p * displ
 
+        print(f"K IS {self.k}")
+
         self.displacement_phi = displ
         self.pulsation_phi = pulsation
 

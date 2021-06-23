@@ -21,7 +21,8 @@ class GridSpectrumSimulator():
             :param int vsini: V*sin(i) [m/s]
             :param float T_var: Temperature Variation of pulsation
         """
-        self.three_dim_star = ThreeDimStar(Teff=Teff, T_var=T_var)
+        self.three_dim_star = ThreeDimStar(
+            Teff=Teff, T_var=T_var, V_p=20, k=100)
         self.three_dim_star.create_rotation(v_rot)
         # self.three_dim_star.add_granulation()
         self.projector = TwoDimProjector(self.three_dim_star,
@@ -131,7 +132,7 @@ class GridSpectrumSimulator():
 
         return rest_wavelength, total_spectrum
 
-    def add_pulsation(self, l=2, m=2, k=1.2, phase=0):
+    def add_pulsation(self, l=2, m=2, phase=0):
         """ Add a pulsation to the star."""
         # TODO make these values adjustable
         t = phase / self.three_dim_star.nu

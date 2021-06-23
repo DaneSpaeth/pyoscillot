@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 fluxes = []
 phases = []
-with open("flux_test.txt", "r") as f:
+with open("flux.txt", "r") as f:
     for line in f:
         columns = line.strip().split()
         try:
