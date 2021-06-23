@@ -9,7 +9,7 @@ class GridSpectrumSimulator():
     """ Simulate a the spectrum of a star with a grid."""
 
     def __init__(self, N_star=500, N_border=5, Teff=4800, v_rot=3000,
-                 inclination=90, T_var=0):
+                 inclination=90, T_var=0, k=100, v_p=1):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -22,7 +22,7 @@ class GridSpectrumSimulator():
             :param float T_var: Temperature Variation of pulsation
         """
         self.three_dim_star = ThreeDimStar(
-            Teff=Teff, T_var=T_var, V_p=20, k=100)
+            Teff=Teff, T_var=T_var, v_p=v_p, k=k)
         self.three_dim_star.create_rotation(v_rot)
         # self.three_dim_star.add_granulation()
         self.projector = TwoDimProjector(self.three_dim_star,

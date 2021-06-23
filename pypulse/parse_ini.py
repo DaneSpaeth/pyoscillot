@@ -44,6 +44,7 @@ def parse_ticket(ticketpath):
 
     # Save the keys of all simulations as keys
     superkeys.pop(superkeys.index("GLOBAL"))
+    superkeys.pop(superkeys.index("DEFAULT"))
     conf_dict["simulations"] = superkeys
 
     for sim in superkeys:

@@ -15,7 +15,7 @@ class ThreeDimStar():
         in onto a grid in the end.
     """
 
-    def __init__(self, nu=1 / 600, V_p=50, k=1.2, Teff=4800, T_var=0, T_phase=0):
+    def __init__(self, nu=1 / 600, v_p=50, k=1.2, Teff=4800, T_var=0, T_phase=0):
         """ Create a 3d star.
 
             :param nu: Pulsation frequency (without 2pi factor)
@@ -34,7 +34,7 @@ class ThreeDimStar():
          self.z) = geo.get_spherical_phi_theta_x_y_z()
 
         self.nu = nu
-        self.V_p = V_p
+        self.v_p = v_p
         self.k = k
         self.T_var = T_var
         self.T_phase = T_phase
@@ -153,7 +153,7 @@ class ThreeDimStar():
         # a factor 1j * 2 * np.pi * nu
         # but we absorb the  2 * np.pi * nu part in the V_p constant
         # See Kochukhov et al. (2004)
-        pulsation = 1j * self.V_p * displ
+        pulsation = 1j * self.v_p * displ
 
         self.displacement_rad = displ
         self.pulsation_rad = pulsation
@@ -179,9 +179,10 @@ class ThreeDimStar():
         part_deriv = 1 / np.sin(self.theta) * 1j * m * harmonic
         displ = part_deriv * np.exp(1j * 2 * np.pi * self.nu * t)
 
-        pulsation = 1j * self.k * self.V_p * displ
+        pulsation = 1j * self.k * self.v_p * displ
 
         print(f"K IS {self.k}")
+        print(f"V_P IS {self.v_p}")
 
         self.displacement_phi = displ
         self.pulsation_phi = pulsation
@@ -207,7 +208,7 @@ class ThreeDimStar():
 
         displ = part_deriv * np.exp(1j * 2 * np.pi * self.nu * t)
 
-        pulsation = 1j * self.k * self.V_p * displ
+        pulsation = 1j * self.k * self.v_p * displ
 
         self.displacement_theta = displ
         self.pulsation_theta = pulsation
