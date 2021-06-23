@@ -1,76 +1,67 @@
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+import plapy.rv.dataloader as load
+from parse_ini import parse_global_ini
 
 
-def read_in_rvs(file):
-    """ Return np.arrays of time, rv and rve.
+def check_time_series(name):
+    """ Plot a check plot.
 
-        :param file: File to read data from.
+        TODO: Change it to use the usual plot functions.
     """
-    time = []
-    rv = []
-    rve = []
-
-    with open(file, "r") as f:
+    # Read in the flux
+    global_dict = parse_global_ini()
+    rvlibpath = global_dict["rvlibpath"]
+    fluxfile = rvlibpath / name / "flux.txt"
+    bjd = []
+    flux = []
+    with open(fluxfile, "r") as f:
         for line in f:
-            line = line.strip()
-            columns = line.split()
-            time.append(float(columns[0]))
-            rv.append(float(columns[1]))
-            rve.append(float(columns[2]))
-
-    time = np.array(time)
-    rv = np.array(rv)
-    rve = np.array(rve)
-
-    return time, rv, rve
-
-
-def _read_in_crx(file):
-    """ Read in info from crx.dat file."""
-    crx_dict = {"bjd": [], "crx": [], "crxe": [],
-                "crx_off": [], "crx_offe": [], "l_v": [], "logwave": {}}
-    with open(file, "r") as f:
-        for idx, line in enumerate(f):
             columns = line.strip().split()
-            zeroth_order_offset = 6
-            for key_idx, key in enumerate(crx_dict.keys()):
-                if key != "logwave":
-                    crx_dict[key].append(float(columns[key_idx]))
+            bjd.append(float(columns[0]))
+            flux.append(float(columns[1]))
+    bjd = np.array(bjd)
+    flux = np.array(flux)
+    flux = flux / np.median(flux)
 
-                for col_nr in range(zeroth_order_offset, len(columns)):
-                    i = col_nr - zeroth_order_offset
-                    if idx == 0:
-                        crx_dict["logwave"][i] = []
-                    crx_dict["logwave"][i].append(float(columns[col_nr]))
+    # Read in RV, CRX and DLW
+    rv_dict = load.rv(name)
+    crx_dict = load.crx(name)["SIMULATION"]
+    dlw_dict = load.dlw(name)["SIMULATION"]
 
-    return crx_dict
+    time = rv_dict["SIMULATION"][0]
+    rv = rv_dict["SIMULATION"][1]
+    rve = rv_dict["SIMULATION"][2]
 
+    # PLOT
+    BJD_OFFSET = 2400000.5
+    fig, ax = plt.subplots(3, 2, figsize=(20, 10))
 
-if __name__ == "__main__":
-    root = Path(
-        "/home/dane/Documents/PhD/pypulse/data/fake_serval/HIP73620_vis/")
-    file = root / "HIP73620_vis.rvc.dat"
-    time, rv, rve = read_in_rvs(file)
-    crx_file = root / "HIP73620_vis.crx.dat"
-    crx_dict = _read_in_crx(crx_file)
+    ax[0, 0].errorbar(time - BJD_OFFSET, rv, yerr=rve,
+                      linestyle="None", marker="o")
+    ax[0, 0].set_xlabel("Time [MJD]")
+    ax[0, 0].set_ylabel("RV [m/s]")
+    ax[0, 1].plot(time - BJD_OFFSET, flux, linestyle="None", marker="o")
+    ax[0, 1].set_ylabel("Time [MJD]")
+    ax[0, 1].set_ylabel("Flux [%]")
 
-    print(crx_dict.keys())
-
-    fig, ax = plt.subplots(3)
-
-    ax[0].errorbar(time - 2400000.5, rv, yerr=rve, linestyle="None", marker="o")
-    ax[0].set_xlabel("Time [MJD]")
-    ax[0].set_ylabel("RV [m/s]")
-    ax[1].errorbar([b - 2400000.5 for b in crx_dict["bjd"]], crx_dict["crx"],
-                   yerr=crx_dict["crxe"], linestyle="None", marker="o")
-    ax[1].set_xlabel("Time [MJD]")
-    ax[1].set_ylabel("CRX [m/s/Np]")
+    ax[1, 0].errorbar([b - BJD_OFFSET for b in crx_dict["bjd"]], crx_dict["crx"],
+                      yerr=crx_dict["crxe"], linestyle="None", marker="o")
+    ax[1, 0].set_xlabel("Time [MJD]")
+    ax[1, 0].set_ylabel("CRX [m/s/Np]")
+    ax[2, 0].errorbar(rv, crx_dict["crx"],
+                      yerr=crx_dict["crxe"], linestyle="None", marker="o")
+    ax[2, 0].set_xlabel("RV [m/s]")
+    ax[2, 0].set_ylabel("CRX [m/s/Np]")
+    ax[1, 1].errorbar([b - BJD_OFFSET for b in dlw_dict["bjd"]], dlw_dict["dlw"],
+                      yerr=dlw_dict["dlwe"], linestyle="None", marker="o")
+    ax[1, 1].set_xlabel("Time [MJD]")
+    ax[1, 1].set_ylabel("dlW [m^2/s^2]")
     # ax[1].set_ylim(-100, 100)
-    ax[2].errorbar(rv, crx_dict["crx"],
-                   yerr=crx_dict["crxe"], linestyle="None", marker="o")
-    ax[2].set_xlabel("RV [m/s]")
-    ax[2].set_ylabel("CRX [m/s/Np]")
-    ax[0].set_title("Small Pulsation/No T variation, dT=0K,l=2,m=-2, V_p=10m/s, vsini=3km/s")
+    ax[2, 1].errorbar(rv, dlw_dict["dlw"],
+                      yerr=dlw_dict["dlwe"], linestyle="None", marker="o")
+    ax[2, 1].set_xlabel("RV [m/s]")
+    ax[2, 1].set_ylabel("dLW [m^²/s^2]")
+    fig.suptitle(name)
     plt.show()

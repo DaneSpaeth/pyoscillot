@@ -1,10 +1,31 @@
+import subprocess
+from simulation_controller import SimulationController
+from parse_ini import parse_global_ini, parse_ticket
+from datasaver import DataSaver
+from check_time_series import check_time_series
 
 
-# TODO Make adjustable
-HIP = 73620
-MIN_WAVE = 5000
-MAX_WAVE = 12000
-# End TODO
+def main(ticket):
+    """ Run a simulation specified in ticket. Run serval. Copy all files
+        and plot the result.
+    """
+    global_dict = parse_global_ini()
+    conf_dict = parse_ticket(ticket)
+
+    # Run the Simulation
+    SimulationController(ticket)
+    # Run Serval
+    subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+                    str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
+
+    # Copy the flux and the ticket to the new folders
+    saver = DataSaver(str(conf_dict["name"]))
+    saver.copy_ticket(ticket)
+    saver.copy_flux()
+
+    check_time_series(str(conf_dict["name"]))
+
 
 if __name__ == "__main__":
-    create_rv_series(P=505, N=30, K=0, mode="pulsation")
+    ticket = "example_ticket.ini"
+    main(ticket)

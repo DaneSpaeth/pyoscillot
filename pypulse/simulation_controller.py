@@ -5,7 +5,7 @@ from astropy.time import Time
 from plapy.obs import observatories
 from plapy.constants import C
 from dataloader import phoenix_spectrum
-from datasaver import save_spectrum
+from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from parse_ini import parse_ticket, parse_global_ini
 import carmenes_simulator as carmenes
@@ -19,6 +19,8 @@ class SimulationController():
     def __init__(self, ticketpath):
         """ Initialize the Controller."""
         self.determine_simulation_params(ticketpath)
+        self.saver = DataSaver(self.conf["name"])
+
         self.create_rv_series()
 
     def determine_simulation_params(self, ticketpath):
@@ -68,7 +70,7 @@ class SimulationController():
             timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
             filename = f"car-{timestr}-sci-fake-vis_A.fits"
 
-            save_spectrum(new_specs[idx], new_header, filename)
+            self.saver.save_spectrum(new_specs[idx], new_header, filename)
 
     def sample_phase(self, P, N, N_phases=1):
         """ Return a phase sample and the corresponding time sample.
@@ -140,7 +142,7 @@ class SimulationController():
         fluxes = []
         i = 0
 
-        for v, phase in zip(K_sample, phase_sample):
+        for v, phase, bjd in zip(K_sample, phase_sample, bjds):
             print(f"Calculate star {i}")
             star = GridSpectrumSimulator(
                 N_star=int(self.conf["n_star"]),
@@ -156,9 +158,7 @@ class SimulationController():
             # Add doppler shift due to barycentric correction
             shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
             spectra.append(rest_spectrum)
-            fluxes.append(star.flux)
-            with open("flux_test.txt", "a") as f:
-                f.write(f"{star.flux}\n")
+            self.saver.save_flux(bjd, star.flux)
 
         return shift_wavelengths, spectra, time_sample, bcs, bjds
 
@@ -188,8 +188,7 @@ class SimulationController():
         spectra = []
         i = 0
 
-        fluxes = []
-        for v, phase in zip(K_sample, phase_sample):
+        for v, phase, bjd in zip(K_sample, phase_sample, bjds):
             print(f"Calculate star {i} at phase {phase}")
             i += 1
             star = GridSpectrumSimulator(
@@ -208,9 +207,7 @@ class SimulationController():
             shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
             spectra.append(rest_spectrum)
 
-            fluxes.append(star.flux)
-            with open("flux_test.txt", "a") as f:
-                f.write(f"{phase}    {star.flux}\n")
+            self.saver.save_flux(bjd, star.flux)
 
         return shift_wavelengths, spectra, time_sample, bcs, bjds
 
@@ -263,7 +260,3 @@ class SimulationController():
             bcs *= 0
             print(bcs)
         return K_array - bcs, bcs, bjds
-
-
-if __name__ == "__main__":
-    SimulationController("example_ticket.ini")
