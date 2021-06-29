@@ -4,6 +4,8 @@ from scipy.spatial.transform import Rotation as Rot
 from scipy.special import sph_harm
 import spherical_geometry as geo
 from matplotlib import cm
+from plapy.constants import SIGMA
+import limb_darkening as limb
 import random
 
 
@@ -224,12 +226,19 @@ class ThreeDimStar():
         self.add_pulsation_phi(t, l, m)
         self.add_pulsation_theta(t, l, m)
 
+    def intensity_stefan_boltzmann(self):
+        """ Calculate the intensity using the stefan boltzmann law."""
+        self.intensity = SIGMA * self.temperature**4
+        self.intensity = self.intensity / np.mean(self.intensity)
+
+        return self.intensity
+
 
 class TwoDimProjector():
     """ Project a 3D star onto a 2D plane."""
 
     def __init__(self, star, N=1000, border=10, inclination=90, azimuth=0,
-                 line_of_sight=True):
+                 line_of_sight=True, limb_darkening=True):
         """ Construct Projector object.
 
             :param star: Instance of 3D star to project
@@ -244,6 +253,8 @@ class TwoDimProjector():
         self.inclination = inclination
         self.azimuth = azimuth
         self.line_of_sight = line_of_sight
+
+        self.limb_darkening = limb_darkening
 
     def _project(self, values, line_of_sight=False, component=None):
         """ Helper function to project stuff.
@@ -270,6 +281,24 @@ class TwoDimProjector():
                                     component=component)
         return projection
 
+    def _add_limb_darkening(self):
+        """ Add a limb darkening. For the moment simply add onto the
+            temperature.
+        """
+        # Try to be clever
+        # Create an array with ones of the same shape as the 3D star
+        unit_array = np.ones(self.star.phi.shape)
+        # Now project the ones onto the radial component
+        # This gives you the cos of the angle between the line of sight
+        # and the radial unit vector
+        # the cosine of this angle is often defined as the limb angle
+        # see e.g. PhD thesis of Müller
+        limb_angle_2d = self._project(unit_array,
+                                      line_of_sight=True,
+                                      component="rad")
+
+        self.limb_angle_2d = limb_angle_2d
+
     def starmask(self):
         """ Return a 2D projected starmask."""
         starmask_2d = self._project(self.star.starmask, line_of_sight=False)
@@ -289,6 +318,15 @@ class TwoDimProjector():
     def temperature(self):
         """ Project the temperature onto a 2d plane."""
         tempmap = self._project(self.star.temperature, line_of_sight=False)
+
+        if self.limb_darkening:
+            self._add_limb_darkening()
+            # Calculate the facrot for the itensity
+            factor = limb.schwarzschild_law(self.limb_angle_2d)
+            # Now you need to calculate that for the factor for temperature
+            factor_temp = factor**(1 / 4)
+            tempmap *= factor_temp
+
         return tempmap
 
     def rotation(self):
@@ -439,6 +477,18 @@ class TwoDimProjector():
         grid_2d = grid_2d.astype(bool)
         return grid_2d
 
+    def intensity_stefan_boltzmann(self):
+        """ Project the intensity using the Stefan Boltzmann Law."""
+        intensity = self.star.intensity_stefan_boltzmann()
+        intensity_2d = self._project(intensity, line_of_sight=False)
+        intensity_2d[np.isnan(intensity_2d)] = 0
+        if self.limb_darkening:
+            self._add_limb_darkening()
+            factor = limb.schwarzschild_law(self.limb_angle_2d)
+            intensity_2d = intensity_2d * factor
+
+        return intensity_2d
+
 
 def plot_3d(x, y, z, value, scale_down=1):
     """ Plot the values in 3d."""
@@ -465,103 +515,10 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60)
-
-    # Create plots
+    projector = TwoDimProjector(star, inclination=90, limb_darkening=True)
     fig, ax = plt.subplots(1, figsize=(8, 8))
     ax.imshow(projector.temperature(), origin="lower",
-              cmap="hot", vmin=0, vmax=8000)
+              cmap="hot", vmin=0, vmax=5000)
     ax.set_xticks([])
     ax.set_yticks([])
-    plt.savefig("imprs_plots/temp.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60)
-    star.create_rotation()
-    rot_map = projector.rotation()
-    rot_map = np.where(np.abs(rot_map) < 1e-5, np.nan, rot_map)
-    ax.imshow(rot_map, origin="lower",
-              cmap="seismic", vmin=-3000, vmax=3000)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/rotation.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation_rad(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_rad_nolos.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation_phi(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_phi_nolos.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation_theta(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_theta_nolos.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation_rad(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_rad_proj.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation_phi(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_phi_proj.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation_theta(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_theta_proj.pdf")
-    plt.close()
-
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
-    star.add_pulsation(l=2, m=2)
-    ax.imshow(projector.pulsation(), origin="lower",
-              cmap="seismic", vmin=-50, vmax=50)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.savefig("imprs_plots/pulse_all_proj.pdf")
-    plt.close()
+    plt.show()

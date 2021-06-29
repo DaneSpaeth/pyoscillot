@@ -1,0 +1,101 @@
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60)
+
+# Create plots
+fig, ax = plt.subplots(1, figsize=(8, 8))
+ax.imshow(projector.temperature(), origin="lower",
+          cmap="hot", vmin=0, vmax=8000)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/temp.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60)
+star.create_rotation()
+rot_map = projector.rotation()
+rot_map = np.where(np.abs(rot_map) < 1e-5, np.nan, rot_map)
+ax.imshow(rot_map, origin="lower",
+          cmap="seismic", vmin=-3000, vmax=3000)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/rotation.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation_rad(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_rad_nolos.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation_phi(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_phi_nolos.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=False)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation_theta(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_theta_nolos.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation_rad(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_rad_proj.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation_phi(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_phi_proj.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation_theta(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_theta_proj.pdf")
+plt.close()
+
+fig, ax = plt.subplots(1, figsize=(8, 8))
+star = ThreeDimStar()
+projector = TwoDimProjector(star, inclination=60, line_of_sight=True)
+star.add_pulsation(l=2, m=2)
+ax.imshow(projector.pulsation(), origin="lower",
+          cmap="seismic", vmin=-50, vmax=50)
+ax.set_xticks([])
+ax.set_yticks([])
+plt.savefig("imprs_plots/pulse_all_proj.pdf")
+plt.close()
