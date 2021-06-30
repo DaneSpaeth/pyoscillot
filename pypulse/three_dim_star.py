@@ -146,14 +146,14 @@ class ThreeDimStar():
         # See Kochukhov et al. (2004)
         pulsation = 1j * v_p * displ
 
-        self.displacement_rad = displ
-        self.pulsation_rad = pulsation
+        self.displacement_rad += displ
+        self.pulsation_rad += pulsation
         # Caution temperature is not reseted
         temp_variation = (displ * np.exp(1j * T_phase)).real
         temp_variation = T_var * \
             temp_variation / np.nanmax(temp_variation)
 
-        self.temperature = self.base_temp + temp_variation
+        self.temperature += temp_variation
 
     def add_pulsation_phi(self, t, l, m, nu, v_p, k):
         """ Get phi component of displacement.
@@ -172,8 +172,8 @@ class ThreeDimStar():
 
         pulsation = 1j * k * v_p * displ
 
-        self.displacement_phi = displ
-        self.pulsation_phi = pulsation
+        self.displacement_phi += displ
+        self.pulsation_phi += pulsation
 
     def add_pulsation_theta(self, t, l, m, nu, v_p, k):
         """ Get theta component of displacement.
@@ -198,8 +198,8 @@ class ThreeDimStar():
 
         pulsation = 1j * k * v_p * displ
 
-        self.displacement_theta = displ
-        self.pulsation_theta = pulsation
+        self.displacement_theta += displ
+        self.pulsation_theta += pulsation
 
     def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=100, k=1.2,
                       T_var=0, T_phase=0):
@@ -519,8 +519,8 @@ def plot_3d(x, y, z, value, scale_down=1):
 if __name__ == "__main__":
     star = ThreeDimStar()
     star.add_pulsation(l=2, m=2, k=0, t=0, v_p=100)
-    star.add_pulsation(l=2, m=2, k=0, t=300, v_p=100)
-    projector = TwoDimProjector(star)
+    star.add_pulsation(l=2, m=2, k=0, t=300, v_p=-100)
+    projector = TwoDimProjector(star, inclination=60)
     plt.imshow(projector.pulsation(), origin="lower",
                cmap="seismic", vmin=-50, vmax=50)
     plt.show()
