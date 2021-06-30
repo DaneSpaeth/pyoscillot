@@ -17,17 +17,11 @@ class ThreeDimStar():
         in onto a grid in the end.
     """
 
-    def __init__(self, nu=1 / 600, v_p=50, k=1.2, Teff=4800, T_var=0, T_phase=0):
+    def __init__(self, Teff=4800, rotation=3000, logg=3):
         """ Create a 3d star.
 
-            :param nu: Pulsation frequency (without 2pi factor)
-            :param V_p: Pulsation velocity in m/s
-            :param k: Ratio between radial component and phi/theta component
-                      1.2 for g-mode (compare to Hatzes1996)
             :param int Teff: effective Temperature [K] of star
-            :param float T_var: Amplitude[K] of Temp variation due to pulsation
-            :parm float T_phase: Phase shift of Temp variation wrt to radial
-                                 displacement
+
         """
         (self.phi,
          self.theta,
@@ -35,11 +29,6 @@ class ThreeDimStar():
          self.y,
          self.z) = geo.get_spherical_phi_theta_x_y_z()
 
-        self.nu = nu
-        self.v_p = v_p
-        self.k = k
-        self.T_var = T_var
-        self.T_phase = T_phase
         self.Teff = Teff
 
         self.default_maps()
@@ -138,7 +127,7 @@ class ThreeDimStar():
         """
         self.rotation = -v * np.sin(self.theta)
 
-    def add_pulsation_rad(self, t=0, l=1, m=1):
+    def add_pulsation_rad(self, t, l, m, nu, v_p, k, T_var, T_phase):
         """ Add the radial component of displacement and pulsation.
 
 
@@ -148,25 +137,25 @@ class ThreeDimStar():
         """
         # Calculate the spherical harmonic Y(l,m)
         harm = sph_harm(m, l, self.phi, self.theta)
-        displ = harm * np.exp(1j * 2 * np.pi * self.nu * t)
+        displ = harm * np.exp(1j * 2 * np.pi * nu * t)
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
         # you need to differentiate the displacements wrt t which introduces
         # a factor 1j * 2 * np.pi * nu
-        # but we absorb the  2 * np.pi * nu part in the V_p constant
+        # but we absorb the  2 * np.pi * nu part in the v_p constant
         # See Kochukhov et al. (2004)
-        pulsation = 1j * self.v_p * displ
+        pulsation = 1j * v_p * displ
 
         self.displacement_rad = displ
         self.pulsation_rad = pulsation
         # Caution temperature is not reseted
-        temp_variation = (displ * np.exp(1j * self.T_phase)).real
-        temp_variation = self.T_var * \
+        temp_variation = (displ * np.exp(1j * T_phase)).real
+        temp_variation = T_var * \
             temp_variation / np.nanmax(temp_variation)
 
         self.temperature = self.base_temp + temp_variation
 
-    def add_pulsation_phi(self, t=0, l=1, m=1):
+    def add_pulsation_phi(self, t, l, m, nu, v_p, k):
         """ Get phi component of displacement.
 
 
@@ -179,17 +168,14 @@ class ThreeDimStar():
         harmonic = sph_harm(m, l, self.phi, self.theta)
         # You need the partial derivative wrt to phi
         part_deriv = 1 / np.sin(self.theta) * 1j * m * harmonic
-        displ = part_deriv * np.exp(1j * 2 * np.pi * self.nu * t)
+        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t)
 
-        pulsation = 1j * self.k * self.v_p * displ
-
-        print(f"K IS {self.k}")
-        print(f"V_P IS {self.v_p}")
+        pulsation = 1j * k * v_p * displ
 
         self.displacement_phi = displ
         self.pulsation_phi = pulsation
 
-    def add_pulsation_theta(self, t=0, l=1, m=1):
+    def add_pulsation_theta(self, t, l, m, nu, v_p, k):
         """ Get theta component of displacement.
 
             :param float t: Time at which to evaluate the pulsation
@@ -208,23 +194,33 @@ class ThreeDimStar():
         else:
             part_deriv = m * 1 / np.tan(self.theta) * harmonic
 
-        displ = part_deriv * np.exp(1j * 2 * np.pi * self.nu * t)
+        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t)
 
-        pulsation = 1j * self.k * self.v_p * displ
+        pulsation = 1j * k * v_p * displ
 
         self.displacement_theta = displ
         self.pulsation_theta = pulsation
 
-    def add_pulsation(self, t=0, l=1, m=1):
+    def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=100, k=1.2,
+                      T_var=0, T_phase=0):
         """ Convenience function to add all pulsations in one go.
 
             :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
+            :param nu: Pulsation frequency (without 2pi factor)
+            :param v_p: Pulsation velocity in m/s
+            :param k: Ratio between radial component and phi/theta component
+                      1.2 for g-mode (compare to Hatzes1996)
+                      (that info is probably a bit wrong)
+                      probably closer to 100 for g-mode
+            :param float T_var: Amplitude[K] of Temp variation due to pulsation
+            :parm float T_phase: Phase shift of Temp variation wrt to radial
+                                 displacement
         """
-        self.add_pulsation_rad(t, l, m)
-        self.add_pulsation_phi(t, l, m)
-        self.add_pulsation_theta(t, l, m)
+        self.add_pulsation_rad(t, l, m, nu, v_p, k, T_var, T_phase)
+        self.add_pulsation_phi(t, l, m, nu, v_p, k)
+        self.add_pulsation_theta(t, l, m, nu, v_p, k)
 
     def intensity_stefan_boltzmann(self):
         """ Calculate the intensity using the stefan boltzmann law."""
@@ -521,4 +517,10 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    pass
+    star = ThreeDimStar()
+    star.add_pulsation(l=2, m=2, k=0, t=0, v_p=100)
+    star.add_pulsation(l=2, m=2, k=0, t=300, v_p=100)
+    projector = TwoDimProjector(star)
+    plt.imshow(projector.pulsation(), origin="lower",
+               cmap="seismic", vmin=-50, vmax=50)
+    plt.show()
