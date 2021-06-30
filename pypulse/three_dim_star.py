@@ -489,6 +489,13 @@ class TwoDimProjector():
 
         return intensity_2d
 
+    def intensity_stefan_boltzmann_global(self):
+        """ Get the integrated itensity using the Stefan-Boltzmann law."""
+        intensity_2d = self.intensity_stefan_boltzmann()
+        global_intensity = np.nansum(intensity_2d)
+
+        return global_intensity
+
 
 def plot_3d(x, y, z, value, scale_down=1):
     """ Plot the values in 3d."""
@@ -514,11 +521,4 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar()
-    projector = TwoDimProjector(star, inclination=90, limb_darkening=True)
-    fig, ax = plt.subplots(1, figsize=(8, 8))
-    ax.imshow(projector.temperature(), origin="lower",
-              cmap="hot", vmin=0, vmax=5000)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.show()
+    pass
