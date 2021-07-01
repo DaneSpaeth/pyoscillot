@@ -150,8 +150,7 @@ class ThreeDimStar():
         self.pulsation_rad += pulsation
         # Caution temperature is not reseted
         temp_variation = (displ * np.exp(1j * T_phase)).real
-        temp_variation = T_var * \
-            temp_variation / np.nanmax(temp_variation)
+        temp_variation = T_var * temp_variation  # / np.nanmax(temp_variation)
 
         self.temperature += temp_variation
 
@@ -225,7 +224,8 @@ class ThreeDimStar():
     def intensity_stefan_boltzmann(self):
         """ Calculate the intensity using the stefan boltzmann law."""
         self.intensity = SIGMA * self.temperature**4
-        self.intensity = self.intensity / np.mean(self.intensity)
+
+        self.intensity = self.intensity
 
         return self.intensity
 
@@ -492,6 +492,14 @@ class TwoDimProjector():
 
         return global_intensity
 
+    def radial_velocity(self):
+        """ Get the integrated radial velocity. This is in a sense a shortcut
+            without creating spectra first.
+        """
+        pulsation_2d = self.pulsation()
+        rv = np.nanmean(pulsation_2d)
+        return rv
+
 
 def plot_3d(x, y, z, value, scale_down=1):
     """ Plot the values in 3d."""
@@ -517,10 +525,40 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar()
-    star.add_pulsation(l=2, m=2, k=0, t=0, v_p=100)
-    star.add_pulsation(l=2, m=2, k=0, t=300, v_p=-100)
-    projector = TwoDimProjector(star, inclination=60)
-    plt.imshow(projector.pulsation(), origin="lower",
-               cmap="seismic", vmin=-50, vmax=50)
+    import random
+    ts = np.linspace(10, 1800, 1)
+    intensities = []
+    rvs = []
+    real_ts = []
+    for t in ts:
+        for i in range(random.randint(3, 8)):
+            # Simulate multiple observations shortly after each other
+            t_random = random.randrange(-10, 10)
+            real_t = t + t_random
+            real_ts.append(real_t)
+
+            star = ThreeDimStar()
+            star.add_pulsation(l=0, m=0, nu=1 / 0.876, k=0,
+                               t=real_t, v_p=50, T_var=50)
+            star.add_pulsation(l=1, m=1, nu=1 / 600, k=100,
+                               t=real_t, v_p=1, T_var=50)
+
+            projector = TwoDimProjector(
+                star, inclination=60, limb_darkening=False)
+            intensities.append(projector.intensity_stefan_boltzmann_global())
+            rvs.append(projector.radial_velocity())
+
+    intensities = np.array(intensities)
+    intensities = intensities / np.median(intensities)
+    rvs = np.array(rvs)
+    real_ts = np.array(real_ts)
+
+    fig, ax = plt.subplots(2)
+    ax[0].plot(real_ts, intensities * 100, "bo")
+    ax[0].set_xlabel("Time [d]")
+    ax[0].set_ylabel("Intensities [%]")
+
+    ax[1].plot(real_ts, rvs, "bo")
+    ax[1].set_xlabel("Time [d]")
+    ax[1].set_ylabel("Radial Velocity [m/s]")
     plt.show()
