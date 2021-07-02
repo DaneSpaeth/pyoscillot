@@ -95,8 +95,6 @@ def get_ref_spectra(T_grid, wavelength_range=(3000, 7000)):
     T_close_min = int(round(T_min, -2))
     T_close_max = int(round(T_max, -2))
 
-    print(T_close_min)
-
     add_spot = False
     if int(T_close_min) == 3000:
         add_spot = True

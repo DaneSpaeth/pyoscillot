@@ -44,7 +44,6 @@ class GridSpectrumSimulator():
             :param bool reset: If True, reset the temp before adding another spot
         """
         az = phase * 360.
-        print(az)
         self.three_dim_star.add_spot(radius, phi_pos=az, T_spot=T_spot)
 
     def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix"):
@@ -104,7 +103,7 @@ class GridSpectrumSimulator():
                         # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
                     else:
-                        print(f"Calculate Star Element {row, col}")
+                        # print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \

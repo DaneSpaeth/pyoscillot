@@ -1,6 +1,7 @@
 from datetime import datetime, date, timedelta
 import numpy as np
 from barycorrpy import get_BC_vel, utc_tdb
+import random
 from astropy.time import Time
 from plapy.obs import observatories
 from plapy.constants import C
@@ -28,8 +29,8 @@ class SimulationController():
         config_dict = parse_ticket(ticketpath)
         simulation_keys = config_dict["simulations"]
 
-        if len(simulation_keys) != 1:
-            raise NotImplementedError("Currently only one mode is implemented")
+        #if len(simulation_keys) != 1:
+        #    raise NotImplementedError("Currently only one mode is implemented")
 
         self.conf = config_dict
         self.simulation_keys = simulation_keys
@@ -42,11 +43,9 @@ class SimulationController():
             :param K: Amplitude in m/s
         """
         # TODO later make that as a loop
-        sim = self.simulation_keys[0]
-        self.sim = sim
         # TODO: decide where to coadd different effects and loop over different
         # mechanisms
-        mode = self.conf[self.sim]["mode"]
+        mode = self.conf[self.simulation_keys[0]]["mode"]
         if mode == "planet":
             (shift_wavelengths, spectra,
              time_sample, bcs, bjds) = self.get_planet_spectra()
@@ -87,6 +86,29 @@ class SimulationController():
         phase_sample = (1 / P * P_sample) % 1
 
         return phase_sample, time_sample
+
+    def sample_phase_new(self):
+        """ New a bit more random phase sampling. Really ugly at the moment"""
+        stop = datetime.combine(date.today(), datetime.min.time())
+
+        max_p = 600
+        N_phases = 3
+        start = stop - timedelta(days=int(max_p*N_phases))
+
+        time_sample = []
+
+        global_days = np.linspace(0, int(max_p*N_phases), 30)
+        local_days = []
+        for gday in global_days:
+            for i in range(random.randint(3, 8)):
+                # Simulate multiple observations shortly after each other
+                day_random = random.randrange(-10, 10)
+                local_day = start + timedelta(days=int(gday)) + timedelta(days=int(day_random))
+                time_sample.append(local_day)
+
+        return sorted(time_sample)
+
+
 
     def get_planet_spectra(self):
         """ Return a list of wavelengths and fluxes for a planetary signal."""
@@ -164,21 +186,21 @@ class SimulationController():
 
     def get_pulsation_spectra(self):
         """ Simulate the pulsation spectra."""
+        # Get the global parameters
         N = int(self.conf["n"])
-        P = self.conf[self.sim]["period"]
-        l = int(self.conf[self.sim]["l"])
-        m = int(self.conf[self.sim]["m"])
-        k = int(self.conf[self.sim]["k"])
-        v_p = self.conf[self.sim]["v_p"]
+        limb_darkening = bool(int(self.conf["limb_darkening"]))
         hip = int(self.conf["hip"])
-        n_star = int(self.conf["n_star"])
         Teff = int(self.conf["teff"])
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
-        dT = self.conf[self.sim]["dt"]
-        limb_darkening = bool(int(self.conf["limb_darkening"]))
+        n_star = int(self.conf["n_star"])
+        min_wave = self.conf["min_wave"]
+        max_wave = self.conf["max_wave"]
 
-        phase_sample, time_sample = self.sample_phase(P, N, N_phases=1)
+        # Determine the time sample
+
+        # phase_sample, time_sample = self.sample_phase(P, N, N_phases=1)
+        time_sample = self.sample_phase_new()
 
         K_sample = np.zeros(len(time_sample))
 
@@ -188,21 +210,31 @@ class SimulationController():
         shift_wavelengths = []
         spectra = []
         i = 0
-
-        for v, phase, bjd in zip(K_sample, phase_sample, bjds):
-            print(f"Calculate star {i} at phase {phase}")
+        for v, bjd in zip(K_sample, bjds):
+            print(f"Calculate star {i}/{len(time_sample)} at bjd {bjd}")
             i += 1
             star = GridSpectrumSimulator(
                 N_star=n_star, N_border=3, Teff=Teff,
                 v_rot=v_rot, inclination=inclination,
                 limb_darkening=limb_darkening)
-            
-            star.add_pulsation(t=bjd, l=l, m=m, nu=1/P, v_p=v_p, k=k, T_var=dT)
+
+            # Add all specified pulsations
+            for sim in self.simulation_keys:
+                P = self.conf[sim]["period"]
+                l = int(self.conf[sim]["l"])
+                m = int(self.conf[sim]["m"])
+                k = int(self.conf[sim]["k"])
+                v_p = self.conf[sim]["v_p"]
+                dT = self.conf[sim]["dt"]
+
+                print(f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}")
+
+                star.add_pulsation(t=bjd, l=l, m=m, nu=1/P, v_p=v_p, k=k, T_var=dT)
 
             # Wavelength in restframe of phoenix spectra but already perturbed by
             # pulsation
             rest_wavelength, rest_spectrum = star.calc_spectrum(
-                self.conf["min_wave"] - 10, self.conf["max_wave"] + 10)
+                min_wave - 10, max_wave + 10)
 
             # Add doppler shift due to barycentric correction
             shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
@@ -259,5 +291,4 @@ class SimulationController():
         bcs = np.array(bcs)
         if set_0:
             bcs *= 0
-            print(bcs)
         return K_array - bcs, bcs, bjds
