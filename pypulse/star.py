@@ -9,7 +9,7 @@ class GridSpectrumSimulator():
     """ Simulate a the spectrum of a star with a grid."""
 
     def __init__(self, N_star=500, N_border=5, Teff=4800, v_rot=3000,
-                 inclination=90, T_var=0, k=100, v_p=1):
+                 inclination=90, limb_darkening=True):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -22,13 +22,14 @@ class GridSpectrumSimulator():
             :param float T_var: Temperature Variation of pulsation
         """
         self.three_dim_star = ThreeDimStar(
-            Teff=Teff, T_var=T_var, v_p=v_p, k=k)
+            Teff=Teff, v_rot=v_rot)
         self.three_dim_star.create_rotation(v_rot)
         # self.three_dim_star.add_granulation()
         self.projector = TwoDimProjector(self.three_dim_star,
                                          N=N_star, border=N_border,
                                          inclination=inclination,
-                                         line_of_sight=True)
+                                         line_of_sight=True,
+                                         limb_darkening=limb_darkening)
         self.spectrum = None
         self.flux = None
 
@@ -132,11 +133,12 @@ class GridSpectrumSimulator():
 
         return rest_wavelength, total_spectrum
 
-    def add_pulsation(self, l=2, m=2, phase=0):
+    def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
+                      T_var=0, T_phase=0):
         """ Add a pulsation to the star."""
         # TODO make these values adjustable
-        t = phase / self.three_dim_star.nu
-        self.three_dim_star.add_pulsation(t=t, l=l, m=m)
+        # t = phase / self.three_dim_star.nu
+        self.three_dim_star.add_pulsation(t=t, l=l, m=m, nu=nu, v_p=v_p, k=k, T_var=T_var, T_phase=T_phase)
 
     def calc_flux(self):
         """ Calculate the local flux of the star.

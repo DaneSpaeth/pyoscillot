@@ -172,10 +172,11 @@ class SimulationController():
         v_p = self.conf[self.sim]["v_p"]
         hip = int(self.conf["hip"])
         n_star = int(self.conf["n_star"])
-        teff = int(self.conf["teff"])
+        Teff = int(self.conf["teff"])
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         dT = self.conf[self.sim]["dt"]
+        limb_darkening = bool(int(self.conf["limb_darkening"]))
 
         phase_sample, time_sample = self.sample_phase(P, N, N_phases=1)
 
@@ -192,11 +193,11 @@ class SimulationController():
             print(f"Calculate star {i} at phase {phase}")
             i += 1
             star = GridSpectrumSimulator(
-                N_star=n_star, N_border=3, Teff=teff,
-                v_rot=v_rot, T_var=dT, inclination=inclination,
-                v_p=v_p, k=k)
-
-            star.add_pulsation(l=l, m=m, phase=phase)
+                N_star=n_star, N_border=3, Teff=Teff,
+                v_rot=v_rot, inclination=inclination,
+                limb_darkening=limb_darkening)
+            
+            star.add_pulsation(t=bjd, l=l, m=m, nu=1/P, v_p=v_p, k=k, T_var=dT)
 
             # Wavelength in restframe of phoenix spectra but already perturbed by
             # pulsation
