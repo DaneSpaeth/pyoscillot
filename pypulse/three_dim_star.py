@@ -17,7 +17,7 @@ class ThreeDimStar():
         in onto a grid in the end.
     """
 
-    def __init__(self, Teff=4800, rotation=3000, logg=3):
+    def __init__(self, Teff=4800, v_rot=3000, logg=3):
         """ Create a 3d star.
 
             :param int Teff: effective Temperature [K] of star
@@ -30,6 +30,9 @@ class ThreeDimStar():
          self.z) = geo.get_spherical_phi_theta_x_y_z()
 
         self.Teff = Teff
+
+        self.v_rot = v_rot
+        self.create_rotation(v_rot)
 
         self.default_maps()
 
@@ -200,7 +203,7 @@ class ThreeDimStar():
         self.displacement_theta += displ
         self.pulsation_theta += pulsation
 
-    def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=100, k=1.2,
+    def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
                       T_var=0, T_phase=0):
         """ Convenience function to add all pulsations in one go.
 
@@ -251,6 +254,8 @@ class TwoDimProjector():
         self.line_of_sight = line_of_sight
 
         self.limb_darkening = limb_darkening
+
+        print(f"Limb Darkening is {self.limb_darkening}")
 
     def _project(self, values, line_of_sight=False, component=None):
         """ Helper function to project stuff.
@@ -526,12 +531,12 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     import random
-    ts = np.linspace(10, 1800, 1)
+    ts = np.linspace(10, 1800, 30)
     intensities = []
     rvs = []
     real_ts = []
     for t in ts:
-        for i in range(random.randint(3, 8)):
+        for i in range(random.randint(4, 9)):
             # Simulate multiple observations shortly after each other
             t_random = random.randrange(-10, 10)
             real_t = t + t_random
@@ -539,9 +544,9 @@ if __name__ == "__main__":
 
             star = ThreeDimStar()
             star.add_pulsation(l=0, m=0, nu=1 / 0.876, k=0,
-                               t=real_t, v_p=50, T_var=50)
+                               t=real_t, v_p=35, T_var=50)
             star.add_pulsation(l=1, m=1, nu=1 / 600, k=100,
-                               t=real_t, v_p=1, T_var=50)
+                               t=real_t, v_p=2, T_var=50)
 
             projector = TwoDimProjector(
                 star, inclination=60, limb_darkening=False)

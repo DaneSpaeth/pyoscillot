@@ -147,4 +147,5 @@ venv/
 *.fits
 flux.txt
 flux_test.txt
+global.ini
 

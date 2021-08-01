@@ -63,7 +63,7 @@ def project_line_of_sight(phi, theta, values, component, inclination):
             scalar_prods.append(np.dot(theta_unit, los))
 
     scalar_prods = np.array(scalar_prods)
-    print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
+    # print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
     values = values * scalar_prods
 
     return values
@@ -125,7 +125,7 @@ def project_2d(x, y, z, phi, theta, values, N,
         values = project_line_of_sight(
             phi, theta, values, component, inclination)
 
-    print(values)
+    # print(values)
 
     # original
     method = "linear"
