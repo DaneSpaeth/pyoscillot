@@ -13,7 +13,7 @@ def main(ticket):
     conf_dict = parse_ticket(ticket)
 
     # Run the Simulation
-    SimulationController(ticket)
+    # SimulationController(ticket)
     # Run Serval
     subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                     str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
@@ -27,5 +27,5 @@ def main(ticket):
 
 
 if __name__ == "__main__":
-    ticket = "example_ticket.ini"
+    ticket = "p+g_ticket.ini"
     main(ticket)

@@ -6,7 +6,7 @@ STAR=$3
 
 SERVALHOME=~/Documents/PhD/serval
 SERVAL=$SERVALHOME/serval/
-source ${SERVALHOME}/venv/bin/activate
+# source ${SERVALHOME}/venv/bin/activate
 
 cd $RVLIBPATH
 
