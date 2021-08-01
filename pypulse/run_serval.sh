@@ -1,11 +1,11 @@
 #!/bin/bash
-root=/home/dane/Documents/PhD/pypulse/data
+root=/home/dspaeth/Documents/pypulse/data
 RVLIBPATH=$1
 SIMNAME=$2
 STAR=$3
 
-SERVALHOME=~/Documents/PhD/serval
-SERVAL=$SERVALHOME/serval/
+#SERVALHOME=~/Documents/serval
+#SERVAL=$SERVALHOME/serval/
 source ${SERVALHOME}/venv/bin/activate
 
 cd $RVLIBPATH

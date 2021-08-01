@@ -15,7 +15,7 @@ def main(ticket):
     # Run the Simulation
     SimulationController(ticket)
     # Run Serval
-    exit()
+    # exit()
     subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                     str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
 
