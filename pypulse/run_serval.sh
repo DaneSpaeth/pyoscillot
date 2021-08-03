@@ -1,5 +1,6 @@
 #!/bin/bash
 root=/home/dspaeth/Documents/pypulse/data
+root=/home/dane/Documents/PhD/pypulse/data
 RVLIBPATH=$1
 SIMNAME=$2
 STAR=$3

@@ -152,7 +152,7 @@ class ThreeDimStar():
         self.displacement_rad += displ
         self.pulsation_rad += pulsation
         # Caution temperature is not reseted
-        temp_variation = (displ * np.exp(1j * T_phase)).real
+        temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         temp_variation = T_var * temp_variation  # / np.nanmax(temp_variation)
 
         self.temperature += temp_variation

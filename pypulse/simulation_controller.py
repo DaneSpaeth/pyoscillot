@@ -29,7 +29,7 @@ class SimulationController():
         config_dict = parse_ticket(ticketpath)
         simulation_keys = config_dict["simulations"]
 
-        #if len(simulation_keys) != 1:
+        # if len(simulation_keys) != 1:
         #    raise NotImplementedError("Currently only one mode is implemented")
 
         self.conf = config_dict
@@ -87,28 +87,33 @@ class SimulationController():
 
         return phase_sample, time_sample
 
-    def sample_phase_new(self):
-        """ New a bit more random phase sampling. Really ugly at the moment"""
+    def sample_phase_new(self, sample_P, N_phases=1, N_global=30, N_local=(3, 8)):
+        """ New a bit more random phase sampling. Really ugly at the moment
+
+            :param float sample_P: Global Period to sample
+            :param int N_phase: Number of phases to sample
+            :param int N_global: Global Number of local datapoints to draw
+                                 to sample
+            :param tuple of ints N_local: Min and max number of datapoints to
+                                          draw for one global datapoint
+        """
         stop = datetime.combine(date.today(), datetime.min.time())
 
-        max_p = 600
-        N_phases = 3
-        start = stop - timedelta(days=int(max_p*N_phases))
+        start = stop - timedelta(days=int(sample_P * N_phases))
 
         time_sample = []
 
-        global_days = np.linspace(0, int(max_p*N_phases), 30)
+        global_days = np.linspace(0, int(sample_P * N_phases), N_global)
         local_days = []
         for gday in global_days:
-            for i in range(random.randint(3, 8)):
+            for i in range(random.randint(N_local[0], N_local[1])):
                 # Simulate multiple observations shortly after each other
                 day_random = random.randrange(-10, 10)
-                local_day = start + timedelta(days=int(gday)) + timedelta(days=int(day_random))
+                local_day = start + \
+                    timedelta(days=int(gday)) + timedelta(days=int(day_random))
                 time_sample.append(local_day)
 
         return sorted(time_sample)
-
-
 
     def get_planet_spectra(self):
         """ Return a list of wavelengths and fluxes for a planetary signal."""
@@ -198,9 +203,11 @@ class SimulationController():
         max_wave = self.conf["max_wave"]
 
         # Determine the time sample
-
-        # phase_sample, time_sample = self.sample_phase(P, N, N_phases=1)
-        time_sample = self.sample_phase_new()
+        # TODO fix phase sampling
+        # At the moment take the first mode as sampling period
+        P = self.conf[self.simulation_keys[0]]["period"]
+        time_sample = self.sample_phase_new(P, N_phases=1, N_global=N)
+        # time_sample = self.sample_phase_new()
 
         K_sample = np.zeros(len(time_sample))
 
@@ -226,10 +233,13 @@ class SimulationController():
                 k = int(self.conf[sim]["k"])
                 v_p = self.conf[sim]["v_p"]
                 dT = self.conf[sim]["dt"]
+                T_phase = self.conf[sim]["t_phase"]
 
-                print(f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}")
+                print(
+                    f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
 
-                star.add_pulsation(t=bjd, l=l, m=m, nu=1/P, v_p=v_p, k=k, T_var=dT)
+                star.add_pulsation(t=bjd, l=l, m=m, nu=1 / P, v_p=v_p, k=k,
+                                   T_var=dT, T_phase=T_phase)
 
             # Wavelength in restframe of phoenix spectra but already perturbed by
             # pulsation
