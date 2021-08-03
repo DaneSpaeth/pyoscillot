@@ -29,5 +29,5 @@ def main(ticket):
 
 
 if __name__ == "__main__":
-    ticket = "antiphase.ini"
+    ticket = "p+g_antiphase_ticket.ini"
     main(ticket)
