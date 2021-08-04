@@ -16,7 +16,6 @@ def main(ticket):
     SimulationController(ticket)
     exit()
     # Run Serval
-    # exit()
     subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                     str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
 
@@ -29,5 +28,5 @@ def main(ticket):
 
 
 if __name__ == "__main__":
-    ticket = "p+g_antiphase_ticket.ini"
+    ticket = "hip16335_ticket.ini"
     main(ticket)
