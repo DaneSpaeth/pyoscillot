@@ -206,7 +206,7 @@ class SimulationController():
         # TODO fix phase sampling
         # At the moment take the first mode as sampling period
         P = self.conf[self.simulation_keys[0]]["period"]
-        time_sample = self.sample_phase_new(P, N_phases=1, N_global=N)
+        time_sample = self.sample_phase_new(P, N_phases=1, N_global=N, N_local=(2,5))
         # time_sample = self.sample_phase_new()
 
         K_sample = np.zeros(len(time_sample))
