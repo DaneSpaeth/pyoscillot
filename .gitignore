@@ -148,4 +148,6 @@ venv/
 flux.txt
 flux_test.txt
 global.ini
+test_colors.py
+test_multiprocess.py
 

@@ -3,6 +3,7 @@ import numpy as np
 from barycorrpy import get_BC_vel, utc_tdb
 import random
 from astropy.time import Time
+from concurrent.futures import ProcessPoolExecutor
 from plapy.obs import observatories
 from plapy.constants import C
 from dataloader import phoenix_spectrum
@@ -192,14 +193,8 @@ class SimulationController():
         """ Simulate the pulsation spectra."""
         # Get the global parameters
         N = int(self.conf["n"])
-        limb_darkening = bool(int(self.conf["limb_darkening"]))
         hip = int(self.conf["hip"])
-        Teff = int(self.conf["teff"])
-        v_rot = self.conf["v_rot"]
-        inclination = self.conf["inclination"]
-        N_star = int(self.conf["n_star"])
-        min_wave = self.conf["min_wave"]
-        max_wave = self.conf["max_wave"]
+        N_processes = int(self.conf["n_processes"])
 
         # Determine the time sample
         # TODO fix phase sampling
@@ -207,52 +202,60 @@ class SimulationController():
         P = self.conf[self.simulation_keys[0]]["period"]
         time_sample = self.sample_phase_new(
             P, N_phases=1, N_global=N, N_local=(1, 1))
-        # time_sample = self.sample_phase_new()
 
         K_sample = np.zeros(len(time_sample))
 
         K_sample, bcs, bjds = self.add_barycentric_correction(
             K_sample, time_sample, hip)
 
-        shift_wavelengths = []
-        spectra = []
-        i = 0
-        for v, time, bjd, bc in zip(K_sample, time_sample, bjds, bcs):
-            print(f"Calculate star {i}/{len(time_sample)-1} at bjd {bjd}")
-            i += 1
-            star = GridSpectrumSimulator(
-                N_star=N_star, N_border=3, Teff=Teff,
-                v_rot=v_rot, inclination=inclination,
-                limb_darkening=limb_darkening)
+        idx_list = list(range(len(K_sample)))
+        with ProcessPoolExecutor(max_workers=N_processes) as executor:
+            results = list(executor.map(
+                self._run_pulsation_sim, idx_list, K_sample, time_sample, bjds, bcs))
 
-            # Add all specified pulsations
-            for sim in self.simulation_keys:
-                P = self.conf[sim]["period"]
-                l = int(self.conf[sim]["l"])
-                # m = int(self.conf[sim]["m"])
-                k = int(self.conf[sim]["k"])
-                v_p = self.conf[sim]["v_p"]
-                dT = self.conf[sim]["dt"]
-                T_phase = self.conf[sim]["t_phase"]
+    def _run_pulsation_sim(self, idx, v, time, bjd, bc):
+        N = int(self.conf["n"])
+        limb_darkening = bool(int(self.conf["limb_darkening"]))
+        Teff = int(self.conf["teff"])
+        v_rot = self.conf["v_rot"]
+        inclination = self.conf["inclination"]
+        N_star = int(self.conf["n_star"])
+        min_wave = self.conf["min_wave"]
+        max_wave = self.conf["max_wave"]
 
-                for m in range(-l, l + 1):
-                    print(
-                        f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
+        print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
+        star = GridSpectrumSimulator(
+            N_star=N_star, N_border=3, Teff=Teff,
+            v_rot=v_rot, inclination=inclination,
+            limb_darkening=limb_darkening)
 
-                    star.add_pulsation(t=bjd, l=l, m=m, nu=1 / P, v_p=v_p, k=k,
-                                       T_var=dT, T_phase=T_phase)
+        # Add all specified pulsations
+        for sim in self.simulation_keys:
+            P = self.conf[sim]["period"]
+            l = int(self.conf[sim]["l"])
+            # m = int(self.conf[sim]["m"])
+            k = int(self.conf[sim]["k"])
+            v_p = self.conf[sim]["v_p"]
+            dT = self.conf[sim]["dt"]
+            T_phase = self.conf[sim]["t_phase"]
 
-            # Wavelength in restframe of phoenix spectra but already perturbed by
-            # pulsation
-            rest_wavelength, spectrum = star.calc_spectrum(
-                min_wave - 10, max_wave + 10)
+            for m in range(-l, l + 1):
+                print(
+                    f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
 
-            # Add doppler shift due to barycentric correction
-            shift_wavelength = rest_wavelength + v / C * rest_wavelength
+                star.add_pulsation(t=bjd, l=l, m=m, nu=1 / P, v_p=v_p, k=k,
+                                   T_var=dT, T_phase=T_phase)
 
-            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+        # Wavelength in restframe of phoenix spectra but already perturbed by
+        # pulsation
+        rest_wavelength, spectrum = star.calc_spectrum(
+            min_wave - 10, max_wave + 10)
 
-            self.saver.save_flux(bjd, star.flux)
+        # Add doppler shift due to barycentric correction
+        shift_wavelength = rest_wavelength + v / C * rest_wavelength
+
+        self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+        self.saver.save_flux(bjd, star.flux)
 
     def add_barycentric_correction(self, K_array, time_list, star, set_0=True):
         """ Add the barycentric correction to the K_list."""

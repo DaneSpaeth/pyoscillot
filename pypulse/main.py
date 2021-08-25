@@ -27,5 +27,5 @@ def main(ticket):
 
 
 if __name__ == "__main__":
-    ticket = "example_spot.ini"
+    ticket = "example_ticket.ini"
     main(ticket)
