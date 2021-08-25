@@ -137,7 +137,8 @@ class GridSpectrumSimulator():
         """ Add a pulsation to the star."""
         # TODO make these values adjustable
         # t = phase / self.three_dim_star.nu
-        self.three_dim_star.add_pulsation(t=t, l=l, m=m, nu=nu, v_p=v_p, k=k, T_var=T_var, T_phase=T_phase)
+        self.three_dim_star.add_pulsation(t=t, l=l, m=m, nu=nu, v_p=v_p, k=k,
+                                          T_var=T_var, T_phase=T_phase)
 
     def calc_flux(self):
         """ Calculate the local flux of the star.

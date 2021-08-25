@@ -14,7 +14,6 @@ def main(ticket):
 
     # Run the Simulation
     SimulationController(ticket)
-    exit()
     # Run Serval
     subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                     str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
@@ -28,5 +27,5 @@ def main(ticket):
 
 
 if __name__ == "__main__":
-    ticket = "hip16335_ticket.ini"
+    ticket = "example_ticket.ini"
     main(ticket)

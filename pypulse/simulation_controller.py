@@ -230,17 +230,18 @@ class SimulationController():
             for sim in self.simulation_keys:
                 P = self.conf[sim]["period"]
                 l = int(self.conf[sim]["l"])
-                m = int(self.conf[sim]["m"])
+                # m = int(self.conf[sim]["m"])
                 k = int(self.conf[sim]["k"])
                 v_p = self.conf[sim]["v_p"]
                 dT = self.conf[sim]["dt"]
                 T_phase = self.conf[sim]["t_phase"]
 
-                print(
-                    f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
+                for m in range(-l, l + 1):
+                    print(
+                        f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
 
-                star.add_pulsation(t=bjd, l=l, m=m, nu=1 / P, v_p=v_p, k=k,
-                                   T_var=dT, T_phase=T_phase)
+                    star.add_pulsation(t=bjd, l=l, m=m, nu=1 / P, v_p=v_p, k=k,
+                                       T_var=dT, T_phase=T_phase)
 
             # Wavelength in restframe of phoenix spectra but already perturbed by
             # pulsation
