@@ -92,7 +92,11 @@ class ThreeDimStar():
         above_plane_mask = above_plane_mask.reshape(self.phi.shape)
 
         self.spotmask += above_plane_mask
+        print(f"Add spot with temperature {T_spot}")
+        temperature_before = self.temperature
         self.temperature[self.spotmask.astype(bool)] = T_spot
+
+        # print(np.max(self.temperature - temperature_before))
 
     def add_granulation(self, planes=3500):
         """ First try to add granulation cells to the star.
@@ -530,40 +534,7 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    import random
-    ts = np.linspace(10, 1800, 30)
-    intensities = []
-    rvs = []
-    real_ts = []
-    for t in ts:
-        for i in range(random.randint(4, 9)):
-            # Simulate multiple observations shortly after each other
-            t_random = random.randrange(-10, 10)
-            real_t = t + t_random
-            real_ts.append(real_t)
 
-            star = ThreeDimStar()
-            star.add_pulsation(l=0, m=0, nu=1 / 0.876, k=0,
-                               t=real_t, v_p=35, T_var=50)
-            star.add_pulsation(l=1, m=1, nu=1 / 600, k=100,
-                               t=real_t, v_p=2, T_var=50)
-
-            projector = TwoDimProjector(
-                star, inclination=60, limb_darkening=False)
-            intensities.append(projector.intensity_stefan_boltzmann_global())
-            rvs.append(projector.radial_velocity())
-
-    intensities = np.array(intensities)
-    intensities = intensities / np.median(intensities)
-    rvs = np.array(rvs)
-    real_ts = np.array(real_ts)
-
-    fig, ax = plt.subplots(2)
-    ax[0].plot(real_ts, intensities * 100, "bo")
-    ax[0].set_xlabel("Time [d]")
-    ax[0].set_ylabel("Intensities [%]")
-
-    ax[1].plot(real_ts, rvs, "bo")
-    ax[1].set_xlabel("Time [d]")
-    ax[1].set_ylabel("Radial Velocity [m/s]")
-    plt.show()
+    star = ThreeDimStar()
+    star.add_spot(rad=10)
+    projector = TwoDimProjector(star, inclination=60, limb_darkening=False)

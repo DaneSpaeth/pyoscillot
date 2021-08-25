@@ -33,7 +33,7 @@ class GridSpectrumSimulator():
         self.spectrum = None
         self.flux = None
 
-    def add_spot(self, phase=0.25, altitude=90, radius=25, T_spot=4300, ):
+    def add_spot(self, phase=0.25, altitude=90, radius=25, T_spot=4300):
         """ Add a circular starspot at position x,y.
 
             :param phase: Phase ranging from 0 to 1 (0 being left edge,
@@ -45,6 +45,11 @@ class GridSpectrumSimulator():
         """
         az = phase * 360.
         self.three_dim_star.add_spot(radius, phi_pos=az, T_spot=T_spot)
+
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots(1)
+        ax.imshow(self.projector.temperature(), origin="lower")
+        plt.show()
 
     def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix"):
         """ Return Spectrum (potentially Doppler broadened) from min to max.

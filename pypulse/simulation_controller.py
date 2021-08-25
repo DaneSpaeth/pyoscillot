@@ -8,7 +8,7 @@ from plapy.constants import C
 from dataloader import phoenix_spectrum
 from datasaver import DataSaver
 from star import GridSpectrumSimulator
-from parse_ini import parse_ticket, parse_global_ini
+from parse_ini import parse_ticket
 import carmenes_simulator as carmenes
 
 
@@ -36,40 +36,31 @@ class SimulationController():
         self.simulation_keys = simulation_keys
 
     def create_rv_series(self):
-        """ Create a fake RV series.
-
-            :param P: period in days
-            :param N: Number of datapoints
-            :param K: Amplitude in m/s
-        """
+        """ Create a fake RV series."""
         # TODO later make that as a loop
         # TODO: decide where to coadd different effects and loop over different
         # mechanisms
         mode = self.conf[self.simulation_keys[0]]["mode"]
         if mode == "planet":
-            (shift_wavelengths, spectra,
-             time_sample, bcs, bjds) = self.get_planet_spectra()
+            self.simulate_planet()
         elif mode == "spot":
-            (shift_wavelengths, spectra,
-             time_sample, bcs, bjds) = self.get_spot_spectra()
+            self.simulate_spot()
         elif mode == "pulsation":
-            (shift_wavelengths, spectra,
-             time_sample, bcs, bjds) = self.get_pulsation_spectra()
+            self.simulate_pulsation()
         else:
             print("Select a Mode")
             exit()
 
-        new_specs = []
-        for shift_wavelength, spectrum in zip(shift_wavelengths, spectra):
-            spec, wave = carmenes.interpolate(spectrum, shift_wavelength)
-            new_specs.append(spec)
+    def _save_to_disk(self, shift_wavelength, spectrum, time, bc, bjd):
+        """ Helper function to save the spectrum to disk."""
+        # Interpolate onto the CARMENES template
+        shifted_spec, wave = carmenes.interpolate(spectrum, shift_wavelength)
 
-        for idx, time in enumerate(time_sample):
-            new_header = carmenes.get_new_header(time, bcs[idx], bjds[idx])
-            timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
-            filename = f"car-{timestr}-sci-fake-vis_A.fits"
+        new_header = carmenes.get_new_header(time, bc, bjd)
+        timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
+        filename = f"car-{timestr}-sci-fake-vis_A.fits"
 
-            self.saver.save_spectrum(new_specs[idx], new_header, filename)
+        self.saver.save_spectrum(shifted_spec, new_header, filename)
 
     def sample_phase(self, P, N, N_phases=1):
         """ Return a phase sample and the corresponding time sample.
@@ -115,7 +106,7 @@ class SimulationController():
 
         return sorted(time_sample)
 
-    def get_planet_spectra(self):
+    def simulate_planet(self):
         """ Return a list of wavelengths and fluxes for a planetary signal."""
         P = self.conf[self.sim]["period"]
         N = int(self.conf["n"])
@@ -130,26 +121,30 @@ class SimulationController():
         # Load one rest_spectrum, all units in Angstrom
         wavelength_range = (self.conf["min_wave"] - 10,
                             self.conf["max_wave"] + 10)
-        rest_wavelength, rest_spectrum, _ = phoenix_spectrum(
+        rest_wavelength, spectrum, _ = phoenix_spectrum(
             Teff=int(self.conf["teff"]), wavelength_range=wavelength_range)
 
         # Add the Doppler shifts
         shift_wavelengths = []
         spectra = []
-        for v in K_sample:
+        for v, time, bc, bjd in zip(K_sample, time_sample, bcs, bjds):
             vo = v
             ve = 0
             a = (1.0 + vo / C) / (1.0 + ve / C)
-            shift_wavelengths.append(
-                np.exp(np.log(rest_wavelength) + np.log(a)))
-            spectra.append(rest_spectrum)
+            shift_wavelengths = np.exp(np.log(rest_wavelength) + np.log(a))
 
-        return shift_wavelengths, spectra, time_sample, bcs, bjds
+            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
-    def get_spot_spectra(self):
+    def simulate_spot(self):
         """ Simulate the spot spectra."""
-        P = self.conf[self.sim]["period"]
+        # TODO allow multiple spots
+        sim = self.simulation_keys[0]
         N = int(self.conf["n"])
+        N_star = int(self.conf["n_star"])
+        P = self.conf[sim]["period"]
+        limb_darkening = bool(int(self.conf["limb_darkening"]))
+        inclination = self.conf["inclination"]
+        v_rot = self.conf["v_rot"]
 
         phase_sample, time_sample = self.sample_phase(P, N)
 
@@ -169,27 +164,31 @@ class SimulationController():
         fluxes = []
         i = 0
 
-        for v, phase, bjd in zip(K_sample, phase_sample, bjds):
-            print(f"Calculate star {i}")
+        for v, phase, time, bjd, bc in zip(K_sample, phase_sample, time_sample,
+                                           bjds, bcs):
+            print(f"Calculate star {i}/{len(time_sample)-1} at bjd {bjd}")
+            i += 1
             star = GridSpectrumSimulator(
-                N_star=int(self.conf["n_star"]),
-                v_rot=self.conf["v_rot"],
-                inclination=self.conf["inclination"])
-            star.add_spot(phase=phase, radius=self.conf[self.sim]["radius"])
+                N_star=N_star,
+                v_rot=v_rot,
+                inclination=inclination,
+                limb_darkening=limb_darkening)
+            star.add_spot(phase=phase,
+                          radius=self.conf[sim]["radius"],
+                          T_spot=self.conf[sim]["t_spot"])
 
-            # Wavelength in restframe of phoenix spectra but already perturbed by
-            # spot
-            rest_wavelength, rest_spectrum = star.calc_spectrum(
+            # Wavelength in restframe of phoenix spectra but already perturbed
+            # by spot
+            rest_wavelength, spectrum = star.calc_spectrum(
                 self.conf["min_wave"] - 10, self.conf["max_wave"] + 10)
 
             # Add doppler shift due to barycentric correction
-            shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
-            spectra.append(rest_spectrum)
+            shift_wavelength = rest_wavelength + v / C * rest_wavelength
+
+            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
             self.saver.save_flux(bjd, star.flux)
 
-        return shift_wavelengths, spectra, time_sample, bcs, bjds
-
-    def get_pulsation_spectra(self):
+    def simulate_pulsation(self):
         """ Simulate the pulsation spectra."""
         # Get the global parameters
         N = int(self.conf["n"])
@@ -198,7 +197,7 @@ class SimulationController():
         Teff = int(self.conf["teff"])
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
-        n_star = int(self.conf["n_star"])
+        N_star = int(self.conf["n_star"])
         min_wave = self.conf["min_wave"]
         max_wave = self.conf["max_wave"]
 
@@ -218,11 +217,11 @@ class SimulationController():
         shift_wavelengths = []
         spectra = []
         i = 0
-        for v, bjd in zip(K_sample, bjds):
-            print(f"Calculate star {i}/{len(time_sample)} at bjd {bjd}")
+        for v, time, bjd, bc in zip(K_sample, time_sample, bjds, bcs):
+            print(f"Calculate star {i}/{len(time_sample)-1} at bjd {bjd}")
             i += 1
             star = GridSpectrumSimulator(
-                N_star=n_star, N_border=3, Teff=Teff,
+                N_star=N_star, N_border=3, Teff=Teff,
                 v_rot=v_rot, inclination=inclination,
                 limb_darkening=limb_darkening)
 
@@ -245,16 +244,15 @@ class SimulationController():
 
             # Wavelength in restframe of phoenix spectra but already perturbed by
             # pulsation
-            rest_wavelength, rest_spectrum = star.calc_spectrum(
+            rest_wavelength, spectrum = star.calc_spectrum(
                 min_wave - 10, max_wave + 10)
 
             # Add doppler shift due to barycentric correction
-            shift_wavelengths.append(rest_wavelength + v / C * rest_wavelength)
-            spectra.append(rest_spectrum)
+            shift_wavelength = rest_wavelength + v / C * rest_wavelength
+
+            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
             self.saver.save_flux(bjd, star.flux)
-
-        return shift_wavelengths, spectra, time_sample, bcs, bjds
 
     def add_barycentric_correction(self, K_array, time_list, star, set_0=True):
         """ Add the barycentric correction to the K_list."""
