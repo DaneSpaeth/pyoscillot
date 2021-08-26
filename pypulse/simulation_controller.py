@@ -101,8 +101,8 @@ class SimulationController():
 
         time_sample = sorted(time_sample)
         time_sample = np.array(time_sample)
-        phase_sample = np.mod((time_sample - start) /
-                              timedelta(days=1), sample_P)
+        phase_sample = (np.mod((time_sample - start) /
+                               timedelta(days=1), sample_P)) / sample_P
         return phase_sample, time_sample
 
     def simulate_planet(self):
@@ -137,11 +137,8 @@ class SimulationController():
         # TODO allow multiple spots
         sim = self.simulation_keys[0]
         N = int(self.conf["n"])
-        N_star = int(self.conf["n_star"])
         P = self.conf[sim]["period"]
-        limb_darkening = bool(int(self.conf["limb_darkening"]))
-        inclination = self.conf["inclination"]
-        v_rot = self.conf["v_rot"]
+        N_processes = int(self.conf["n_processes"])
 
         phase_sample, time_sample = self.sample_phase(P, N)
 
@@ -151,34 +148,54 @@ class SimulationController():
         K_sample, bcs, bjds = self.add_barycentric_correction(
             K_sample, time_sample, int(self.conf["hip"]))
 
-        shift_wavelengths = []
-        spectra = []
-        fluxes = []
-        i = 0
+        idx_list = list(range(len(K_sample)))
+        with ProcessPoolExecutor(max_workers=N_processes) as executor:
+            results = list(executor.map(
+                self._run_spot_sim, idx_list, K_sample, phase_sample,
+                time_sample, bjds, bcs))
 
-        for v, phase, time, bjd, bc in zip(K_sample, phase_sample, time_sample,
-                                           bjds, bcs):
-            print(f"Calculate star {i}/{len(time_sample)-1} at bjd {bjd}")
-            i += 1
-            star = GridSpectrumSimulator(
-                N_star=N_star,
-                v_rot=v_rot,
-                inclination=inclination,
-                limb_darkening=limb_darkening)
-            star.add_spot(phase=phase,
-                          radius=self.conf[sim]["radius"],
-                          T_spot=self.conf[sim]["t_spot"])
+    def _run_spot_sim(self, idx, v, phase, time, bjd, bc):
+        """ Isolated function to actually run the spot simulation.
 
-            # Wavelength in restframe of phoenix spectra but already perturbed
-            # by spot
-            rest_wavelength, spectrum = star.calc_spectrum(
-                self.conf["min_wave"] - 10, self.conf["max_wave"] + 10)
+            It is splitted from the simulate_pulsation function to allow
+            mulitprocessing which works via pickling.
 
-            # Add doppler shift due to barycentric correction
-            shift_wavelength = rest_wavelength + v / C * rest_wavelength
+            :param idx: Idx of current simulation (just for counting)
+            :param v: Current velocity due to barycentric correction in m/s
+                      (Could in principle be used to add another v shift)
+            :param time: Time as datetime.datetime
+            :param bjd: Barycentric Julian Date as float
+            :param bc: Barycentric correction in m/s
 
-            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
-            self.saver.save_flux(bjd, star.flux)
+            All parameters should be single values
+        """
+        sim = self.simulation_keys[0]
+        N = int(self.conf["n"])
+        N_star = int(self.conf["n_star"])
+        limb_darkening = bool(int(self.conf["limb_darkening"]))
+        inclination = self.conf["inclination"]
+        v_rot = self.conf["v_rot"]
+
+        print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
+        star = GridSpectrumSimulator(
+            N_star=N_star,
+            v_rot=v_rot,
+            inclination=inclination,
+            limb_darkening=limb_darkening)
+        star.add_spot(phase=phase,
+                      radius=self.conf[sim]["radius"],
+                      T_spot=self.conf[sim]["t_spot"])
+
+        # Wavelength in restframe of phoenix spectra but already perturbed
+        # by spot
+        rest_wavelength, spectrum = star.calc_spectrum(
+            self.conf["min_wave"] - 10, self.conf["max_wave"] + 10)
+
+        # Add doppler shift due to barycentric correction
+        shift_wavelength = rest_wavelength + v / C * rest_wavelength
+
+        self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+        self.saver.save_flux(bjd, star.flux)
 
     def simulate_pulsation(self):
         """ Simulate the pulsation spectra."""
@@ -194,7 +211,6 @@ class SimulationController():
         N_processes = int(self.conf["n_processes"])
 
         # Determine the time sample
-        # TODO fix phase sampling
         # At the moment take the first mode as sampling period
         P = self.conf[self.simulation_keys[0]]["period"]
         _, time_sample = self.sample_phase(
@@ -213,14 +229,26 @@ class SimulationController():
                 self._run_pulsation_sim, idx_list, K_sample, time_sample, bjds, bcs))
 
     def _run_pulsation_sim(self, idx, v, time, bjd, bc):
+        """ Isolated function to actually run the pulsation simulation.
+
+            It is splitted from the simulate_pulsation function to allow
+            mulitprocessing which works via pickling.
+
+            :param idx: Idx of current simulation (just for counting)
+            :param v: Current velocity due to barycentric correction in m/s
+                      (Could in principle be used to add another v shift)
+            :param time: Time as datetime.datetime
+            :param bjd: Barycentric Julian Date as float
+            :param bc: Barycentric correction in m/s
+
+            All parameters should be single values
+        """
         N = int(self.conf["n"])
         limb_darkening = bool(int(self.conf["limb_darkening"]))
         Teff = int(self.conf["teff"])
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
-        min_wave = self.conf["min_wave"]
-        max_wave = self.conf["max_wave"]
 
         print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
         star = GridSpectrumSimulator(
@@ -248,7 +276,8 @@ class SimulationController():
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
         rest_wavelength, spectrum = star.calc_spectrum(
-            min_wave - 10, max_wave + 10)
+            self.conf["min_wave"] - 10,
+            self.conf["max_wave"] + 10)
 
         # Add doppler shift due to barycentric correction
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
@@ -257,7 +286,12 @@ class SimulationController():
         self.saver.save_flux(bjd, star.flux)
 
     def add_barycentric_correction(self, K_array, time_list, star, set_0=True):
-        """ Add the barycentric correction to the K_list."""
+        """ At the moment the K_array is not affected.
+
+            TODO: Decide for a consistent way of handling the K array
+            We could actually minimize this function since we set the BC to 0
+            at the moment.
+        """
 
         tmean = 53.0455
         time_list = [t + timedelta(seconds=tmean) for t in time_list]
