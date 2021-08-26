@@ -150,9 +150,14 @@ class SimulationController():
 
         idx_list = list(range(len(K_sample)))
         with ProcessPoolExecutor(max_workers=N_processes) as executor:
-            results = list(executor.map(
+            results = executor.map(
                 self._run_spot_sim, idx_list, K_sample, phase_sample,
-                time_sample, bjds, bcs))
+                time_sample, bjds, bcs)
+            for res in results:
+                try:
+                    print(res)
+                except Execption as e:
+                    raise(e)
 
     def _run_spot_sim(self, idx, v, phase, time, bjd, bc):
         """ Isolated function to actually run the spot simulation.
@@ -179,6 +184,9 @@ class SimulationController():
         print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
         star = GridSpectrumSimulator(
             N_star=N_star,
+            Teff=self.conf["teff"],
+            logg=self.conf["logg"],
+            feh=self.conf["feh"],
             v_rot=v_rot,
             inclination=inclination,
             limb_darkening=limb_darkening)
@@ -224,9 +232,15 @@ class SimulationController():
             K_sample, time_sample, hip)
 
         idx_list = list(range(len(K_sample)))
-        with ProcessPoolExecutor(max_workers=N_processes) as executor:
-            results = list(executor.map(
-                self._run_pulsation_sim, idx_list, K_sample, time_sample, bjds, bcs))
+        if N_processes > 1:
+            with ProcessPoolExecutor(max_workers=N_processes) as executor:
+                for r in executor.map(
+                        self._run_pulsation_sim, idx_list, K_sample, time_sample, bjds, bcs):
+                    print(r)
+        else:
+            for r in map(self._run_pulsation_sim, idx_list,
+                         K_sample, time_sample, bjds, bcs):
+                print(r)
 
     def _run_pulsation_sim(self, idx, v, time, bjd, bc):
         """ Isolated function to actually run the pulsation simulation.
@@ -245,14 +259,16 @@ class SimulationController():
         """
         N = int(self.conf["n"])
         limb_darkening = bool(int(self.conf["limb_darkening"]))
-        Teff = int(self.conf["teff"])
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
 
         print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
         star = GridSpectrumSimulator(
-            N_star=N_star, N_border=3, Teff=Teff,
+            N_star=N_star, N_border=3,
+            Teff=int(self.conf["teff"]),
+            logg=float(self.conf["logg"]),
+            feh=float(self.conf["feh"]),
             v_rot=v_rot, inclination=inclination,
             limb_darkening=limb_darkening)
 
@@ -284,6 +300,8 @@ class SimulationController():
 
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
         self.saver.save_flux(bjd, star.flux)
+
+        return(f"Star {idx}/{N-1} finished")
 
     def add_barycentric_correction(self, K_array, time_list, star, set_0=True):
         """ At the moment the K_array is not affected.

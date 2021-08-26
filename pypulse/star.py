@@ -8,8 +8,8 @@ from physics import get_ref_spectra, get_interpolated_spectrum
 class GridSpectrumSimulator():
     """ Simulate a the spectrum of a star with a grid."""
 
-    def __init__(self, N_star=500, N_border=5, Teff=4800, v_rot=3000,
-                 inclination=90, limb_darkening=True):
+    def __init__(self, N_star=500, N_border=5, Teff=4800, logg=3.0, feh=0.0,
+                 v_rot=3000, inclination=90, limb_darkening=True):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -26,10 +26,13 @@ class GridSpectrumSimulator():
         self.three_dim_star.create_rotation(v_rot)
         # self.three_dim_star.add_granulation()
         self.projector = TwoDimProjector(self.three_dim_star,
-                                         N=N_star, border=N_border,
+                                         N=N_star,
+                                         border=N_border,
                                          inclination=inclination,
                                          line_of_sight=True,
                                          limb_darkening=limb_darkening)
+        self.logg = logg
+        self.feh = feh
         self.spectrum = None
         self.flux = None
 
@@ -70,6 +73,8 @@ class GridSpectrumSimulator():
             (rest_wavelength,
              ref_spectra,
              ref_headers) = get_ref_spectra(self.temperature,
+                                            logg=self.logg,
+                                            feh=self.feh,
                                             wavelength_range=wavelength_range)
         elif mode == "gaussian":
             print("Gaussian mode")
