@@ -18,9 +18,11 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
     # Round to full .5
     logg = round(logg / 5, 1) * 5
     feh = round(feh / 5, 1) * 5
+    # Round to full 100
     Teff = round(Teff / 100, 0) * 100
 
     folder = DATAROOT / "phoenix_spectra"
+
     # Give feh=0 a small negative number such that the sign operation
     # in the string formatting gives a minus (this is how it works for PHOENIX)
     if feh == 0.0:
@@ -57,11 +59,11 @@ def download_phoenix(filename, out_dir, feh):
 
         :param filename: Name of file to download.
         :param out_dir. pathlib.Path to output directory.
+        :param float feh: Metallicity of the star (needed again for the correct
+                          ftp folder)
     """
     ftp_root = f"ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/Z{feh:+.1f}/"
     ftp_link = ftp_root.strip() + filename.strip()
-
-    "ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/Z+0.5/lte03000-2.50+0.5.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
 
     print(f"Download from {ftp_link}")
     wget.download(ftp_link, out=str(out_dir / filename))
