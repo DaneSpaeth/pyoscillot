@@ -63,23 +63,8 @@ class SimulationController():
 
         self.saver.save_spectrum(shifted_spec, new_header, filename)
 
-    def sample_phase(self, P, N, N_phases=1):
-        """ Return a phase sample and the corresponding time sample.
-
-            Phase ranges from 0 to 1
-        """
-        # At the moment, fix today as last observation date
-        stop = datetime.combine(date.today(), datetime.min.time())
-
-        # Sample one Period
-        P_sample = np.linspace(0, N_phases * P, N, dtype=int)
-        time_sample = np.array([stop - timedelta(days=int(d))
-                                for d in P_sample[::-1]])
-        phase_sample = (1 / P * P_sample) % 1
-
-        return phase_sample, time_sample
-
-    def sample_phase_new(self, sample_P, N_phases=1, N_global=30, N_local=(3, 8)):
+    def sample_phase(self, sample_P, N_global=30, N_periods=1,
+                     N_local=(1, 1), random_day_range=(0, 1)):
         """ New a bit more random phase sampling. Really ugly at the moment
 
             :param float sample_P: Global Period to sample
@@ -88,24 +73,37 @@ class SimulationController():
                                  to sample
             :param tuple of ints N_local: Min and max number of datapoints to
                                           draw for one global datapoint
+            :param tuple of ints random_day_range: Min and max deviation from
+                                                   global day to allow for
+                                                   local days
+
+            The current default params allow a uniform sampling with 1
+            local day per global day without deviation.
+
+            It therefore replaces the previous function.
         """
         stop = datetime.combine(date.today(), datetime.min.time())
 
-        start = stop - timedelta(days=int(sample_P * N_phases))
+        start = stop - timedelta(days=int(sample_P * N_periods))
 
         time_sample = []
 
-        global_days = np.linspace(0, int(sample_P * N_phases), N_global)
+        global_days = np.linspace(0, int(sample_P * N_periods), N_global)
         local_days = []
         for gday in global_days:
             for i in range(random.randint(N_local[0], N_local[1])):
                 # Simulate multiple observations shortly after each other
-                day_random = random.randrange(-10, 10)
+                day_random = random.randrange(random_day_range[0],
+                                              random_day_range[1])
                 local_day = start + \
                     timedelta(days=int(gday)) + timedelta(days=int(day_random))
                 time_sample.append(local_day)
 
-        return sorted(time_sample)
+        time_sample = sorted(time_sample)
+        time_sample = np.array(time_sample)
+        phase_sample = np.mod((time_sample - start) /
+                              timedelta(days=1), sample_P)
+        return phase_sample, time_sample
 
     def simulate_planet(self):
         """ Return a list of wavelengths and fluxes for a planetary signal."""
@@ -126,13 +124,11 @@ class SimulationController():
             Teff=int(self.conf["teff"]), wavelength_range=wavelength_range)
 
         # Add the Doppler shifts
-        shift_wavelengths = []
-        spectra = []
         for v, time, bc, bjd in zip(K_sample, time_sample, bcs, bjds):
             vo = v
             ve = 0
             a = (1.0 + vo / C) / (1.0 + ve / C)
-            shift_wavelengths = np.exp(np.log(rest_wavelength) + np.log(a))
+            shift_wavelength = np.exp(np.log(rest_wavelength) + np.log(a))
 
             self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
@@ -148,11 +144,6 @@ class SimulationController():
         v_rot = self.conf["v_rot"]
 
         phase_sample, time_sample = self.sample_phase(P, N)
-
-        # TODO REMOVE
-        phase_sample = phase_sample[:-1]
-        time_sample = time_sample[:-1]
-        # END TODO
 
         # At the moment assume that there is no planetary signal present
         # But still create K_sample for barycentric correction
@@ -193,6 +184,12 @@ class SimulationController():
         """ Simulate the pulsation spectra."""
         # Get the global parameters
         N = int(self.conf["n"])
+        N_local_min = int(self.conf["n_local_min"])
+        N_local_max = int(self.conf["n_local_max"])
+        rand_day_min = int(self.conf["random_day_local_range_min"])
+        rand_day_max = int(self.conf["random_day_local_range_max"])
+
+        N_periods = int(self.conf["n_periods"])
         hip = int(self.conf["hip"])
         N_processes = int(self.conf["n_processes"])
 
@@ -200,8 +197,10 @@ class SimulationController():
         # TODO fix phase sampling
         # At the moment take the first mode as sampling period
         P = self.conf[self.simulation_keys[0]]["period"]
-        time_sample = self.sample_phase_new(
-            P, N_phases=1, N_global=N, N_local=(1, 1))
+        _, time_sample = self.sample_phase(
+            P, N_periods=N_periods, N_global=N,
+            N_local=(N_local_min, N_local_max),
+            random_day_range=(rand_day_min, rand_day_max))
 
         K_sample = np.zeros(len(time_sample))
 
