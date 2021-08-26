@@ -149,15 +149,16 @@ class SimulationController():
             K_sample, time_sample, int(self.conf["hip"]))
 
         idx_list = list(range(len(K_sample)))
-        with ProcessPoolExecutor(max_workers=N_processes) as executor:
-            results = executor.map(
-                self._run_spot_sim, idx_list, K_sample, phase_sample,
-                time_sample, bjds, bcs)
-            for res in results:
-                try:
-                    print(res)
-                except Execption as e:
-                    raise(e)
+        if N_processes > 1:
+            with ProcessPoolExecutor(max_workers=N_processes) as executor:
+                for r in executor.map(
+                        self._run_spot_sim, idx_list, K_sample, phase_sample,
+                        time_sample, bjds, bcs):
+                    print(r)
+        else:
+            for r in map(self._run_pulsation_sim, idx_list,
+                         K_sample, time_sample, bjds, bcs):
+                print(r)
 
     def _run_spot_sim(self, idx, v, phase, time, bjd, bc):
         """ Isolated function to actually run the spot simulation.
@@ -205,6 +206,8 @@ class SimulationController():
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
         self.saver.save_flux(bjd, star.flux)
 
+        return(f"Star {idx}/{N-1} finished")
+
     def simulate_pulsation(self):
         """ Simulate the pulsation spectra."""
         # Get the global parameters
@@ -215,7 +218,6 @@ class SimulationController():
         rand_day_max = int(self.conf["random_day_local_range_max"])
 
         N_periods = int(self.conf["n_periods"])
-        hip = int(self.conf["hip"])
         N_processes = int(self.conf["n_processes"])
 
         # Determine the time sample
@@ -229,7 +231,7 @@ class SimulationController():
         K_sample = np.zeros(len(time_sample))
 
         K_sample, bcs, bjds = self.add_barycentric_correction(
-            K_sample, time_sample, hip)
+            K_sample, time_sample, int(self.conf["hip"]))
 
         idx_list = list(range(len(K_sample)))
         if N_processes > 1:
@@ -311,6 +313,8 @@ class SimulationController():
             at the moment.
         """
 
+        # TODO: Fix the exposure time in some way (I don't know at the
+        # moment if it matters)
         tmean = 53.0455
         time_list = [t + timedelta(seconds=tmean) for t in time_list]
         jdutc_times = [Time(t, scale="utc") for t in time_list]
@@ -318,6 +322,7 @@ class SimulationController():
         for jdutc in jdutc_times:
             jdutc.format = "jd"
 
+        # Define the Calar Alto Observatory
         caha = observatories.calar_alto
         lat = float(caha["lat"].replace(" N", ""))
         lon = -float((caha["lon"].replace(" W", "")))
@@ -327,28 +332,32 @@ class SimulationController():
         bjds = []
         for jdutc in jdutc_times:
 
-            # result = get_BC_vel(JDUTC=jdutc, hip_id=star, lat=lat, longi=lon,
-            #                     alt=alt, ephemeris='de430')
-            result = get_BC_vel(JDUTC=jdutc,
-                                ra=225.72515818125,
-                                dec=2.0913040080555554,
-                                epoch=2451545.0,
-                                pmra=-54.89,
-                                pmdec=13.34,
-                                px=0.0,
-                                lat=37.2236,
-                                longi=-2.5463,
-                                alt=2168.0)
-            bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc,
-                                                 ra=225.72515818125,
-                                                 dec=2.0913040080555554,
-                                                 epoch=2451545.0,
-                                                 pmra=-54.89,
-                                                 pmdec=13.34,
-                                                 px=0.0,
-                                                 lat=37.2236,
-                                                 longi=-2.5463,
-                                                 alt=2168.0)
+            result = get_BC_vel(JDUTC=jdutc, hip_id=star,
+                                lat=lat, longi=lon,
+                                alt=alt, ephemeris='de430')
+            # result = get_BC_vel(JDUTC=jdutc,
+            #                     ra=225.72515818125,
+            #                     dec=2.0913040080555554,
+            #                     epoch=2451545.0,
+            #                     pmra=-54.89,
+            #                     pmdec=13.34,
+            #                     px=0.0,
+            #                     lat=37.2236,
+            #                     longi=-2.5463,
+            #                     alt=2168.0)
+            # bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc,
+            #                                      ra=225.72515818125,
+            #                                      dec=2.0913040080555554,
+            #                                      epoch=2451545.0,
+            #                                      pmra=-54.89,
+            #                                      pmdec=13.34,
+            #                                      px=0.0,
+            #                                      lat=37.2236,
+            #                                      longi=-2.5463,
+            #                                      alt=2168.0)
+            bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, hip_id=star,
+                                                 lat=lat, longi=lon,
+                                                 alt=alt, ephemeris='de430')
             bcs.append(float(result[0]))
             bjds.append(float(bjd_result[0]))
 
