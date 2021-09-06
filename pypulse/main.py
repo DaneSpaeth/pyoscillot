@@ -31,6 +31,5 @@ def main(ticket, run_laptop=False):
 
 
 if __name__ == "__main__":
-    # ticket = "hip73620_ticket.ini"
-    ticket = "example_ticket.ini"
+    ticket = "hip73620_ticket.ini"
     main(ticket, run_laptop=True)
