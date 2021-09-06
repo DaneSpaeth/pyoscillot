@@ -7,14 +7,14 @@ import socket
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
 
-def main(ticket):
+def main(ticket, run_laptop=False):
     """ Run a simulation specified in ticket. Run serval. Copy all files
         and plot the result.
     """
     global_dict = parse_global_ini()
     conf_dict = parse_ticket(ticket)
 
-    if not laptop:
+    if not laptop or run_laptop:
         # Run the Simulation
         SimulationController(ticket)
     else:
@@ -31,5 +31,6 @@ def main(ticket):
 
 
 if __name__ == "__main__":
-    ticket = "hip73620_ticket.ini"
-    main(ticket)
+    # ticket = "hip73620_ticket.ini"
+    ticket = "example_ticket.ini"
+    main(ticket, run_laptop=True)

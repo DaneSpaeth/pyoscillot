@@ -142,6 +142,24 @@ class GridSpectrumSimulator():
 
         return rest_wavelength, total_spectrum
 
+    def get_arrays(self):
+        """ Get all arrays (e.g. pulsation, temp) of the simulation.
+
+            Return all arrays as a dictionary.
+
+            Useful for creating movies afterwards.
+        """
+        array_dict = {
+            "pulsation_rad": self.projector.pulsation_rad(),
+            "pulsation_phi": self.projector.pulsation_phi(),
+            "pulsation_theta": self.projector.pulsation_theta(),
+            "pulsation": self.projector.pulsation(),
+            "temperature": self.projector.temperature(),
+            "rotation": self.projector.rotation(),
+            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann()}
+
+        return array_dict
+
     def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
                       T_var=0, T_phase=0):
         """ Add a pulsation to the star."""

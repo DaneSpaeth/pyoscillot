@@ -237,7 +237,8 @@ class SimulationController():
         if N_processes > 1:
             with ProcessPoolExecutor(max_workers=N_processes) as executor:
                 for r in executor.map(
-                        self._run_pulsation_sim, idx_list, K_sample, time_sample, bjds, bcs):
+                        self._run_pulsation_sim, idx_list,
+                        K_sample, time_sample, bjds, bcs):
                     print(r)
         else:
             for r in map(self._run_pulsation_sim, idx_list,
@@ -299,6 +300,9 @@ class SimulationController():
 
         # Add doppler shift due to barycentric correction
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
+
+        array_dict = star.get_arrays()
+        self.saver.save_arrays(array_dict, bjd)
 
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
         self.saver.save_flux(bjd, star.flux)
