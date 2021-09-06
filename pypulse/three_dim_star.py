@@ -144,6 +144,7 @@ class ThreeDimStar():
         """
         # Calculate the spherical harmonic Y(l,m)
         harm = sph_harm(m, l, self.phi, self.theta)
+
         displ = harm * np.exp(1j * 2 * np.pi * nu * t)
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
@@ -155,6 +156,7 @@ class ThreeDimStar():
 
         self.displacement_rad += displ
         self.pulsation_rad += pulsation
+
         # Caution temperature is not reseted
         temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         temp_variation = T_var * temp_variation  # / np.nanmax(temp_variation)
@@ -534,7 +536,4 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-
-    star = ThreeDimStar()
-    star.add_spot(rad=10)
-    projector = TwoDimProjector(star, inclination=60, limb_darkening=False)
+    pass
