@@ -156,7 +156,7 @@ class SimulationController():
                         time_sample, bjds, bcs):
                     print(r)
         else:
-            for r in map(self._run_pulsation_sim, idx_list,
+            for r in map(self._run_spot_sim, idx_list,
                          K_sample, time_sample, bjds, bcs):
                 print(r)
 
