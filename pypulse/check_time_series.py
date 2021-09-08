@@ -50,6 +50,9 @@ def check_time_series(name):
 
     ax[1, 0].errorbar([b - BJD_OFFSET for b in crx_dict["bjd"]], crx_dict["crx"],
                       yerr=crx_dict["crxe"], linestyle="None", marker="o")
+
+    crx = crx_dict["crx"]
+    print(np.max(crx) - np.min(crx))
     ax[1, 0].set_xlabel("Time [MJD]")
     ax[1, 0].set_ylabel("CRX [m/s/Np]")
     ax[2, 0].errorbar(rv, crx_dict["crx"],
@@ -88,4 +91,4 @@ def plot_temperature(name):
 
 
 if __name__ == "__main__":
-    plot_temperature("test_arrays")
+    check_time_series("small_amplitude_100K")
