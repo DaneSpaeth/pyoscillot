@@ -67,7 +67,8 @@ def download_phoenix(filename, out_dir, feh):
 
     print(f"Download from {ftp_link}")
     wget.download(ftp_link, out=str(out_dir / filename))
-    print("Download complete")
+    print("Download complete!")
+    print(f"Saved to {str(out_dir / filename)}")
 
 
 def carmenes_template():
