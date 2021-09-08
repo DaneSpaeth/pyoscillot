@@ -33,10 +33,10 @@ def planck_ratio(wav, T_1, T_2):
 
 
 def get_interpolated_spectrum(T_local,
-                              wavelength_range=(3000, 7000),
-                              ref_wave=None,
-                              ref_spectra=None,
-                              ref_headers=None):
+                              ref_wave,
+                              ref_spectra,
+                              ref_headers=None,
+                              wavelength_range=(3000, 7000)):
     """ Return a potentially interpolated spectrum. Returns the same format as
         the phoenix spectrum.
 
@@ -44,25 +44,25 @@ def get_interpolated_spectrum(T_local,
         logg=3.0, feh=0.0
     """
 
-    T_close = int(round(T_local, -2))
+    T_low = int(np.floor(T_local / 100) * 100)
+    T_high = int(np.ceil(T_local / 100) * 100)
 
-    # Get closest spectrum
-    if ref_spectra is None:
-        print("I AM HERE")
-        wave, spec, header = phoenix_spectrum(
-            T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
-    else:
-        # print(f"Use the given Reference Spectra at T={T_close}")
-        assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
-        assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
-        wave = ref_wave
-        spec = ref_spectra[T_close]
-        header = ref_headers[T_close]
-        assert wave.shape == spec.shape
+    # print(f"Use the given Reference Spectra at T={T_close}")
+    assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
+    assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
+    wave = ref_wave
+    spec_low = ref_spectra[T_low]
+    spec_high = ref_spectra[T_high]
+    header = ref_headers[T_low]
 
-        # Now interpolate with the contrast given by the Planck curves
-    if int(T_local) != T_close:
-        spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
+    # Now interpolate with the contrast given by the Planck curves
+
+    ratio_high = 1 - (np.abs(T_high - T_local)) / 100
+    ratio_low = 1 - (np.abs(T_low - T_local)) / 100
+    spec_low_interpol = spec_low * planck_ratio(wave * 1e-10, T_local, T_low)
+    spec_high_interpol = spec_high * planck_ratio(wave * 1e-10, T_local, T_low)
+    spec = (spec_low_interpol * ratio_low + spec_high_interpol * ratio_high)
+
     return wave, spec, header
 
 
@@ -92,6 +92,15 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000)):
     T_unique = np.unique(T_grid)
     T_unique = T_unique.astype(int)
 
+    # Append the next lowest and next highest values as well
+    T_unique = np.insert(T_unique, 0, T_unique[0] - 100)
+    T_unique = np.append(T_unique, T_unique[-1] + 100)
+
+    # And now define a grid from the lowest to the highest value with all full 100s
+
+    T_unique = np.linspace(np.min(T_unique), np.max(T_unique), int(
+        (np.max(T_unique) - np.min(T_unique)) / 100) + 1, dtype=int)
+
     ref_spectra = {}
     ref_headers = {}
     for T in T_unique:
@@ -103,23 +112,21 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000)):
 
 
 if __name__ == "__main__":
-    T_grid = np.ones((100, 100)) * 4700.0
-    T_grid[0:20, :] = 3000
-    T_grid[50:60, :] = 4500
-    T_grid[20:30, :] = 5201
+    T_grid = np.ones((100, 100)) * 3100
+    T_grid[0:20, :] = 3001
+    T_grid[50:60, :] = 3200
 
     wave, ref_spectra, ref_headers = get_ref_spectra(
         T_grid, logg=2.0, feh=0.0, wavelength_range=(3000, 12000))
-    print(ref_spectra.keys())
 
-    # wave, ref_spectra, ref_headers = get_ref_spectra(
-    #     T_grid, wavelength_range=(3000, 12000))
-
-    # wave3, spec3, header3 = get_interpolated_spectrum(3000,
-    #                                                   ref_wave=wave,
-    #                                                   ref_spectra=ref_spectra,
-    #                                                   ref_headers=ref_headers)
-    # # plt.plot(wave3, spec3)
-    # # plt.plot(wave2, spec2)
-    # plt.plot(wave3, spec3)
-    # plt.show()
+    wave, spec1, header3 = get_interpolated_spectrum(3050,
+                                                     ref_wave=wave,
+                                                     ref_spectra=ref_spectra,
+                                                     ref_headers=ref_headers)
+    wave, spec2, header3 = get_interpolated_spectrum(3060,
+                                                     ref_wave=wave,
+                                                     ref_spectra=ref_spectra,
+                                                     ref_headers=ref_headers)
+    plt.plot(wave, spec2)
+    plt.plot(wave, spec1)
+    plt.show()

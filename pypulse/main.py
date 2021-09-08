@@ -14,10 +14,13 @@ def main(ticket, run_laptop=False):
     global_dict = parse_global_ini()
     conf_dict = parse_ticket(ticket)
 
-    if not laptop or run_laptop:
+    if not laptop:
         # Run the Simulation
         SimulationController(ticket)
     else:
+        if run_laptop:
+            # Run the Simulation even if on laptop
+            SimulationController(ticket)
         # Run Serval
         subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                         str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
@@ -33,4 +36,4 @@ def main(ticket, run_laptop=False):
 if __name__ == "__main__":
     # ticket = "small_amplitude.ini"
     ticket = "hip73620_ticket.ini"
-    main(ticket, run_laptop=False)
+    main(ticket, run_laptop=True)
