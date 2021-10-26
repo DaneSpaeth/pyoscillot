@@ -119,13 +119,32 @@ class ThreeDimStar():
                  random.uniform(-1, 1)])
             normal = normal / np.dot(normal, normal)
 
-            close_plane_mask = np.abs(np.dot(vecs, normal)) <= 0.0001
+            close_plane_mask = np.abs(np.dot(vecs, normal)) <= 0.01
             close_plane_mask = close_plane_mask.reshape(self.phi.shape)
 
             self.temperature[close_plane_mask] = self.Teff - 400
             self.border_mask[close_plane_mask] = 1
         print(
             f"Border Value: {np.sum(self.border_mask)/np.size(self.border_mask)}")
+
+    def add_granulation_new(self, random_points=100):
+        centers = np.zeros((random_points, 2))
+        quadr_distances = np.zeros(
+            (random_points, self.phi.shape[0], self.phi.shape[1]))
+        for i in range(random_points):
+            random_phi = random.uniform(0, 2 * np.pi)
+            random_theta = random.uniform(0, np.pi)
+
+            diff_phi = np.abs(self.phi[0, :] - random_phi)
+            diff_theta = np.abs(self.theta[:, 0] - random_theta)
+
+            idx_phi = np.argmin(diff_phi)
+            idx_theta = np.argmin(diff_theta)
+
+            self.temperature[idx_theta, idx_phi] = 1000000
+            centers[i, :] = random_theta, random_phi
+            quadr_distances[i, :, :] = (
+                self.phi - random_phi)**2 + (self.theta - random_theta)**2
 
     def create_rotation(self, v=3000):
         """ Create a 3D rotation map.
@@ -536,4 +555,8 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    pass
+    star = ThreeDimStar()
+    star.add_granulation_new()
+    projector = TwoDimProjector(star, limb_darkening=False, N=1000)
+    plt.imshow(projector.temperature(), cmap="plasma")
+    plt.show()
