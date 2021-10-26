@@ -4,7 +4,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from pathlib import Path
-from check_time_series import read_in_rvs, _read_in_crx
+# from check_time_series import read_in_rvs, _read_in_crx
 import plapy.rv.dataloader as load
 
 
@@ -63,7 +63,7 @@ def _create_and_save_arrays_pulsation():
         plt.close()
 
 
-def read_in_saved_arrays_pulsation():
+def read_in_saved_arrays_pulsation_old():
     path = Path(f"arrays/{PULSATION_NAME}")
     array_paths = path.glob("*npy")
     pulse_maps = []
@@ -75,6 +75,23 @@ def read_in_saved_arrays_pulsation():
         phis.append(phi)
     pulse_maps = [-1 * pulse_map for _,
                   pulse_map in sorted(zip(phis, pulse_maps))]
+
+    return pulse_maps
+
+
+def read_in_saved_arrays_pulsation():
+    path = Path(
+        f"/home/dane/Documents/PhD/pypulse/data/fake_spectra/{PULSATION_NAME}/arrays/pulsation")
+    array_paths = path.glob("*npy")
+    pulse_maps = []
+    bjds = []
+
+    for array_path in sorted(array_paths):
+        pulse_maps.append(np.load(array_path))
+        bjd = float(array_path.name.split(".npy")[0])
+        bjds.append(bjd)
+    pulse_maps = [-1 * pulse_map for _,
+                  pulse_map in sorted(zip(bjds, pulse_maps))]
 
     return pulse_maps
 
@@ -175,7 +192,7 @@ def animate_pulse():
         ani = animation.FuncAnimation(
             fig, updatefig, images, interval=175, blit=False, repeat=False)
         if not dlw:
-            ani.save("pulse_crx.gif")
+            ani.save("/home/dane/Documents/PhD/all-hands-on-deck/pulse_spp.gif")
         else:
             ani.save("pulse_dlw.gif")
 
@@ -187,13 +204,14 @@ def animate_pulse():
         ax = init_plots(ax, index, time, rv, rve, crx, crxe, )
         ax = update_plots(ax, index, time, rv, rve, crx, crxe, dlw=dlw)
         if not dlw:
-            plt.savefig("pulse_crx.pdf")
+            plt.savefig(
+                "/home/dane/Documents/PhD/all-hands-on-deck/pulse_spp.pdf")
         else:
             plt.savefig("pulse_dlw.pdf")
 
     create_plot(im, fig, ax, images, index, time,
                 rv, rve, crx, crxe, dlw=False)
-    create_plot(im, fig, ax, images, index, time, rv, rve, dlw, dlwe, dlw=True)
+    # create_plot(im, fig, ax, images, index, time, rv, rve, dlw, dlwe, dlw=True)
 
 
 def init_plots(ax, index, time, rv, rve, crx, crxe):
@@ -380,8 +398,9 @@ def plot_simplanet():
 if __name__ == "__main__":
     # _create_and_save_arrays()
     # animate_spot()
-    PULSATION_NAME = "pulsation_l1m1_k100_vp1_incl60"
-    _create_and_save_arrays_pulsation()
+    # PULSATION_NAME = "pulsation_l1m1_k100_vp1_incl60"
+    PULSATION_NAME = "hip16335_talk_refined_highres"
+    # _create_and_save_arrays_pulsation()
     # read_in_saved_arrays_pulsation()
-    # animate_pulse()
+    animate_pulse()
     # plot_simplanet()
