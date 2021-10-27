@@ -71,9 +71,9 @@ def download_phoenix(filename, out_dir, feh):
     print(f"Saved to {str(out_dir / filename)}")
 
 
-def carmenes_template():
+def carmenes_template(filename="template.fits"):
     """ Return spec, sig, cont and wave of Carmenes template."""
-    template = DATAROOT / "template.fits"
+    template = DATAROOT / filename
     with fits.open(template) as hdul:
         spec = hdul[1].data
         cont = hdul[2].data
