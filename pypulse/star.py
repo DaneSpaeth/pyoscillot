@@ -132,9 +132,9 @@ class GridSpectrumSimulator():
         if mode == "oneline":
             total_spectrum += np.abs(total_spectrum.min())
             total_spectrum = total_spectrum / total_spectrum.max()
-        else:
-            total_spectrum = adjust_resolution(
-                rest_wavelength, total_spectrum, R=90000)
+        # else:
+        #     total_spectrum = adjust_resolution(
+        #         rest_wavelength, total_spectrum, R=90000)
         self.spectrum = total_spectrum
 
         # Also calculate the flux
