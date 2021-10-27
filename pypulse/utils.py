@@ -59,12 +59,12 @@ def bisector(wavelength, spectrum):
     right_wavelength = wavelength[max_idx:]
     for s in search_for:
         # print(s)
-        #diff_left = np.abs(left_spectrum - s)
+        # diff_left = np.abs(left_spectrum - s)
         # diff_right = np.abs(right_spectrum - s)
-        #left_idx = np.argmin(diff_left)
-        #s = left_spectrum[left_idx]
+        # left_idx = np.argmin(diff_left)
+        # s = left_spectrum[left_idx]
         # right_idx = np.argmin(diff_right)
-        #left_wave = left_wavelength[np.argmin(diff_left)]
+        # left_wave = left_wavelength[np.argmin(diff_left)]
         # right_wave = right_wavelength[np.argmin(diff_right)]
         cs = CubicSpline(left_spectrum[::-1], left_wavelength[::-1])
         left_wave = cs(s)
@@ -199,6 +199,7 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     # Generate logarithmic wavelength grid for smoothing
     w_logmin = np.log10(np.nanmin(w_grid))
     w_logmax = np.log10(np.nanmax(w_grid))
+
     n_w = np.size(w_grid) * w_sample
     w_log = np.logspace(w_logmin, w_logmax, num=n_w)
 
@@ -255,13 +256,40 @@ def adjust_snr(spec, wave_template, spec_template, sig_template, snr=None):
 
 
 if __name__ == "__main__":
-    from plapy.constants import C
 
-    line = 6254.29
-    wave, spec, _ = phoenix_spectrum(
-        wavelength_range=(line - 0.25, line + 0.25))
+    from dataloader import carmenes_template
+    (spec, cont, sig, wave) = carmenes_template("template.fits")
+    idx = 20
+    carm_spec = spec[idx]
+    carm_wave = wave[idx]
+    carm_cont = cont[idx]
+    carm_sig = sig[idx]
+
+    wave, spec, _ = phoenix_spectrum(Teff=4800, logg=2.5,
+                                     wavelength_range=(carm_wave[0], carm_wave[-1]))
     spec = spec / np.max(spec)
-    bis_wave, bis = bisector_new(wave, spec)
-    # plt.plot(wave, spec, marker=".", linestyle="None")
-    plt.plot((bis_wave - np.median(bis_wave)) / np.median(bis_wave) * C, bis)
+    smoothed_spec = adjust_resolution(wave, spec, 90000)
+    smoothed_oversample_spec = adjust_resolution(
+        wave, spec, 90000, w_sample=100)
+    # plt.plot(wave, spec)
+
+    carm_spec /= np.nanmax(carm_spec)
+    # carm_spec = -1 * carm_spec + 1
+    # carm_spec = carm_spec / carm_cont
+    scale = np.nanmedian(spec) / np.nanmedian(carm_spec)
+    # shifted_nooversample_spec = add_doppler_shift(spec, wave, -2.0)
+
+    shifted_spec = add_doppler_shift(smoothed_spec, wave, -0.91)
+
+    # plt.plot(wave, spec, linewidth=3)
+    plt.plot(carm_wave, carm_spec * scale,
+             linewidth=2, label="CARMENES template")
+    plt.plot(wave, shifted_spec, linewidth=2, label="Smoothed PHOENIX")
+    # plt.plot(wave, smoothed_oversample_spec, linewidth=2, label="Oversampled PHOENIX")
+    # plt.plot(wave, smoothed_twice_spec, linewidth=3)
+    # plt.plot(carm_wave, carm_cont)
+    plt.xlim(6240, 6260)
+    # plt.ylim(0.15, 1.1)
+    plt.legend()
+
     plt.show()
