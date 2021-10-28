@@ -71,7 +71,7 @@ def download_phoenix(filename, out_dir, feh):
     print(f"Saved to {str(out_dir / filename)}")
 
 
-def carmenes_template(filename="template.fits"):
+def carmenes_template(filename="CARMENES_template.fits"):
     """ Return spec, sig, cont and wave of Carmenes template."""
     template = DATAROOT / filename
     with fits.open(template) as hdul:
@@ -83,13 +83,20 @@ def carmenes_template(filename="template.fits"):
     return (spec, cont, sig, wave)
 
 
-if __name__ == "__main__":
-    wavelength_range = (3000, 30000)
-    feh = -0.0
-    teff = 3529
-    logg = 1.2
-    wavelength, spectrum, _ = phoenix_spectrum(
-        wavelength_range=wavelength_range, Teff=teff, logg=logg, feh=feh)
+def harps_template(filename="HARPS_template.fits"):
+    """ Return spec, sig, cont and wave of Carmenes template."""
+    template = DATAROOT / filename
+    with fits.open(template) as hdul:
+        hdu = hdul[1]
+        wave = np.array(hdu.data["WAVE"][0])
+        spec = np.array(hdu.data["FLUX"][0])
+        sig = np.array(hdu.data["ERR"][0])
 
-    plt.plot(wavelength, spectrum)
+    return (spec, sig, wave)
+
+
+if __name__ == "__main__":
+    (spec, sig, wave) = harps_template()
+
+    plt.plot(wave, sig)
     plt.show()
