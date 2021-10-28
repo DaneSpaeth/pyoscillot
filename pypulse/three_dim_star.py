@@ -164,7 +164,10 @@ class ThreeDimStar():
         # Calculate the spherical harmonic Y(l,m)
         harm = sph_harm(m, l, self.phi, self.theta)
 
+        print(harm)
+
         displ = harm * np.exp(1j * 2 * np.pi * nu * t)
+        print(displ)
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
         # you need to differentiate the displacements wrt t which introduces
@@ -172,6 +175,8 @@ class ThreeDimStar():
         # but we absorb the  2 * np.pi * nu part in the v_p constant
         # See Kochukhov et al. (2004)
         pulsation = 1j * v_p * displ
+
+        print(pulsation)
 
         self.displacement_rad += displ
         self.pulsation_rad += pulsation
@@ -556,7 +561,14 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     star = ThreeDimStar()
-    star.add_granulation_new()
-    projector = TwoDimProjector(star, limb_darkening=False, N=1000)
-    plt.imshow(projector.temperature(), cmap="plasma")
+    # star.add_granulation_new()
+    #star.add_pulsation(l=1, m=-1)
+    # star.add_pulsation(l=2, m=0)
+    star.add_pulsation(l=1, m=0, t=10)
+    # star.add_pulsation(l=1, m=1)
+    # star.add_pulsation(l=1, m=-1)
+    projector = TwoDimProjector(
+        star, line_of_sight=False, limb_darkening=False, N=1000, inclination=30)
+    plt.imshow(projector.pulsation_rad(),
+               cmap="seismic", vmin=-0.5, vmax=0.5)
     plt.show()
