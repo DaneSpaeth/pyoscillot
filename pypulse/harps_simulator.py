@@ -22,7 +22,7 @@ def interpolate(spectrum, wavelength):
 
         # Reduce the level to something similar to HARPS
         order_spec = order_spec * \
-            np.nanmax(spec[order]) / np.nanmax(order_spec)
+            np.nanmean(spec[order]) / np.nanmean(order_spec)
 
         interpol_spec.append(order_spec)
     interpol_spec = np.array(interpol_spec)
@@ -42,9 +42,9 @@ def get_new_header(time, bc=None, bjd=None):
     time = Time(time, scale="utc")
     header_dict = {"DATE": time.isot,
                    "DATE-OBS": time.isot,
-                   "MJD-OBS": time.mjd,
-                   "JD": time.jd - 2400000,
-                   "HJD": time.jd - 2400000,
+                   "MJD-OBS": time.mjd + 2400000,
+                   #"JD": time.jd - 2400000,
+                   #"HJD": time.jd - 2400000,
                    "PI-COI": "SpaethSim",
                    "OBJECT": "Sim",
                    "TEXPTIME": 100.0}
@@ -55,7 +55,7 @@ def get_new_header(time, bc=None, bjd=None):
     if bc is not None:
         header_dict["HIERARCH ESO DRS BERV"] = bc / 1000
     if bjd is not None:
-        header_dict["HIERARCH ESO DRS BJD"] = bjd - 2400000
+        header_dict["HIERARCH ESO DRS BJD"] = bjd
 
     # others: RA, DEC, UTC, LST, MJD-END
 
