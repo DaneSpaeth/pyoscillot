@@ -3,6 +3,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import plapy.rv.dataloader as load
 from parse_ini import parse_global_ini
+import sys
+sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
+from plotter import plot_rv, plot_activity, plot_activity_rv
 
 
 def check_time_series(name):
@@ -29,51 +32,16 @@ def check_time_series(name):
     flux = flux / np.median(flux)
 
     # Read in RV, CRX and DLW
-    rv_dict = load.rv(name)
-    crx_dict = load.crx(name)["SIMULATION"]
-    dlw_dict = load.dlw(name)["SIMULATION"]
-
-    time = rv_dict["SIMULATION"]["bjd"]
-    rv = rv_dict["SIMULATION"]["rv"]
-    rve = rv_dict["SIMULATION"]["rve"]
-
-    print(time)
-    print(len(flux))
-    print(len(rv))
-
-    # PLOT
-    BJD_OFFSET = 2400000.5
     fig, ax = plt.subplots(3, 2, figsize=(20, 10))
+    rv_dict = load.rv(name)
+    crx_dict = load.crx(name)
+    dlw_dict = load.dlw(name)
 
-    ax[0, 0].errorbar(time - BJD_OFFSET, rv, yerr=rve,
-                      linestyle="None", marker="o")
-    ax[0, 0].set_xlabel("Time [MJD]")
-    ax[0, 0].set_ylabel("RV [m/s]")
-    ax[0, 1].plot(bjd - BJD_OFFSET, flux, linestyle="None", marker="o")
-    ax[0, 1].set_xlabel("Time [MJD]")
-    ax[0, 1].set_ylabel("Flux [%]")
-
-    ax[1, 0].errorbar([b - BJD_OFFSET for b in crx_dict["bjd"]], crx_dict["crx"],
-                      yerr=crx_dict["crxe"], linestyle="None", marker="o")
-
-    crx = crx_dict["crx"]
-    print(np.max(crx) - np.min(crx))
-    ax[1, 0].set_xlabel("Time [MJD]")
-    ax[1, 0].set_ylabel("CRX [m/s/Np]")
-    ax[2, 0].errorbar(rv, crx_dict["crx"],
-                      yerr=crx_dict["crxe"], linestyle="None", marker="o")
-    ax[2, 0].set_xlabel("RV [m/s]")
-    ax[2, 0].set_ylabel("CRX [m/s/Np]")
-    ax[1, 1].errorbar([b - BJD_OFFSET for b in dlw_dict["bjd"]], dlw_dict["dlw"],
-                      yerr=dlw_dict["dlwe"], linestyle="None", marker="o")
-    ax[1, 1].set_xlabel("Time [MJD]")
-    ax[1, 1].set_ylabel("dlW [m^2/s^2]")
-    # ax[1].set_ylim(-100, 100)
-    ax[2, 1].errorbar(rv, dlw_dict["dlw"],
-                      yerr=dlw_dict["dlwe"], linestyle="None", marker="o")
-    ax[2, 1].set_xlabel("RV [m/s]")
-    ax[2, 1].set_ylabel("dLW [m^²/s^2]")
-    # fig.suptitle(name)
+    plot_rv(rv_dict, ax=ax[0, 0])
+    plot_activity(crx_dict, ax=ax[1, 0])
+    plot_activity(dlw_dict, ax=ax[2, 0])
+    plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1])
+    plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1])
     fig.tight_layout()
     plt.show()
 
@@ -96,4 +64,4 @@ def plot_temperature(name):
 
 
 if __name__ == "__main__":
-    check_time_series("small_amplitude_100K")
+    check_time_series("test_harps")
