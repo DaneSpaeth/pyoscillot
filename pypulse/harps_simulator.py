@@ -7,7 +7,7 @@ from utils import adjust_resolution
 
 def interpolate(spectrum, wavelength):
     """ Interpolate to the HARPS spectrum."""
-    (spec, wave) = harps_template()
+    (spec, wave, blaze) = harps_template()
 
     interpol_spec = []
     spectrum = adjust_resolution(wavelength, spectrum, R=115000, w_sample=5)
@@ -17,9 +17,12 @@ def interpolate(spectrum, wavelength):
         func = interp1d(wavelength, spectrum, kind="linear")
         order_spec = func(wave[order])
 
+        # Adjust for the blaze
+        order_spec *= blaze[order]
+
         # Reduce the level to something similar to HARPS
         order_spec = order_spec * \
-            np.nanmean(spec[order]) / np.nanmean(order_spec)
+            np.nanmax(spec[order]) / np.nanmax(order_spec)
 
         # At the moment do not correct for the continuum
         # order_cont = cont[order] / np.mean(cont[order])
