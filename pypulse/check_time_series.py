@@ -16,11 +16,14 @@ def check_time_series(name):
     fluxfile = rvlibpath / name / "flux.txt"
     bjd = []
     flux = []
-    with open(fluxfile, "r") as f:
-        for line in f:
-            columns = line.strip().split()
-            bjd.append(float(columns[0]))
-            flux.append(float(columns[1]))
+    try:
+        with open(fluxfile, "r") as f:
+            for line in f:
+                columns = line.strip().split()
+                bjd.append(float(columns[0]))
+                flux.append(float(columns[1]))
+    except FileNotFoundError:
+        pass
     bjd = np.array(bjd)
     flux = np.array(flux)
     flux = flux / np.median(flux)
@@ -30,9 +33,11 @@ def check_time_series(name):
     crx_dict = load.crx(name)["SIMULATION"]
     dlw_dict = load.dlw(name)["SIMULATION"]
 
-    time = rv_dict["SIMULATION"][0]
-    rv = rv_dict["SIMULATION"][1]
-    rve = rv_dict["SIMULATION"][2]
+    time = rv_dict["SIMULATION"]["bjd"]
+    rv = rv_dict["SIMULATION"]["rv"]
+    rve = rv_dict["SIMULATION"]["rve"]
+
+    print(time)
     print(len(flux))
     print(len(rv))
 
