@@ -51,6 +51,9 @@ class DataSaver():
                 for key, value in new_header.items():
                     if key in hdul[0].header.keys():
                         hdul[0].header[key] = value
+                # Needed that serval shows the correct filename
+                # during the analysis
+                hdul[0].header["FILENAME"] = outfile.name
 
                 hdul[1].data = spectrum
                 hdul.flush()
