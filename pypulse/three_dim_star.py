@@ -164,10 +164,7 @@ class ThreeDimStar():
         # Calculate the spherical harmonic Y(l,m)
         harm = sph_harm(m, l, self.phi, self.theta)
 
-        print(harm)
-
         displ = harm * np.exp(1j * 2 * np.pi * nu * t)
-        print(displ)
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
         # you need to differentiate the displacements wrt t which introduces
@@ -175,8 +172,6 @@ class ThreeDimStar():
         # but we absorb the  2 * np.pi * nu part in the v_p constant
         # See Kochukhov et al. (2004)
         pulsation = 1j * v_p * displ
-
-        print(pulsation)
 
         self.displacement_rad += displ
         self.pulsation_rad += pulsation
