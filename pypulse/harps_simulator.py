@@ -49,12 +49,15 @@ def get_new_header(time, bc=None, bjd=None):
                    "PI-COI": "SpaethSim",
                    "OBJECT": "Sim",
                    "TEXPTIME": 100.0}
+
+    # serval uses the comment of MJD-OBS to retrieve a timeid
+    comment_dict = {"MJD-OBS": f"MJD start ({time.isot})"}
     # HJD is wrong but not so important at the moment
     if bc is not None:
-        header_dict["HIERARCH ESO BERV"] = bc / 1000
+        header_dict["HIERARCH ESO DRS BERV"] = bc / 1000
     if bjd is not None:
-        header_dict["HIERARCH ESO BJD"] = bjd - 2400000
+        header_dict["HIERARCH ESO DRS BJD"] = bjd - 2400000
 
     # others: RA, DEC, UTC, LST, MJD-END
 
-    return header_dict
+    return header_dict, comment_dict

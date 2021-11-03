@@ -89,6 +89,7 @@ def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
     spec_template = DATAROOT / spec_filename
     with fits.open(spec_template) as hdul:
         hdu = hdul[0]
+        header = hdul[0].header
         spec = np.array(hdu.data)
 
     wave_template = DATAROOT / wave_filename

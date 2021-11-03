@@ -70,16 +70,15 @@ class SimulationController():
                                      instrument="CARMENES_VIS")
         if self.instrument in ["HARPS", "ALL"]:
             shifted_spec, wave = harps.interpolate(spectrum, shift_wavelength)
-            new_header = harps.get_new_header(time, bc, bjd)
-
-            print(new_header)
+            new_header, new_comments = harps.get_new_header(time, bc, bjd)
 
             timestr = time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
             filename = f"ADP.{timestr}.fits"
             self.saver.save_spectrum(shifted_spec,
                                      new_header,
                                      filename,
-                                     instrument="HARPS")
+                                     instrument="HARPS",
+                                     fits_comment_dict=new_comments)
 
     def sample_phase(self, sample_P, N_global=30, N_periods=1,
                      N_local=(1, 1), random_day_range=(0, 1)):

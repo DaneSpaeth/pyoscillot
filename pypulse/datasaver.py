@@ -18,7 +18,8 @@ class DataSaver():
         self.dataroot = self.global_dict["datapath"]
         self.simulation_name = simulation_name
 
-    def save_spectrum(self, spectrum, new_header, name, instrument="CARMENES_VIS"):
+    def save_spectrum(self, spectrum, new_header, name, instrument="CARMENES_VIS",
+                      fits_comment_dict=None):
         """ Save a Carmenes spectrum from spectrum."""
         if instrument == "CARMENES_VIS":
             template = self.dataroot / "CARMENES_template.fits"
@@ -27,7 +28,10 @@ class DataSaver():
         elif instrument == "HARPS":
             template = self.dataroot / "HARPS_template_e2ds_A.fits"
             if not name.endswith("_e2ds_A.fits"):
-                name += "_e2ds_A.fits"
+                if name.endswith(".fits"):
+                    name = name.replace(".fits", "_e2ds_A.fits")
+                else:
+                    name += "_e2ds_A.fits"
 
         # Create the simulation folder
         folder = self._create_folder(instrument)
@@ -55,6 +59,9 @@ class DataSaver():
                 # Now update the primary header
                 for key, value in new_header.items():
                     hdul[0].header[key] = value
+                if fits_comment_dict is not None:
+                    for key, value in fits_comment_dict.items():
+                        hdul[0].header.comments[key] = value
                 hdul[0].data = spectrum
                 hdul.flush()
 
