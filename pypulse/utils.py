@@ -258,7 +258,7 @@ def adjust_snr(spec, wave_template, spec_template, sig_template, snr=None):
 if __name__ == "__main__":
 
     from dataloader import carmenes_template
-    (spec, cont, sig, wave) = carmenes_template("template.fits")
+    (spec, cont, sig, wave) = carmenes_template("CARMENES_template.fits")
     idx = 20
     carm_spec = spec[idx]
     carm_wave = wave[idx]
@@ -268,9 +268,9 @@ if __name__ == "__main__":
     wave, spec, _ = phoenix_spectrum(Teff=4800, logg=2.5,
                                      wavelength_range=(carm_wave[0], carm_wave[-1]))
     spec = spec / np.max(spec)
-    smoothed_spec = adjust_resolution(wave, spec, 90000)
-    smoothed_oversample_spec = adjust_resolution(
-        wave, spec, 90000, w_sample=100)
+    smoothed_spec = adjust_resolution(wave, spec, 90000, w_sample=5)
+    # smoothed_oversample_spec = adjust_resolution(
+    #    wave, spec, 90000, w_sample=100)
     # plt.plot(wave, spec)
 
     carm_spec /= np.nanmax(carm_spec)
@@ -280,6 +280,7 @@ if __name__ == "__main__":
     # shifted_nooversample_spec = add_doppler_shift(spec, wave, -2.0)
 
     shifted_spec = add_doppler_shift(smoothed_spec, wave, -0.91)
+    shifted_spec_raw = add_doppler_shift(spec, wave, -0.91)
 
     # plt.plot(wave, spec, linewidth=3)
     plt.plot(carm_wave, carm_spec * scale,

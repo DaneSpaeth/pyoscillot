@@ -1,6 +1,7 @@
 from astropy.io import fits
 from pathlib import Path
 from shutil import copy2
+import tarfile
 import numpy as np
 from parse_ini import parse_global_ini
 
@@ -17,32 +18,50 @@ class DataSaver():
         self.dataroot = self.global_dict["datapath"]
         self.simulation_name = simulation_name
 
-    def save_spectrum(self, spectrum, new_header, name):
+    def save_spectrum(self, spectrum, new_header, name, instrument="CARMENES_VIS"):
         """ Save a Carmenes spectrum from spectrum."""
-        template = self.dataroot / "template.fits"
-        if not name.endswith("fits"):
-            name += ".fits"
+        if instrument == "CARMENES_VIS":
+            template = self.dataroot / "CARMENES_template.fits"
+            if not name.endswith("fits"):
+                name += ".fits"
+        elif instrument == "HARPS":
+            template = self.dataroot / "HARPS_template_e2ds_A.fits"
+            if not name.endswith("_e2ds_A.fits"):
+                name += "_e2ds_A.fits"
 
         # Create the simulation folder
-        folder = self._create_folder()
+        folder = self._create_folder(instrument)
 
         outfile = folder / name
 
         print(f"Copy template to {outfile}")
         copy2(template, outfile)
 
-        with fits.open(outfile, mode="update") as hdul:
-            # First fix the index error
-            for i in range(0, len(hdul)):
-                hdul[i].verify("fix")
+        if instrument == "CARMENES_VIS":
+            with fits.open(outfile, mode="update") as hdul:
+                # First fix the index error
+                for i in range(0, len(hdul)):
+                    hdul[i].verify("fix")
 
-            # Now update the primary header
-            for key, value in new_header.items():
-                if key in hdul[0].header.keys():
+                # Now update the primary header
+                for key, value in new_header.items():
+                    if key in hdul[0].header.keys():
+                        hdul[0].header[key] = value
+
+                hdul[1].data = spectrum
+                hdul.flush()
+        elif instrument == "HARPS":
+            with fits.open(outfile, mode="update") as hdul:
+                # Now update the primary header
+                for key, value in new_header.items():
                     hdul[0].header[key] = value
+                hdul[0].data = spectrum
+                hdul.flush()
 
-            hdul[1].data = spectrum
-            hdul.flush()
+            with tarfile.open(str(outfile).replace('_e2ds_A.fits', '.tar'), "w") as tar:
+                tar.add(
+                    outfile, arcname=f"{outfile.name}")
+            outfile.unlink()
 
     def save_arrays(self, array_dict, bjd):
         """ Save the 2D arrays of the simulation along with the spectra.
@@ -80,11 +99,13 @@ class DataSaver():
                 self.simulation_name / "flux.txt"
             copy2(fluxfile, new_fluxfile)
 
-    def _create_folder(self):
+    def _create_folder(self, instrument):
         """ Create the folder to contain all data."""
-        folder = self.dataroot / "fake_spectra" / self.simulation_name
+        folder = self.dataroot / "fake_spectra" / \
+            self.simulation_name / instrument
+
         if not folder.is_dir():
-            folder.mkdir()
+            folder.mkdir(parents=True)
             array_folder = folder / "arrays"
             array_folder.mkdir()
         return folder

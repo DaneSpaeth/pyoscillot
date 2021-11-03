@@ -11,6 +11,7 @@ from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from parse_ini import parse_ticket
 import carmenes_simulator as carmenes
+import harps_simulator as harps
 
 
 class SimulationController():
@@ -35,6 +36,7 @@ class SimulationController():
 
         self.conf = config_dict
         self.simulation_keys = simulation_keys
+        self.instrument = config_dict["instrument"]
 
     def create_rv_series(self):
         """ Create a fake RV series."""
@@ -55,13 +57,29 @@ class SimulationController():
     def _save_to_disk(self, shift_wavelength, spectrum, time, bc, bjd):
         """ Helper function to save the spectrum to disk."""
         # Interpolate onto the CARMENES template
-        shifted_spec, wave = carmenes.interpolate(spectrum, shift_wavelength)
+        if self.instrument in ["CARMENES_VIS", "ALL"]:
+            shifted_spec, wave = carmenes.interpolate(
+                spectrum, shift_wavelength)
+            new_header = carmenes.get_new_header(time, bc, bjd)
+            timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
+            filename = f"car-{timestr}-sci-fake-vis_A.fits"
 
-        new_header = carmenes.get_new_header(time, bc, bjd)
-        timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
-        filename = f"car-{timestr}-sci-fake-vis_A.fits"
+            self.saver.save_spectrum(shifted_spec,
+                                     new_header,
+                                     filename,
+                                     instrument="CARMENES_VIS")
+        if self.instrument in ["HARPS", "ALL"]:
+            shifted_spec, wave = harps.interpolate(spectrum, shift_wavelength)
+            new_header = harps.get_new_header(time, bc, bjd)
 
-        self.saver.save_spectrum(shifted_spec, new_header, filename)
+            print(new_header)
+
+            timestr = time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+            filename = f"ADP.{timestr}.fits"
+            self.saver.save_spectrum(shifted_spec,
+                                     new_header,
+                                     filename,
+                                     instrument="HARPS")
 
     def sample_phase(self, sample_P, N_global=30, N_periods=1,
                      N_local=(1, 1), random_day_range=(0, 1)):
@@ -103,15 +121,17 @@ class SimulationController():
         time_sample = np.array(time_sample)
         phase_sample = (np.mod((time_sample - start) /
                                timedelta(days=1), sample_P)) / sample_P
-        return phase_sample, time_sample
+        return phase_sample.astype(float), time_sample
 
     def simulate_planet(self):
         """ Return a list of wavelengths and fluxes for a planetary signal."""
-        P = self.conf[self.sim]["period"]
+        sim = self.simulation_keys[0]
+        P = self.conf[sim]["period"]
         N = int(self.conf["n"])
-        K = self.conf[self.sim]["k"]
+        K = self.conf[sim]["k"]
 
         phase_sample, time_sample = self.sample_phase(P, N)
+
         K_sample = K * np.sin(2 * np.pi * phase_sample)
 
         K_sample, bcs, bjds = self.add_barycentric_correction(
@@ -125,6 +145,7 @@ class SimulationController():
 
         # Add the Doppler shifts
         for v, time, bc, bjd in zip(K_sample, time_sample, bcs, bjds):
+            print(v)
             vo = v
             ve = 0
             a = (1.0 + vo / C) / (1.0 + ve / C)
@@ -369,3 +390,8 @@ class SimulationController():
         if set_0:
             bcs *= 0
         return K_array - bcs, bcs, bjds
+
+
+if __name__ == "__main__":
+    ticket = "example_planet.ini"
+    SimulationController(ticket)

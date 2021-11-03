@@ -83,20 +83,25 @@ def carmenes_template(filename="CARMENES_template.fits"):
     return (spec, cont, sig, wave)
 
 
-def harps_template(filename="HARPS_template.fits"):
+def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
+                   wave_filename="HARPS_template_wave_A.fits"):
     """ Return spec, sig, cont and wave of Carmenes template."""
-    template = DATAROOT / filename
-    with fits.open(template) as hdul:
-        hdu = hdul[1]
-        wave = np.array(hdu.data["WAVE"][0])
-        spec = np.array(hdu.data["FLUX"][0])
-        sig = np.array(hdu.data["ERR"][0])
+    spec_template = DATAROOT / spec_filename
+    with fits.open(spec_template) as hdul:
+        hdu = hdul[0]
+        spec = np.array(hdu.data)
 
-    return (spec, sig, wave)
+    wave_template = DATAROOT / wave_filename
+    with fits.open(wave_template) as hdul:
+        hdu = hdul[0]
+        wave = np.array(hdu.data)
+
+    return (spec, wave)
 
 
 if __name__ == "__main__":
-    (spec, sig, wave) = harps_template()
 
-    plt.plot(wave, sig)
+    (spec, wave, ) = harps_template()
+
+    plt.plot(wave[10], spec[10])
     plt.show()
