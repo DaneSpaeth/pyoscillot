@@ -24,10 +24,6 @@ def interpolate(spectrum, wavelength):
         order_spec = order_spec * \
             np.nanmax(spec[order]) / np.nanmax(order_spec)
 
-        # At the moment do not correct for the continuum
-        # order_cont = cont[order] / np.mean(cont[order])
-        # order_spec = order_spec * order_cont
-
         interpol_spec.append(order_spec)
     interpol_spec = np.array(interpol_spec)
 
