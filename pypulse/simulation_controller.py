@@ -1,6 +1,6 @@
 from datetime import datetime, date, timedelta
 import numpy as np
-from barycorrpy import get_BC_vel, utc_tdb
+from barycorrpy import utc_tdb
 import random
 from astropy.time import Time
 from concurrent.futures import ProcessPoolExecutor
@@ -133,8 +133,8 @@ class SimulationController():
 
         K_sample = K * np.sin(2 * np.pi * phase_sample)
 
-        K_sample, bcs, bjds = self.add_barycentric_correction(
-            K_sample, time_sample, int(self.conf["hip"]))
+        bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
+        bcs = np.zeros(len(bjds))
 
         # Load one rest_spectrum, all units in Angstrom
         wavelength_range = (self.conf["min_wave"] - 10,
@@ -165,8 +165,8 @@ class SimulationController():
         # At the moment assume that there is no planetary signal present
         # But still create K_sample for barycentric correction
         K_sample = np.zeros(len(time_sample))
-        K_sample, bcs, bjds = self.add_barycentric_correction(
-            K_sample, time_sample, int(self.conf["hip"]))
+        bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
+        bcs = np.zeros(len(bjds))
 
         idx_list = list(range(len(K_sample)))
         if N_processes > 1:
@@ -253,8 +253,8 @@ class SimulationController():
 
         K_sample = np.zeros(len(time_sample))
 
-        K_sample, bcs, bjds = self.add_barycentric_correction(
-            K_sample, time_sample, int(self.conf["hip"]))
+        bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
+        bcs = np.zeros(len(bjds))
 
         idx_list = list(range(len(K_sample)))
         if N_processes > 1:
@@ -337,18 +337,18 @@ class SimulationController():
 
         return(f"Star {idx}/{N-1} finished")
 
-    def add_barycentric_correction(self, K_array, time_list, star, set_0=True):
-        """ At the moment the K_array is not affected.
+    def get_bjd(self, time_list, star, t_exp=106.091):
+        """ Get the BJD for times in time_list as UTC.
 
-            TODO: Decide for a consistent way of handling the K array
-            We could actually minimize this function since we set the BC to 0
-            at the moment.
+            At the moment I decide to set the barycentric correction to 0.
+            In serval we later use the BERV modes to not correct for
+            the barycentric correction.
+
+            :param list time_list: List of datetime.datetime as utc
+            :param int star: Name of star to simulate
+            :param float t_exp: Exposure time in seconds
         """
-
-        # TODO: Fix the exposure time in some way (I don't know at the
-        # moment if it matters)
-        tmean = 53.0455
-        time_list = [t + timedelta(seconds=tmean) for t in time_list]
+        time_list = [t + timedelta(seconds=t_exp / 2) for t in time_list]
         jdutc_times = [Time(t, scale="utc") for t in time_list]
 
         for jdutc in jdutc_times:
@@ -360,43 +360,14 @@ class SimulationController():
         lon = -float((caha["lon"].replace(" W", "")))
         alt = 2168.
 
-        bcs = []
         bjds = []
         for jdutc in jdutc_times:
-
-            result = get_BC_vel(JDUTC=jdutc, hip_id=star,
-                                lat=lat, longi=lon,
-                                alt=alt, ephemeris='de430')
-            # result = get_BC_vel(JDUTC=jdutc,
-            #                     ra=225.72515818125,
-            #                     dec=2.0913040080555554,
-            #                     epoch=2451545.0,
-            #                     pmra=-54.89,
-            #                     pmdec=13.34,
-            #                     px=0.0,
-            #                     lat=37.2236,
-            #                     longi=-2.5463,
-            #                     alt=2168.0)
-            # bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc,
-            #                                      ra=225.72515818125,
-            #                                      dec=2.0913040080555554,
-            #                                      epoch=2451545.0,
-            #                                      pmra=-54.89,
-            #                                      pmdec=13.34,
-            #                                      px=0.0,
-            #                                      lat=37.2236,
-            #                                      longi=-2.5463,
-            #                                      alt=2168.0)
             bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, hip_id=star,
                                                  lat=lat, longi=lon,
                                                  alt=alt, ephemeris='de430')
-            bcs.append(float(result[0]))
             bjds.append(float(bjd_result[0]))
 
-        bcs = np.array(bcs)
-        if set_0:
-            bcs *= 0
-        return K_array - bcs, bcs, bjds
+        return bjds
 
 
 if __name__ == "__main__":
