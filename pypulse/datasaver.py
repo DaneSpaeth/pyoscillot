@@ -82,7 +82,7 @@ class DataSaver():
         """
         # Make sure the folder is created, also creates the array folder
         folder = self._create_folder(instrument)
-        array_folder = folder / "arrays" / instrument
+        array_folder = folder / "arrays"
 
         for key, array in array_dict.items():
             component_folder = array_folder / key
