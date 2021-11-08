@@ -18,7 +18,8 @@ class DataSaver():
         self.dataroot = self.global_dict["datapath"]
         self.simulation_name = simulation_name
 
-    def save_spectrum(self, spectrum, new_header, name, instrument="CARMENES_VIS",
+    def save_spectrum(self, spectrum, new_header, name,
+                      instrument="CARMENES_VIS",
                       fits_comment_dict=None):
         """ Save a Carmenes spectrum from spectrum."""
         if instrument == "CARMENES_VIS":
@@ -73,28 +74,28 @@ class DataSaver():
                     outfile, arcname=f"{outfile.name}")
             outfile.unlink()
 
-    def save_arrays(self, array_dict, bjd):
+    def save_arrays(self, array_dict, bjd, instrument):
         """ Save the 2D arrays of the simulation along with the spectra.
 
             :param dict array_dict: Dictionary of savename:array
             :param dict bjd: BJD to save
         """
         # Make sure the folder is created, also creates the array folder
-        folder = self._create_folder()
-        array_folder = folder / "arrays"
+        folder = self._create_folder(instrument)
+        array_folder = folder / "arrays" / instrument
 
         for key, array in array_dict.items():
             component_folder = array_folder / key
             if not component_folder.is_dir():
-                component_folder.mkdir()
+                component_folder.mkdir(parents=True)
 
             array_path = component_folder / f"{bjd}.npy"
             print(f"Save {key} array to {array_path}")
             np.save(array_path, array)
 
-    def save_flux(self, bjd, flux):
+    def save_flux(self, bjd, flux, instrument):
         """ Save flux to file."""
-        folder = self._create_folder()
+        folder = self._create_folder(instrument)
 
         with open(folder / "flux.txt", "a") as f:
             f.write(f"{bjd}    {flux}\n")

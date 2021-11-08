@@ -224,7 +224,10 @@ class SimulationController():
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
-        self.saver.save_flux(bjd, star.flux)
+        if self.instrument in ["CARMENES_VIS", "ALL"]:
+            self.saver.save_flux(bjd, star.flux, "CARMENES_VIS")
+        if self.instrument in ["HARPS", "ALL"]:
+            self.saver.save_flux(bjd, star.flux, "HARPS")
 
         return(f"Star {idx}/{N-1} finished")
 
@@ -322,10 +325,15 @@ class SimulationController():
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
         array_dict = star.get_arrays()
-        self.saver.save_arrays(array_dict, bjd)
+
+        if self.instrument in ["CARMENES_VIS", "ALL"]:
+            self.saver.save_arrays(array_dict, bjd, "CARMENES_VIS")
+            self.saver.save_flux(bjd, star.flux, "CARMENES_VIS")
+        if self.instrument in ["HARPS", "ALL"]:
+            self.saver.save_arrays(array_dict, bjd, "HARPS")
+            self.saver.save_flux(bjd, star.flux, "HARPS")
 
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
-        self.saver.save_flux(bjd, star.flux)
 
         return(f"Star {idx}/{N-1} finished")
 
