@@ -22,18 +22,31 @@ def main(ticket, run_laptop=False):
             # Run the Simulation even if on laptop
             SimulationController(ticket)
         # Run Serval
-        subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
-                        str(conf_dict["name"]), f"HIP{int(conf_dict['hip'])}"])
+        if conf_dict["instrument"].upper() == "ALL":
+            subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+                            str(conf_dict["name"]
+                                ), f"HIP{int(conf_dict['hip'])}",
+                            "CARMENES_VIS"])
+
+            subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+                            str(conf_dict["name"]
+                                ), f"HIP{int(conf_dict['hip'])}",
+                            "HARPS"])
+        else:
+            subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+                            str(conf_dict["name"]
+                                ), f"HIP{int(conf_dict['hip'])}",
+                            conf_dict["instrument"].upper()])
 
         # Copy the flux and the ticket to the new folders
-        saver = DataSaver(str(conf_dict["name"]))
-        saver.copy_ticket(ticket)
-        saver.copy_flux()
+        #saver = DataSaver(str(conf_dict["name"]))
+        # saver.copy_ticket(ticket)
+        # saver.copy_flux()
 
         check_time_series(str(conf_dict["name"]))
 
 
 if __name__ == "__main__":
     # ticket = "small_amplitude.ini"
-    ticket = "hip16335_ticket_talk.ini"
+    ticket = "example_planet.ini"
     main(ticket, run_laptop=False)

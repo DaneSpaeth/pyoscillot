@@ -91,7 +91,7 @@ class DataSaver():
 
             array_path = component_folder / f"{bjd}.npy"
             print(f"Save {key} array to {array_path}")
-            np.save(array_path, array)
+            np.save(array_path, array, fix_imports=False)
 
     def save_flux(self, bjd, flux, instrument):
         """ Save flux to file."""

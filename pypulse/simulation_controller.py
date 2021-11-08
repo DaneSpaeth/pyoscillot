@@ -60,6 +60,7 @@ class SimulationController():
         if self.instrument in ["CARMENES_VIS", "ALL"]:
             shifted_spec, wave = carmenes.interpolate(
                 spectrum, shift_wavelength)
+
             new_header = carmenes.get_new_header(time, bc, bjd)
             timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
             filename = f"car-{timestr}-sci-fake-vis_A.fits"
@@ -325,6 +326,8 @@ class SimulationController():
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
         array_dict = star.get_arrays()
+        star = None
+        del star
 
         if self.instrument in ["CARMENES_VIS", "ALL"]:
             self.saver.save_arrays(array_dict, bjd, "CARMENES_VIS")
@@ -332,6 +335,8 @@ class SimulationController():
         if self.instrument in ["HARPS", "ALL"]:
             self.saver.save_arrays(array_dict, bjd, "HARPS")
             self.saver.save_flux(bjd, star.flux, "HARPS")
+        array_dict = None
+        del array_dict
 
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
