@@ -392,5 +392,5 @@ class SimulationController():
 
 
 if __name__ == "__main__":
-    ticket = "example_planet.ini"
+    ticket = "hip73620_ticket.ini"
     SimulationController(ticket)
