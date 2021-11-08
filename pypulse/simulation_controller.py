@@ -326,8 +326,6 @@ class SimulationController():
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
         array_dict = star.get_arrays()
-        star = None
-        del star
 
         if self.instrument in ["CARMENES_VIS", "ALL"]:
             self.saver.save_arrays(array_dict, bjd, "CARMENES_VIS")
