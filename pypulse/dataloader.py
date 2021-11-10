@@ -73,7 +73,10 @@ def download_phoenix(filename, out_dir, feh):
 
 def carmenes_template(filename="CARMENES_template.fits"):
     """ Return spec, sig, cont and wave of Carmenes template."""
-    template = DATAROOT / filename
+    if Path(filename).is_absolute():
+        template = filename
+    else:
+        template = DATAROOT / filename
     with fits.open(template) as hdul:
         spec = hdul[1].data
         cont = hdul[2].data
@@ -106,13 +109,43 @@ def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
     return (spec, wave, blaze)
 
 
+def plot_central_order_intensitites():
+    color_dict = {"HIP73620": "green",
+                  "fake": "purple"}
+    for star, color in color_dict.items():
+        if star == "fake":
+            directory = Path(
+                f"/home/dane/Documents/PhD/pypulse/data/fake_spectra/hip16335_talk_refined_highres")
+        else:
+            directory = Path(
+                f"/home/dane/Documents/PhD/pyCARM/data/by_hip/{star}")
+        files = directory.glob("*vis_A.fits")
+        overall_mean_spec = []
+        for file in files:
+            (spec, cont, sig, wave) = carmenes_template(file)
+            mid_idx = int(spec.shape[1] / 2)
+            # mean_spec = np.mean(spec[:, mid_idx - 10:mid_idx + 10], axis=1)
+            mean_spec = np.nanmean(spec, axis=1)
+            mean_wave = wave[:, mid_idx]
+            mean_spec = mean_spec / np.max(mean_spec)
+            overall_mean_spec.append(mean_spec)
+
+        # overall_mean_spec = np.array(overall_mean_spec)
+        # mean_spec = np.mean(overall_mean_spec, axis=0)
+
+            plt.plot(mean_wave, mean_spec, label=star, color=color)
+
+    (spec, cont, sig, wave) = carmenes_template(file)
+    mid_idx = int(spec.shape[1] / 2)
+    mean_spec = np.mean(spec[:, mid_idx - 10:mid_idx + 10], axis=1)
+    mean_wave = wave[:, mid_idx]
+    mean_spec = mean_spec / np.max(mean_spec)
+    plt.plot(mean_wave, mean_spec, label="template", color="black")
+    plt.legend()
+    plt.show()
+
+
 if __name__ == "__main__":
-
-    (spec, wave, blaze) = harps_template()
-
-    fake_spec, _, _ = harps_template("fake_HARPS.fits")
-
-    order = 2
-    plt.plot(wave[order], spec[order])
-    plt.plot(wave[order], fake_spec[order])
+    wave, spec, header = phoenix_spectrum()
+    plt.plot(wave, spec)
     plt.show()
