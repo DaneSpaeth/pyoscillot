@@ -1,46 +1,53 @@
 import numpy as np
 from astropy.time import Time
 from scipy.interpolate import interp1d
+from scipy.ndimage import gaussian_filter1d
 from utils import adjust_resolution
 from dataloader import carmenes_template
 
 
-def interpolate(spectrum, wavelength):
+def interpolate(spectrum, wavelength,
+                adjust_snr=True, add_noise=True, snr_per_order=None):
     """ Interpolate to the Carmenes spectrum."""
-    (spec, cont, sig, wave) = carmenes_template()
+    (spec_templ, cont_templ, sig_templ, wave_templ) = carmenes_template()
+
+    if snr_per_order is None:
+        snr_per_order = np.nanmedian(spec_templ / sig_templ, axis=1)
 
     new_spec = []
     spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
-    for order in range(len(wave)):
+    for order in range(len(wave_templ)):
 
         order_spec = []
         func = interp1d(wavelength, spectrum, kind="linear")
-        order_spec = func(wave[order])
+        order_spec = func(wave_templ[order])
 
         # Reduce the level to something similar to CARMENES
         order_spec = order_spec * \
-            np.nanmean(spec[order]) / np.nanmean(order_spec)
+            np.nanmean(spec_templ[order]) / np.nanmean(order_spec)
 
-        order_cont = cont[order] / np.mean(cont[order])
-        order_spec = order_spec * order_cont
+        # Do not correct for cont anymore
+        # order_cont = cont[order] / np.mean(cont[order])
+        # order_spec = order_spec * order_cont
 
-        # orig_resolution=90000
-        # order_spec = adjust_resolution(
-        #    wave[order], order_spec, R=120000, w_sample=50)
-
-        # order_spec = adjust_snr(order_spec, wave[order], spec[order], sig[order],
-        #                         snr=3 * np.nanmedian(spec[order] / sig[order]))
-
-        # order_spec = gaussian_filter1d(order_spec, 5)
+        # Adjust the signal to noise ratio and also adds noise if add_noise
+        # is True
+        if adjust_snr:
+            order_spec = adjust_snr_order(
+                order_spec,
+                spec_templ[order],
+                sig_templ[order],
+                wave_templ[order],
+                add_noise)
 
         # Set the old orders that were nan back to nan
-        nan_mask = np.isnan(sig[order])
+        nan_mask = np.isnan(sig_templ[order])
         order_spec[nan_mask] = np.nan
 
         new_spec.append(order_spec)
     new_spec = np.array(new_spec)
 
-    return new_spec, wave
+    return new_spec, wave_templ
 
 
 def get_new_header(time, bc=None, bjd=None):
@@ -66,3 +73,48 @@ def get_new_header(time, bc=None, bjd=None):
         header_dict["CARACAL BJD"] = bjd - 2400000
 
     return header_dict
+
+
+def adjust_snr_order(sp, sp_templ, sig_templ, wave_templ, add_noise,
+                     new_median_snr=None):
+    """ Adjust the SNR for one order.
+
+        :param 1d array sp: Spectrum
+        :param 1d array sp_templ: Template spectrum
+        :param 1d array sig_templ: Template Sigma (Error)
+        :param 1d array wave_templ: Template Wavelength grid
+        :param bool add_noise: If True add noise to new spectrm
+
+        :returns: SNR and noise adjusted array
+    """
+    # Do not change the original array
+    sig_templ = sig_templ.copy()
+    # Use the template SNR if None is given
+    if new_median_snr is None:
+        new_median_snr = np.nanmedian(sp_templ / sig_templ)
+
+    # We first need to make sure there are no nans in the sig_template
+    if np.any(np.isnan(sig_templ)):
+        nan_idx = np.isnan(sig_templ)
+        sig_templ[nan_idx] = np.interp(wave_templ[nan_idx],
+                                       wave_templ[~nan_idx],
+                                       sig_templ[~nan_idx])
+    # Now smooth the noise
+    filter_width = 40
+    sig_templ = gaussian_filter1d(sig_templ, sigma=filter_width)
+    smooth_sp = gaussian_filter1d(sp, sigma=filter_width)
+
+    # Now rescale the spec to have the desired snr
+    current_snr = np.nanmedian(smooth_sp / sig_templ)
+    factor = new_median_snr / current_snr
+    sp = sp * np.abs(factor)
+
+    # Now add some noise
+    # global_snr = gaussian_filter1d(spec, sigma=filter_width) / sig_template
+    if add_noise:
+        noise = np.random.normal(loc=np.zeros(
+            len(sig_templ)), scale=sig_templ)
+        noisy_sp = sp + noise
+        return noisy_sp
+    else:
+        return sp

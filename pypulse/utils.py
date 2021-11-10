@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
-from scipy.ndimage import gaussian_filter1d
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
 from scipy.interpolate import CubicSpline
@@ -221,38 +220,6 @@ def adjust_resolution(wave, spec, R, w_sample=1):
 
     # Write smoothed spectrum back into Spectrum object
     return f_sm
-
-
-def adjust_snr(spec, wave_template, spec_template, sig_template, snr=None):
-    """ Adjust the signal to noise ratio of the spectrum.
-
-        if snr is None the same as for the CARMENES template is taken
-
-        :param np.array spec: 1d numpy array of spectrum values
-        :param np.array wave_template: 1d numpy array of template wavelength
-        :param np.array spec_template: 1d numpy array of template spectrum
-        :param np.array sig_template: 1d numpy array of template error (noise)
-    """
-    if snr is None:
-        snr = np.nanmedian(spec_template / sig_template)
-    print("SNR:", snr)
-
-    # We first need to make sure there are no nans in the sig_template
-    if np.any(np.isnan(sig_template)):
-        nan_idx = np.isnan(sig_template)
-        sig_template[nan_idx] = np.interp(wave_template[nan_idx],
-                                          wave_template[~nan_idx],
-                                          sig_template[~nan_idx])
-    # Now smooth the noise
-    sig_template = gaussian_filter1d(sig_template, 40)
-
-    # Now rescale the spec to have the desired snr
-    current_snr = np.nanmedian(spec / sig_template)
-    factor = snr / current_snr
-
-    spec = spec * np.abs(factor)
-
-    return spec
 
 
 if __name__ == "__main__":
