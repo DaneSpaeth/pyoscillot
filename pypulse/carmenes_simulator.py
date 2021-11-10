@@ -6,13 +6,24 @@ from utils import adjust_resolution
 from dataloader import carmenes_template
 
 
-def interpolate(spectrum, wavelength,
-                adjust_snr=True, add_noise=True, snr_per_order=None):
+def interpolate(spectrum, wavelength, template_file=None,
+                target_max_snr=300, adjust_snr=True, add_noise=True,
+                snr_profile=None):
     """ Interpolate to the Carmenes spectrum."""
-    (spec_templ, cont_templ, sig_templ, wave_templ) = carmenes_template()
+    if template_file is not None:
+        (spec_templ, cont_templ, sig_templ,
+         wave_templ) = carmenes_template(template_file)
+    else:
+        (spec_templ, cont_templ, sig_templ,
+         wave_templ) = carmenes_template()
 
-    if snr_per_order is None:
+    if snr_profile is None:
         snr_per_order = np.nanmedian(spec_templ / sig_templ, axis=1)
+        # snr_per_order /= np.nanmax(snr_per_order)
+    else:
+        # If a snr profile is given it should be given as a normalized quantity
+        # Adjust to target_max_snr
+        snr_per_order = snr_profile * target_max_snr
 
     new_spec = []
     spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)

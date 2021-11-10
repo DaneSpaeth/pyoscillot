@@ -9,7 +9,8 @@ from plapy.constants import C
 from dataloader import phoenix_spectrum
 from datasaver import DataSaver
 from star import GridSpectrumSimulator
-from parse_ini import parse_ticket
+from pathlib import Path
+from parse_ini import parse_ticket, parse_global_ini
 import carmenes_simulator as carmenes
 import harps_simulator as harps
 
@@ -58,8 +59,34 @@ class SimulationController():
         """ Helper function to save the spectrum to disk."""
         # Interpolate onto the CARMENES template
         if self.instrument in ["CARMENES_VIS", "ALL"]:
+            # Determine the template and SNR file from the star name
+            # NOTE: AT THE MOMENT ONLY THE NAME IS CHECKED AND NOT THE
+            # TEMPERATURE OR SO
+            hip = int(self.conf["hip"])
+            star = f"HIP{hip}"
+
+            global_dict = parse_global_ini()
+            template_directory = Path(
+                global_dict["datapath"]) / "CARMENES_templates"
+            fits_template = template_directory / \
+                f"CARMENES_template_{star}.fits"
+            if not fits_template.is_file():
+                fits_template = None
+
+            global_dict = parse_global_ini()
+            snr_directory = Path(
+                global_dict["datapath"]) / "CARMENES_SNR_profiles"
+            snr_file = snr_directory / f"{star}.npy"
+            try:
+                snr_profile = np.load(snr_file)
+            except FileNotFoundError:
+                snr_profile = None
+
             shifted_spec, wave = carmenes.interpolate(
-                spectrum, shift_wavelength)
+                spectrum, shift_wavelength,
+                template_file=fits_template,
+                snr_profile=snr_profile,
+                target_max_snr=float(self.conf["snr"]))
 
             new_header = carmenes.get_new_header(time, bc, bjd)
             timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")

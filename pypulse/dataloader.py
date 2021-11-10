@@ -77,6 +77,7 @@ def carmenes_template(filename="CARMENES_template.fits"):
         template = filename
     else:
         template = DATAROOT / filename
+    print(f"Load template from {template}")
     with fits.open(template) as hdul:
         spec = hdul[1].data
         cont = hdul[2].data
