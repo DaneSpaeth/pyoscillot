@@ -97,6 +97,7 @@ class SimulationController():
             self.saver.save_spectrum(shifted_spec,
                                      new_header,
                                      filename,
+                                     CARMENES_template=fits_template,
                                      instrument="CARMENES_VIS")
         if self.instrument in ["HARPS", "ALL"]:
             shifted_spec, wave = harps.interpolate(spectrum, shift_wavelength)

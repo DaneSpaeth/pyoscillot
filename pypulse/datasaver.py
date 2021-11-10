@@ -19,11 +19,15 @@ class DataSaver():
         self.simulation_name = simulation_name
 
     def save_spectrum(self, spectrum, new_header, name,
+                      CARMENES_template=None,
                       instrument="CARMENES_VIS",
                       fits_comment_dict=None):
         """ Save a Carmenes spectrum from spectrum."""
         if instrument == "CARMENES_VIS":
-            template = self.dataroot / "CARMENES_template.fits"
+            if CARMENES_template is None:
+                template = self.dataroot / "CARMENES_template.fits"
+            else:
+                template = CARMENES_template
             if not name.endswith("fits"):
                 name += ".fits"
         elif instrument == "HARPS":
