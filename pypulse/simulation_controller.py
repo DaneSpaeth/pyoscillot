@@ -88,7 +88,9 @@ class SimulationController():
                 snr_profile=snr_profile,
                 target_max_snr=float(self.conf["snr"]))
 
-            new_header = carmenes.get_new_header(time, bc, bjd)
+            new_header = carmenes.get_new_header(time, bc, bjd,
+                                                 snr_profile=snr_profile,
+                                                 target_max_snr=float(self.conf["snr"]))
             timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
             filename = f"car-{timestr}-sci-fake-vis_A.fits"
 

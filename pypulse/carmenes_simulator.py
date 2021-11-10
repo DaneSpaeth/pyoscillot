@@ -62,7 +62,8 @@ def interpolate(spectrum, wavelength, template_file=None,
     return new_spec, wave_templ
 
 
-def get_new_header(time, bc=None, bjd=None):
+def get_new_header(time, bc=None, bjd=None, snr_profile=None,
+                   target_max_snr=None):
     """ Create the new header for the fake Carmenes spectrum.
 
         :param time: Time of observation
@@ -83,6 +84,11 @@ def get_new_header(time, bc=None, bjd=None):
         header_dict["CARACAL BERV"] = bc / 1000
     if bjd is not None:
         header_dict["CARACAL BJD"] = bjd - 2400000
+
+    if snr_profile is not None and target_max_snr is not None:
+        for order, snr_ratio in enumerate(snr_profile):
+            header_dict[f"CARACAL FOX SNR {order}"] = snr_ratio * \
+                target_max_snr
 
     return header_dict
 
