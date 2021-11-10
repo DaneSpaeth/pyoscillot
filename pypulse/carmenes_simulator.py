@@ -38,7 +38,8 @@ def interpolate(spectrum, wavelength,
                 spec_templ[order],
                 sig_templ[order],
                 wave_templ[order],
-                add_noise)
+                add_noise,
+                new_median_snr=snr_per_order[order])
 
         # Set the old orders that were nan back to nan
         nan_mask = np.isnan(sig_templ[order])
