@@ -261,7 +261,7 @@ class SimulationController():
         if self.instrument in ["HARPS", "ALL"]:
             self.saver.save_flux(bjd, star.flux, "HARPS")
 
-        return(f"Star {idx}/{N-1} finished")
+        return(f"Star {idx+1}/{N} finished")
 
     def simulate_pulsation(self):
         """ Simulate the pulsation spectra."""
@@ -321,7 +321,7 @@ class SimulationController():
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
 
-        print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
+        print(f"Calculate star {idx+1}/{N} at bjd {bjd}")
         star = GridSpectrumSimulator(
             N_star=N_star, N_border=3,
             Teff=int(self.conf["teff"]),
@@ -373,7 +373,7 @@ class SimulationController():
 
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
-        return(f"Star {idx}/{N-1} finished")
+        return(f"Star {idx+1}/{N} finished")
 
     def get_bjd(self, time_list, star, t_exp=106.091):
         """ Get the BJD for times in time_list as UTC.
