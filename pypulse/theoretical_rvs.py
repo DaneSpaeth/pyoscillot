@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from plapy.constants import C
 from PyAstronomy import pyasl
 import time
+from utils import interpolate_to_restframe
 
 
 def calc_theoretical_results(ref_wave, ref_spec, wave, spec, bjd):
@@ -17,16 +18,41 @@ def calc_theoretical_results(ref_wave, ref_spec, wave, spec, bjd):
     fig, ax = plt.subplots(1)
 
     # rv = calc_rv(ref_wave, ref_spec, wave, spec)
-    # ax[0].scatter(bjd, rv_best)
+    least_square_rvfit(ref_wave, ref_spec, wave, spec)
+    exit()
     ax.plot(ref_wave, ref_spec, label="Reference")
     ax.plot(wave, spec, label="Pulsation")
+
     ax.legend()
     plt.show()
+    exit()
 
-    wave_chunks, rv_chunks = calc_rv_chunks(ref_wave, ref_spec, wave, spec)
-    ax.scatter(wave_chunks, rv_chunks)
+    print(ref_wave - wave)
+
+    print("Run Cross-correlation global with mode doppler")
+    rv, cc = pyasl.crosscorrRV(
+        wave, spec, ref_wave, ref_spec, -1.00, -0.3, 0.001, skipedge=100, mode="doppler")
+    # Find the index of maximum cross-correlation function
+    maxind = np.argmax(cc)
+    print("Cross-correlation function is maximized at dRV = ",
+          rv[maxind], " km/s")
+    if rv[maxind] > 0.0:
+        print("  A red-shift with respect to the template")
+    else:
+        print("  A blue-shift with respect to the template")
+    rv_best = rv[maxind]
+    print(rv_best)
+
+    plt.plot(rv, cc, 'bp-')
+    plt.plot(rv[maxind], cc[maxind], 'ro')
     plt.show()
     exit()
+
+    wave_chunks, rv_chunks = calc_rv_chunks(ref_wave, ref_spec, wave, spec)
+    print(np.mean(rv_chunks))
+    fig, ax = plt.subplots(1)
+    ax.scatter(wave_chunks, rv_chunks)
+    plt.show()
 
 
 def calc_rv(ref_wave, ref_spec, wave, spec):
@@ -81,7 +107,7 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
         start = time.time()
         rv, cc = pyasl.crosscorrRV(wave_chunk, spec_chunk,
                                    ref_wave_chunk, ref_spec_chunk,
-                                   -0.500, 0.500, 0.0001, skipedge=20)
+                                   -1, 1, 0.001, skipedge=5)
         maxind = np.argmax(cc)
         rv_chunk = rv[maxind]
         stop = time.time()
@@ -94,3 +120,24 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
     wave_chunks = np.array(wave_chunks)
 
     return wave_chunks, rv_chunks
+
+
+def least_square_rvfit(ref_wave, ref_spec, wave, spec):
+    test_vs = np.linspace(400, 700, 100)
+    residuals = np.zeros(len(test_vs))
+
+    for idx, v in enumerate(test_vs):
+        print(f"Test v={v}")
+        # Shift the wavelength grid of the simulated spectrum
+        shift_wave = wave * (1 + v / C)
+        # Interpolate back to the ref (and therefore simulated wavelength grid)
+        interpol_spec = interpolate_to_restframe(shift_wave,
+                                                 spec,
+                                                 ref_wave)
+
+        residuals[idx] = np.sum(np.square(interpol_spec - ref_spec))
+
+    plt.plot(test_vs, residuals)
+    plt.show()
+
+    return test_vs, residuals

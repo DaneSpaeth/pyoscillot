@@ -110,36 +110,41 @@ class GridSpectrumSimulator():
                                                                          ref_headers=ref_headers)
 
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
-                        # print(f"Skip Star Element {row, col}")
+                        print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
+
+                        local_wavelength = rest_wavelength
                     else:
-                        # print(f"Calculate Star Element {row, col}")
+                        print(
+                            f"Calculate Star Element {row, col} with v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
                             v_c_pulse[row, col] * rest_wavelength
+
+                        a_pulse = (1.0 + v_c_pulse[row, col])
+                        local_wavelength = np.exp(
+                            np.log(rest_wavelength) + np.log(a_pulse))
                         # Interpolate the spectrum to the same rest wavelength grid
 
                         interpol_spectrum = interpolate_to_restframe(local_wavelength,
-                                                                     local_spectrum, rest_wavelength)
-                        # interpol_spectrum = local_spectrum
+                                                                     local_spectrum,
+                                                                     rest_wavelength)
 
                         total_spectrum += interpol_spectrum
 
-        total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
+        # total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
 
         # Now adjust the resolution to Carmenes
         if mode == "oneline":
             total_spectrum += np.abs(total_spectrum.min())
             total_spectrum = total_spectrum / total_spectrum.max()
-        # else:
-        #     total_spectrum = adjust_resolution(
-        #         rest_wavelength, total_spectrum, R=90000)
         self.spectrum = total_spectrum
 
         # Also calculate the flux
         self.calc_flux()
 
+        # return local_wavelength, local_spectrum
         return rest_wavelength, total_spectrum
 
     def get_arrays(self):

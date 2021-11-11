@@ -382,7 +382,7 @@ class SimulationController():
         ref_wave, ref_spec = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
                                                     self.conf["max_wave"] + 10)
 
-        ref_spec = ref_spec * np.max(spectrum) / np.max(ref_spec)
+        # ref_spec = ref_spec * np.max(spectrum) / np.max(ref_spec)
         calc_theoretical_results(
             ref_wave, ref_spec, rest_wavelength, spectrum, bjd)
         exit()
