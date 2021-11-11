@@ -27,6 +27,7 @@ def parse_ticket(ticketpath):
     """
     # Read in the ini file
     config = configparser.ConfigParser()
+    ticketpath = "tickets/" + ticketpath
     config.read(ticketpath)
     superkeys = list(config.keys())
 

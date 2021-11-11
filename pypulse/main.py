@@ -49,5 +49,5 @@ def main(ticket, run_laptop=False):
 if __name__ == "__main__":
     # ticket = "small_amplitude.ini"
     # ticket = "ngc2423-3_ticket.ini"
-    ticket = "hip73620_ticket.ini"
+    ticket = "fix_CARM.ini"
     main(ticket, run_laptop=True)

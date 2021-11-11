@@ -43,7 +43,7 @@ class DataSaver():
 
         outfile = folder / name
 
-        print(f"Copy template to {outfile}")
+        print(f"Copy template {template} to {outfile}")
         copy2(template, outfile)
 
         if instrument == "CARMENES_VIS":
