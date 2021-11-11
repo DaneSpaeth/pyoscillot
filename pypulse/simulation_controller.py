@@ -86,7 +86,8 @@ class SimulationController():
                 spectrum, shift_wavelength,
                 template_file=fits_template,
                 snr_profile=snr_profile,
-                target_max_snr=float(self.conf["snr"]))
+                target_max_snr=float(self.conf["snr"]),
+                adjust_snr=True)
 
             new_header = carmenes.get_new_header(time, bc, bjd,
                                                  snr_profile=snr_profile,
@@ -339,7 +340,11 @@ class SimulationController():
             dT = self.conf[sim]["dt"]
             T_phase = self.conf[sim]["t_phase"]
 
-            for m in range(-l, l + 1):
+            if "m" in list(self.conf[sim].keys()):
+                ms = [int(self.conf[sim]["m"])]
+            else:
+                ms = range(-l, l + 1)
+            for m in ms:
                 print(
                     f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
 
