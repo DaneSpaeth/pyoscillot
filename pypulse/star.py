@@ -97,6 +97,11 @@ class GridSpectrumSimulator():
 
         total_spectrum = np.zeros(len(rest_wavelength))
 
+        # import matplotlib.pyplot as plt
+        # plt.imshow(self.pulsation)
+        # plt.show()
+
+        v_total = np.nanmean(self.pulsation)
         for row in range(self.temperature.shape[0]):
             for col in range(self.temperature.shape[1]):
                 if not np.isnan(self.temperature[row, col]):
@@ -114,9 +119,10 @@ class GridSpectrumSimulator():
                         total_spectrum += local_spectrum
 
                         local_wavelength = rest_wavelength
+
                     else:
                         print(
-                            f"Calculate Star Element {row, col} with v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
+                            f"Calculate Star Element {row, col} with T={self.temperature[row, col]}, v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
@@ -144,8 +150,11 @@ class GridSpectrumSimulator():
         # Also calculate the flux
         self.calc_flux()
 
+        # TODO REMOVE
         # return local_wavelength, local_spectrum
-        return rest_wavelength, total_spectrum
+        return rest_wavelength, total_spectrum, v_total
+        # END TODO
+        # return rest_wavelength, total_spectrum
 
     def get_arrays(self):
         """ Get all arrays (e.g. pulsation, temp) of the simulation.

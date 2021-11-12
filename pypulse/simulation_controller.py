@@ -188,7 +188,7 @@ class SimulationController():
             shift_wavelengths.append(shift_wavelength)
             spectra.append(spectrum)
 
-            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+            # self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
         # calc_theoretical_results(shift_wavelengths, spectra, bjds)
 
@@ -292,9 +292,9 @@ class SimulationController():
             random_day_range=(rand_day_min, rand_day_max))
 
         # TODO REMOVE
-        print(time_sample)
-        time_sample = [time_sample[1]]
-        print(time_sample)
+        # print(time_sample)
+        # time_sample = [time_sample[1]]
+        # print(time_sample)
         # END REMOVE
 
         K_sample = np.zeros(len(time_sample))
@@ -367,25 +367,33 @@ class SimulationController():
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
-        rest_wavelength, spectrum = star.calc_spectrum(
+        rest_wavelength, spectrum, v = star.calc_spectrum(
             self.conf["min_wave"] - 10,
             self.conf["max_wave"] + 10)
+        np.save(f"tmp/wave_{v}_{bjd}.npy", rest_wavelength)
+        np.save(f"tmp/spectrum_{v}_{bjd}.npy", spectrum)
 
-        # TODO REFACTOR
-        ref_star = GridSpectrumSimulator(
-            N_star=N_star, N_border=3,
-            Teff=int(self.conf["teff"]),
-            logg=float(self.conf["logg"]),
-            feh=float(self.conf["feh"]),
-            v_rot=v_rot, inclination=inclination,
-            limb_darkening=limb_darkening)
-        ref_wave, ref_spec = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
-                                                    self.conf["max_wave"] + 10)
+        # TODO REMOVE
+        # from pathlib import Path
+
+        # if not Path("tmp/spectrum_0.0_0.npy").is_file():
+        #     # TODO REFACTOR
+        #     ref_star = GridSpectrumSimulator(
+        #         N_star=N_star, N_border=3,
+        #         Teff=int(self.conf["teff"]),
+        #         logg=float(self.conf["logg"]),
+        #         feh=float(self.conf["feh"]),
+        #         v_rot=v_rot, inclination=inclination,
+        #         limb_darkening=limb_darkening)
+        #     ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
+        #                                                    self.conf["max_wave"] + 10)
+        #     np.save(f"tmp/wave_{v}_{0}.npy", ref_wave)
+        #     np.save(f"tmp/spectrum_{v}_{0}.npy", ref_spec)
+        return None
 
         # ref_spec = ref_spec * np.max(spectrum) / np.max(ref_spec)
-        calc_theoretical_results(
-            ref_wave, ref_spec, rest_wavelength, spectrum, bjd)
-        exit()
+        # calc_theoretical_results(
+        #    ref_wave, ref_spec, rest_wavelength, spectrum, bjd)
 
         # Add doppler shift due to barycentric correction
         # shift_wavelength = rest_wavelength + v / C * rest_wavelength

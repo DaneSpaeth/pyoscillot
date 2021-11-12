@@ -4,6 +4,9 @@ from plapy.constants import C
 from PyAstronomy import pyasl
 import time
 from utils import interpolate_to_restframe
+from pathlib import Path
+from scipy.optimize import least_squares, curve_fit
+from numpy.polynomial.polynomial import Polynomial
 
 
 def calc_theoretical_results(ref_wave, ref_spec, wave, spec, bjd):
@@ -83,10 +86,8 @@ def calc_rv(ref_wave, ref_spec, wave, spec):
 def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
     """ Calculate RV in chunks which allows to calculate a CRX."""
     # You'll get twice the chunks since we will also overlap in between
-    n_chunks = 100
+    n_chunks = 50
     border = 100
-
-    print(len(ref_wave))
 
     chunk_size_px = int((len(ref_wave) - 2 * border) / n_chunks)
 
@@ -103,15 +104,13 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
         ref_spec_chunk = ref_spec_chunk * \
             np.median(spec_chunk) / np.median(ref_spec_chunk)
 
-        print(f"Calculate RV via CCF for chunk {n_chunk}")
+        print(f"Calculate RV via least_square_rvfit for chunk {n_chunk}")
         start = time.time()
-        rv, cc = pyasl.crosscorrRV(wave_chunk, spec_chunk,
-                                   ref_wave_chunk, ref_spec_chunk,
-                                   -1, 1, 0.001, skipedge=5)
-        maxind = np.argmax(cc)
-        rv_chunk = rv[maxind]
+        rv_chunk = least_square_rvfit(
+            ref_wave_chunk, ref_spec_chunk, wave_chunk, spec_chunk)
         stop = time.time()
-        print(f"RV={round(1e3*rv_chunk,3)}m/s. CCF took {round(stop-start,2)}s")
+
+        print(f"RV={round(rv_chunk, 3)}m/s. Fit took {round(stop-start,2)}s")
 
         rv_chunks.append(rv_chunk)
         wave_chunks.append(np.mean(ref_wave_chunk))
@@ -123,21 +122,96 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
 
 
 def least_square_rvfit(ref_wave, ref_spec, wave, spec):
-    test_vs = np.linspace(400, 700, 100)
-    residuals = np.zeros(len(test_vs))
-
-    for idx, v in enumerate(test_vs):
-        print(f"Test v={v}")
-        # Shift the wavelength grid of the simulated spectrum
-        shift_wave = wave * (1 + v / C)
+    def func(v_shift, ref_wave, ref_spec, wave, spec):
+        shift_wave = wave * (1 + v_shift[0] / C)
         # Interpolate back to the ref (and therefore simulated wavelength grid)
         interpol_spec = interpolate_to_restframe(shift_wave,
                                                  spec,
                                                  ref_wave)
 
-        residuals[idx] = np.sum(np.square(interpol_spec - ref_spec))
+        return interpol_spec - ref_spec
 
-    plt.plot(test_vs, residuals)
+    x0 = np.array([10])
+    # bounds = (-1000, 1000)
+    res = least_squares(func, x0, method="lm",
+                        args=(ref_wave, ref_spec, wave, spec))
+
+    return -res.x[0]
+
+
+def fit_crx(wave, rv):
+    """ Fit the chromatic index."""
+    def func(log_wave, alpha, crx):
+        return alpha + log_wave * crx
+    popt, pcov = curve_fit(func, np.log(wave), rv)
+
+    alpha, crx = popt
+
+    print(alpha, crx)
+
+    return crx, alpha
+
+
+def test():
+    sim = "tmp"
+    wave_files = Path(sim).glob("wave_*.npy")
+    spec_files = Path(sim).glob("spectrum_*.npy")
+
+    waves = []
+    specs = []
+    vs = []
+    bjds = []
+
+    for wave_file, spec_file in zip(sorted(list(wave_files)),
+                                    sorted(list(spec_files))):
+        v = float(spec_file.name.split("spectrum_")
+                  [-1].split(".npy")[0].split("_")[0])
+        bjd = float(spec_file.name.split("spectrum_")
+                    [-1].split(".npy")[0].split("_")[-1])
+        if v == 0:
+            ref_wave = np.load(wave_file)
+            ref_spec = np.load(spec_file)
+            wave_mask_low = ref_wave > 5200
+            wave_mask_high = ref_wave < 9600
+            wave_mask = np.logical_and(wave_mask_low, wave_mask_high)
+            ref_wave = ref_wave[wave_mask]
+            ref_spec = ref_spec[wave_mask]
+        else:
+            wave = np.load(wave_file)
+            wave_mask_low = wave > 5200
+            wave_mask_high = wave < 9600
+            wave_mask = np.logical_and(wave_mask_low, wave_mask_high)
+            waves.append(wave[wave_mask])
+            specs.append(np.load(spec_file)[wave_mask])
+            vs.append(v)
+            bjds.append(bjd)
+
+    v_fits = []
+    crxs = []
+    for wave, spec, v_theo in zip(waves, specs, vs):
+        wave_chunks, rv_chunks = calc_rv_chunks(ref_wave, ref_spec, wave, spec)
+        fig, ax = plt.subplots(1)
+        ax.semilogx(wave_chunks, rv_chunks, "bo")
+        crx, alpha = fit_crx(wave_chunks, rv_chunks)
+        lin_wave = np.linspace(np.min(wave_chunks),
+                               np.max(wave_chunks))
+        # print(np.log(lin_wave) * crx)
+        # exit()
+
+        ax.semilogx(lin_wave, np.log(lin_wave) * crx + alpha)
+        plt.show()
+        crxs.append(crx)
+
+        v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)
+        print(
+            f"v_fit={round(v_fit,3)}, v_theo={round(v_theo,3)}, delta_v={round(v_fit - v_theo,3)}")
+        v_fits.append(v_fit)
+
+    fig, ax = plt.subplots(2, 1)
+    ax[0].plot(bjds, v_fits, "bo")
+    ax[1].plot(bjds, crxs, "bo")
     plt.show()
 
-    return test_vs, residuals
+
+if __name__ == "__main__":
+    test()
