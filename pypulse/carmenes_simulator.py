@@ -30,7 +30,7 @@ def interpolate(spectrum, wavelength, template_file=None,
     for order in range(len(wave_templ)):
 
         order_spec = []
-        func = interp1d(wavelength, spectrum, kind="linear")
+        func = interp1d(wavelength, spectrum, kind="cubic")
         order_spec = func(wave_templ[order])
 
         # Reduce the level to something similar to CARMENES
@@ -38,11 +38,12 @@ def interpolate(spectrum, wavelength, template_file=None,
             np.nanmean(spec_templ[order]) / np.nanmean(order_spec)
 
         # Do not correct for cont anymore
-        # order_cont = cont[order] / np.mean(cont[order])
+        # order_cont = cont_templ[order] / np.mean(cont_templ[order])
         # order_spec = order_spec * order_cont
 
         # Adjust the signal to noise ratio and also adds noise if add_noise
         # is True
+        add_noise = False
         if adjust_snr:
             order_spec = adjust_snr_order(
                 order_spec,

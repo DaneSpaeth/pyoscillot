@@ -23,6 +23,7 @@ def main(ticket, run_laptop=False):
             SimulationController(ticket)
         # Run Serval
         if conf_dict["instrument"].upper() == "ALL":
+
             subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                             str(conf_dict["name"]
                                 ), f"HIP{int(conf_dict['hip'])}",
@@ -50,4 +51,4 @@ if __name__ == "__main__":
     # ticket = "small_amplitude.ini"
     # ticket = "ngc2423-3_ticket.ini"
     ticket = "hip73620_ticket.ini"
-    main(ticket, run_laptop=True)
+    main(ticket, run_laptop=False)
