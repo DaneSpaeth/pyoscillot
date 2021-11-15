@@ -7,6 +7,7 @@ from utils import interpolate_to_restframe
 from pathlib import Path
 from scipy.optimize import least_squares, curve_fit
 from numpy.polynomial.polynomial import Polynomial
+from scipy.ndimage import gaussian_filter1d
 
 
 def calc_theoretical_results(ref_wave, ref_spec, wave, spec, bjd):
@@ -85,7 +86,6 @@ def calc_rv(ref_wave, ref_spec, wave, spec):
 
 def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
     """ Calculate RV in chunks which allows to calculate a CRX."""
-    # You'll get twice the chunks since we will also overlap in between
     n_chunks = 50
     border = 100
 
@@ -93,6 +93,7 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
 
     rv_chunks = []
     wave_chunks = []
+    chunk_sizes = []
     for n_chunk in range(n_chunks):
         idx_range = slice(border + n_chunk * chunk_size_px,
                           (n_chunk + 1) * chunk_size_px)
@@ -101,8 +102,33 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
         wave_chunk = wave[idx_range]
         spec_chunk = spec[idx_range]
 
+        # try to fit the continuum
+        filter_width = 1000
+        smoothed_ref_spec_chunk = gaussian_filter1d(
+            ref_spec_chunk, sigma=filter_width)
+        smoothed_ref_spec_chunk = smoothed_ref_spec_chunk * \
+            np.median(ref_spec_chunk) / np.median(smoothed_ref_spec_chunk)
+        res = np.polynomial.polynomial.Polynomial.fit(
+            ref_wave_chunk, smoothed_ref_spec_chunk, 1)
+        coef = res.convert().coef
+
         ref_spec_chunk = ref_spec_chunk * \
             np.median(spec_chunk) / np.median(ref_spec_chunk)
+        continuum = coef[0] + coef[1] * \
+            ref_wave_chunk  # + coef[2] * lin_wave**2
+        ref_spec_chunk /= continuum
+        spec_chunk /= continuum
+        if n_chunk == 40:
+            lin_wave = np.linspace(
+                np.min(ref_wave_chunk), np.max(ref_wave_chunk))
+            # plt.plot(wave_chunk, spec_chunk, label="Observed")
+            # plt.plot(ref_wave_chunk, ref_spec_chunk, label="Reference")
+            # plt.plot(ref_wave_chunk, smoothed_ref_spec_chunk)
+            #         np.median(ref_spec_chunk))
+            # plt.plot(lin_wave, continuum)
+            # plt.show()            # exit()
+
+        chunk_sizes.append(wave_chunk[-1] - wave_chunk[0])
 
         print(f"Calculate RV via least_square_rvfit for chunk {n_chunk}")
         start = time.time()
@@ -117,13 +143,14 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
 
     rv_chunks = np.array(rv_chunks)
     wave_chunks = np.array(wave_chunks)
+    chunk_sizes = np.array(chunk_sizes)
 
-    return wave_chunks, rv_chunks
+    return wave_chunks, rv_chunks, chunk_sizes
 
 
 def least_square_rvfit(ref_wave, ref_spec, wave, spec):
     def func(v_shift, ref_wave, ref_spec, wave, spec):
-        shift_wave = wave * (1 + v_shift[0] / C)
+        shift_wave = wave * 1 / (1 + v_shift[0] / C)
         # Interpolate back to the ref (and therefore simulated wavelength grid)
         interpol_spec = interpolate_to_restframe(shift_wave,
                                                  spec,
@@ -147,13 +174,13 @@ def fit_crx(wave, rv):
 
     alpha, crx = popt
 
-    print(alpha, crx)
+    print(f"CRX={crx}")
 
     return crx, alpha
 
 
 def test():
-    sim = "tmp"
+    sim = "n20_dT200_k1f2_vp400_tphase0"
     wave_files = Path(sim).glob("wave_*.npy")
     spec_files = Path(sim).glob("spectrum_*.npy")
 
@@ -162,6 +189,7 @@ def test():
     vs = []
     bjds = []
 
+    # counter = 0
     for wave_file, spec_file in zip(sorted(list(wave_files)),
                                     sorted(list(spec_files))):
         v = float(spec_file.name.split("spectrum_")
@@ -176,6 +204,8 @@ def test():
             wave_mask = np.logical_and(wave_mask_low, wave_mask_high)
             ref_wave = ref_wave[wave_mask]
             ref_spec = ref_spec[wave_mask]
+            # counter += 1
+            # continue
         else:
             wave = np.load(wave_file)
             wave_mask_low = wave > 5200
@@ -188,18 +218,23 @@ def test():
 
     v_fits = []
     crxs = []
-    for wave, spec, v_theo in zip(waves, specs, vs):
-        wave_chunks, rv_chunks = calc_rv_chunks(ref_wave, ref_spec, wave, spec)
-        fig, ax = plt.subplots(1)
+    for wave, spec, v_theo, bjd in zip(waves, specs, vs, bjds):
+        wave_chunks, rv_chunks, chunk_sizes = calc_rv_chunks(
+            ref_wave.copy(), ref_spec.copy(), wave.copy(), spec.copy())
+        fig, ax = plt.subplots()
         ax.semilogx(wave_chunks, rv_chunks, "bo")
         crx, alpha = fit_crx(wave_chunks, rv_chunks)
         lin_wave = np.linspace(np.min(wave_chunks),
                                np.max(wave_chunks))
+        #ax[1].plot(wave_chunks, chunk_sizes, "bo")
         # print(np.log(lin_wave) * crx)
         # exit()
 
-        ax.semilogx(lin_wave, np.log(lin_wave) * crx + alpha)
-        plt.show()
+        ax.semilogx(lin_wave, np.log(lin_wave) * crx +
+                    alpha, label=f"CRX={round(crx,2)}")
+        ax.set_title(f"BJD={bjd}")
+        ax.legend()
+        # plt.show()
         crxs.append(crx)
 
         v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)

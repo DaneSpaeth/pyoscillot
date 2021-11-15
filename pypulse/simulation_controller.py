@@ -370,25 +370,31 @@ class SimulationController():
         rest_wavelength, spectrum, v = star.calc_spectrum(
             self.conf["min_wave"] - 10,
             self.conf["max_wave"] + 10)
-        np.save(f"tmp/wave_{v}_{bjd}.npy", rest_wavelength)
-        np.save(f"tmp/spectrum_{v}_{bjd}.npy", spectrum)
+
+        from pathlib import Path
+        name = "n20_dT200_k1f2_vp400_tphase0"
+        try:
+            Path(name).mkdir()
+        except FileExistsError:
+            pass
+        np.save(f"{name}/wave_{v}_{bjd}.npy", rest_wavelength)
+        np.save(f"{name}/spectrum_{v}_{bjd}.npy", spectrum)
 
         # TODO REMOVE
-        # from pathlib import Path
 
-        # if not Path("tmp/spectrum_0.0_0.npy").is_file():
-        #     # TODO REFACTOR
-        #     ref_star = GridSpectrumSimulator(
-        #         N_star=N_star, N_border=3,
-        #         Teff=int(self.conf["teff"]),
-        #         logg=float(self.conf["logg"]),
-        #         feh=float(self.conf["feh"]),
-        #         v_rot=v_rot, inclination=inclination,
-        #         limb_darkening=limb_darkening)
-        #     ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
-        #                                                    self.conf["max_wave"] + 10)
-        #     np.save(f"tmp/wave_{v}_{0}.npy", ref_wave)
-        #     np.save(f"tmp/spectrum_{v}_{0}.npy", ref_spec)
+        if not Path(f"{name}/spectrum_0.0_0.npy").is_file():
+            # TODO REFACTOR
+            ref_star = GridSpectrumSimulator(
+                N_star=N_star, N_border=3,
+                Teff=int(self.conf["teff"]),
+                logg=float(self.conf["logg"]),
+                feh=float(self.conf["feh"]),
+                v_rot=v_rot, inclination=inclination,
+                limb_darkening=limb_darkening)
+            ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
+                                                           self.conf["max_wave"] + 10)
+            np.save(f"{name}/wave_{v}_{0}.npy", ref_wave)
+            np.save(f"{name}/spectrum_{v}_{0}.npy", ref_spec)
         return None
 
         # ref_spec = ref_spec * np.max(spectrum) / np.max(ref_spec)

@@ -124,14 +124,20 @@ class GridSpectrumSimulator():
                         print(
                             f"Calculate Star Element {row, col} with T={self.temperature[row, col]}, v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
 
-                        local_wavelength = rest_wavelength + \
-                            v_c_rot[row, col] * rest_wavelength + \
-                            v_c_pulse[row, col] * rest_wavelength
+                        # local_wavelength = rest_wavelength + \
+                        #     v_c_rot[row, col] * rest_wavelength + \
+                        #     v_c_pulse[row, col] * rest_wavelength
 
-                        a_pulse = (1.0 + v_c_pulse[row, col])
-                        local_wavelength = np.exp(
-                            np.log(rest_wavelength) + np.log(a_pulse))
+                        a_pulse = 1.0 + v_c_pulse[row, col]
+                        # local_wavelength = np.exp(
+                        #    np.log(rest_wavelength) + np.log(a_pulse))
+                        local_wavelength = rest_wavelength * a_pulse
                         # Interpolate the spectrum to the same rest wavelength grid
+
+                        #import matplotlib.pyplot as plt
+                        # plt.plot(rest_wavelength, np.abs(
+                        #    rest_wavelength - local_wavelength))
+                        # plt.show()
 
                         interpol_spectrum = interpolate_to_restframe(local_wavelength,
                                                                      local_spectrum,
