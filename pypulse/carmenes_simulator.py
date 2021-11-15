@@ -43,7 +43,7 @@ def interpolate(spectrum, wavelength, template_file=None,
 
         # Adjust the signal to noise ratio and also adds noise if add_noise
         # is True
-        add_noise = False
+        add_noise = True
         if adjust_snr:
             order_spec = adjust_snr_order(
                 order_spec,
@@ -127,6 +127,14 @@ def adjust_snr_order(sp, sp_templ, sig_templ, wave_templ, add_noise,
     current_snr = np.nanmedian(smooth_sp / sig_templ)
     factor = new_median_snr / current_snr
     sp = sp * np.abs(factor)
+
+    print(f"current_snr={current_snr}")
+    print(f"new_median_snr={new_median_snr}")
+    print(f"SNR factor={factor}")
+    print(f"Median sig_templ={np.median(sig_templ)}")
+    print(f"Max sig_templ={np.max(sig_templ)}")
+    print(f"Min sig_templ={np.min(sig_templ)}")
+
 
     # Now add some noise
     # global_snr = gaussian_filter1d(spec, sigma=filter_width) / sig_template
