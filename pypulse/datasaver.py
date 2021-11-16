@@ -78,14 +78,22 @@ class DataSaver():
                     outfile, arcname=f"{outfile.name}")
             outfile.unlink()
 
-    def save_arrays(self, array_dict, bjd, instrument):
+    def save_raw(self, wave, spec, bjd, v_theo):
+        """ Save the Raw wavelength and spectrum as npy files."""
+        folder = self._create_folder("RAW")
+        np.save(folder / f"wave_{bjd}_{v_theo}.npy", wave)
+        print(f"Save RAW wavelength to {folder / f'wave_{bjd}_{v_theo}.npy'}")
+        np.save(folder / f"spec_{bjd}_{v_theo}.npy", spec)
+        print(f"Save RAW spectrum to {folder / f'spec_{bjd}_{v_theo}.npy'}")
+
+    def save_arrays(self, array_dict, bjd):
         """ Save the 2D arrays of the simulation along with the spectra.
 
             :param dict array_dict: Dictionary of savename:array
             :param dict bjd: BJD to save
         """
         # Make sure the folder is created, also creates the array folder
-        folder = self._create_folder(instrument)
+        folder = self._create_folder()
         array_folder = folder / "arrays"
 
         for key, array in array_dict.items():
@@ -97,9 +105,9 @@ class DataSaver():
             print(f"Save {key} array to {array_path}")
             np.save(array_path, array, fix_imports=False)
 
-    def save_flux(self, bjd, flux, instrument):
+    def save_flux(self, bjd, flux):
         """ Save flux to file."""
-        folder = self._create_folder(instrument)
+        folder = self._create_folder()
 
         with open(folder / "flux.txt", "a") as f:
             f.write(f"{bjd}    {flux}\n")
@@ -114,15 +122,19 @@ class DataSaver():
                 self.simulation_name / "flux.txt"
             copy2(fluxfile, new_fluxfile)
 
-    def _create_folder(self, instrument):
+    def _create_folder(self, instrument=None):
         """ Create the folder to contain all data."""
         folder = self.dataroot / "fake_spectra" / \
-            self.simulation_name / instrument
+            self.simulation_name
+        if instrument is not None:
+            folder = folder / instrument
 
         if not folder.is_dir():
             folder.mkdir(parents=True)
-            array_folder = folder / "arrays"
-            array_folder.mkdir()
+        if instrument is None:
+            if not (folder / "arrays").is_dir():
+                array_folder = folder / "arrays"
+                array_folder.mkdir()
         return folder
 
     def copy_ticket(self, ticket):

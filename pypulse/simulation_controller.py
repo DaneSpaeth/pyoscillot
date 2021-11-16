@@ -56,7 +56,7 @@ class SimulationController():
             print("Select a Mode")
             exit()
 
-    def _save_to_disk(self, shift_wavelength, spectrum, time, bc, bjd):
+    def _save_to_disk(self, shift_wavelength, spectrum, time, bc, bjd, v_theo):
         """ Helper function to save the spectrum to disk."""
         # Interpolate onto the CARMENES template
         if self.instrument in ["CARMENES_VIS", "ALL"]:
@@ -112,6 +112,8 @@ class SimulationController():
                                      filename,
                                      instrument="HARPS",
                                      fits_comment_dict=new_comments)
+        if self.instrument in ["RAW", "ALL"]:
+            self.saver.save_raw(shift_wavelength, spectrum, bjd, v_theo)
 
     def sample_phase(self, sample_P, N_global=30, N_periods=1,
                      N_local=(1, 1), random_day_range=(0, 1)):
@@ -188,7 +190,7 @@ class SimulationController():
             shift_wavelengths.append(shift_wavelength)
             spectra.append(spectrum)
 
-            # self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
 
         # calc_theoretical_results(shift_wavelengths, spectra, bjds)
 
@@ -257,17 +259,18 @@ class SimulationController():
 
         # Wavelength in restframe of phoenix spectra but already perturbed
         # by spot
-        rest_wavelength, spectrum = star.calc_spectrum(
+        rest_wavelength, spectrum, v_theo = star.calc_spectrum(
             self.conf["min_wave"] - 10, self.conf["max_wave"] + 10)
 
         # Add doppler shift due to barycentric correction
         shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
-        self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
-        if self.instrument in ["CARMENES_VIS", "ALL"]:
-            self.saver.save_flux(bjd, star.flux, "CARMENES_VIS")
-        if self.instrument in ["HARPS", "ALL"]:
-            self.saver.save_flux(bjd, star.flux, "HARPS")
+        self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd, v_theo)
+        # Save the arrays
+        array_dict = star.get_arrays()
+        self.saver.save_arrays(array_dict, bjd)
+        # Save the flux
+        self.saver.save_flux(bjd, star.flux)
 
         return(f"Star {idx+1}/{N} finished")
 
@@ -342,7 +345,6 @@ class SimulationController():
         for sim in self.simulation_keys:
             P = self.conf[sim]["period"]
             l = int(self.conf[sim]["l"])
-            # m = int(self.conf[sim]["m"])
             k = int(self.conf[sim]["k"])
             v_p = self.conf[sim]["v_p"]
             dT = self.conf[sim]["dt"]
@@ -361,55 +363,34 @@ class SimulationController():
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
-        rest_wavelength, spectrum, v = star.calc_spectrum(
+        rest_wavelength, spectrum, v_theo = star.calc_spectrum(
             self.conf["min_wave"] - 10,
             self.conf["max_wave"] + 10)
 
-        from pathlib import Path
-        name = "n20_dT200_k1f2_vp400_tphase0"
-        try:
-            Path(name).mkdir()
-        except FileExistsError:
-            pass
-        np.save(f"{name}/wave_{v}_{bjd}.npy", rest_wavelength)
-        np.save(f"{name}/spectrum_{v}_{bjd}.npy", spectrum)
-
-        # TODO REMOVE
-
-        if not Path(f"{name}/spectrum_0.0_0.npy").is_file():
-            # TODO REFACTOR
-            ref_star = GridSpectrumSimulator(
-                N_star=N_star, N_border=3,
-                Teff=int(self.conf["teff"]),
-                logg=float(self.conf["logg"]),
-                feh=float(self.conf["feh"]),
-                v_rot=v_rot, inclination=inclination,
-                limb_darkening=limb_darkening)
-            ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
-                                                           self.conf["max_wave"] + 10)
-            np.save(f"{name}/wave_{v}_{0}.npy", ref_wave)
-            np.save(f"{name}/spectrum_{v}_{0}.npy", ref_spec)
-        return None
-
-        # ref_spec = ref_spec * np.max(spectrum) / np.max(ref_spec)
-        # calc_theoretical_results(
-        #    ref_wave, ref_spec, rest_wavelength, spectrum, bjd)
+        # if not Path(f"{name}/spectrum_0.0_0.npy").is_file():
+        #     # TODO REFACTOR
+        #     ref_star = GridSpectrumSimulator(
+        #         N_star=N_star, N_border=3,
+        #         Teff=int(self.conf["teff"]),
+        #         logg=float(self.conf["logg"]),
+        #         feh=float(self.conf["feh"]),
+        #         v_rot=v_rot, inclination=inclination,
+        #         limb_darkening=limb_darkening)
+        #     ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
+        #                                                    self.conf["max_wave"] + 10)
+        #     np.save(f"{name}/wave_{v}_{0}.npy", ref_wave)
+        #     np.save(f"{name}/spectrum_{v}_{0}.npy", ref_spec)
 
         # Add doppler shift due to barycentric correction
         # shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
+        # Save the arrays
         array_dict = star.get_arrays()
+        self.saver.save_arrays(array_dict, bjd)
+        # Save the flux
+        self.saver.save_flux(bjd, star.flux)
 
-        if self.instrument in ["CARMENES_VIS", "ALL"]:
-            self.saver.save_arrays(array_dict, bjd, "CARMENES_VIS")
-            self.saver.save_flux(bjd, star.flux, "CARMENES_VIS")
-        if self.instrument in ["HARPS", "ALL"]:
-            self.saver.save_arrays(array_dict, bjd, "HARPS")
-            self.saver.save_flux(bjd, star.flux, "HARPS")
-        array_dict = None
-        del array_dict
-
-        # self._save_to_disk(rest_wavelength, spectrum, time, bc, bjd)
+        self._save_to_disk(rest_wavelength, spectrum, time, bc, bjd, v_theo)
 
         return(f"Star {idx+1}/{N} finished")
 
