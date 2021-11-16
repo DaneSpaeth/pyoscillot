@@ -142,6 +142,11 @@ class DataSaver():
             folder.
         """
         ticket = Path(ticket)
+        if not ticket.is_file():
+            ticket = Path("tickets") / ticket
+        if not ticket.is_file():
+            raise FileNotFoundError(ticket)
+            exit()
 
         # First copy to the spectra folder
         folder = self._create_folder()

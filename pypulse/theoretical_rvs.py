@@ -9,14 +9,13 @@ from parse_ini import parse_global_ini
 import time
 
 
-def _read_in_arrays(name, min_wave=None, max_wave=None):
+def _read_in_arrays(name, min_wave=None, max_wave=None, ref=False):
     """ Read in all arrays for given simulation name."""
 
     dataroot = parse_global_ini()["datapath"]
-    print(dataroot)
     sim = dataroot / "fake_spectra" / name / "RAW"
     wave_files = list(Path(sim).glob("wave_*.npy"))
-    spec_files = list(Path(sim).glob("spectrum_*.npy"))
+    spec_files = list(Path(sim).glob("spec_*.npy"))
 
     if not len(wave_files):
         print(f"No files could be found in {sim}")
@@ -28,19 +27,20 @@ def _read_in_arrays(name, min_wave=None, max_wave=None):
 
     for wave_file, spec_file in zip(sorted(wave_files),
                                     sorted(spec_files)):
-        v = float(spec_file.name.split("spectrum_")
-                  [-1].split(".npy")[0].split("_")[0])
-        bjd = float(spec_file.name.split("spectrum_")
-                    [-1].split(".npy")[0].split("_")[-1])
-        if v == 0:
-            ref_wave = np.load(wave_file)
-            ref_spec = np.load(spec_file)
-            if min_wave is not None and max_wave is not None:
-                ref_wave, ref_spec = _cut_to_waverange(ref_wave, ref_spec,
-                                                       min_wave, max_wave)
-
+        v = float(spec_file.name.split("spec_")
+                  [-1].split(".npy")[0].split("_")[-1])
+        bjd = float(spec_file.name.split("spec_")
+                    [-1].split(".npy")[0].split("_")[0])
+        if ref:
+            if v == 0:
+                ref_wave = np.load(wave_file)
+                ref_spec = np.load(spec_file)
+                if min_wave is not None and max_wave is not None:
+                    ref_wave, ref_spec = _cut_to_waverange(ref_wave, ref_spec,
+                                                           min_wave, max_wave)
         else:
             wave = np.load(wave_file)
+
             spec = np.load(spec_file)
             if min_wave is not None and max_wave is not None:
                 wave, spec = _cut_to_waverange(wave, spec,
@@ -49,6 +49,11 @@ def _read_in_arrays(name, min_wave=None, max_wave=None):
             specs.append(spec)
             vs.append(v)
             bjds.append(bjd)
+
+    print(waves)
+    if not ref:
+        ref_wave = waves[0]
+        ref_spec = specs[0]
 
     return (ref_wave, ref_spec,
             np.array(waves), np.array(specs),
@@ -66,13 +71,15 @@ def _cut_to_waverange(wave, spec, min_wave, max_wave):
     return wave, spec
 
 
-def calc_theoretical_results(name):
+def calc_theoretical_results(name, min_wave=None, max_wave=None):
     """ Calculate all theoretical results, i.e. RVs, CRX, dLW
 
         :param str name: Name of Simulation
     """
 
-    ref_wave, ref_spec, waves, specs, vs, bjds = _read_in_arrays(name)
+    ref_wave, ref_spec, waves, specs, vs, bjds = _read_in_arrays(name,
+                                                                 min_wave=min_wave,
+                                                                 max_wave=max_wave)
 
     v_fits = []
     crxs = []
@@ -197,4 +204,4 @@ def fit_crx(wave, rv):
 
 
 if __name__ == "__main__":
-    calc_theoretical_results("n10_dT600_k100")
+    calc_theoretical_results("test_raw", min_wave=5500, max_wave=7500)
