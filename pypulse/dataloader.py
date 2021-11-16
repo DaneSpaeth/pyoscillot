@@ -147,17 +147,8 @@ def plot_central_order_intensitites():
 
 
 if __name__ == "__main__":
-    from scipy.ndimage import gaussian_filter
-    # spec, wave, blaze = harps_template()
-    # order = 40
-    spec, cont, sig, wave = carmenes_template(
-        "/home/dane/Documents/PhD/pypulse/data/fake_spectra/HARPS_CARM_test/CARMENES_VIS/car-20200618T00h00m00s-sci-fake-vis_A.fits")
-    # spec, cont, sig, wave = carmenes_template()
-    order = 20
-    snr = gaussian_filter(spec[order], sigma=30) / \
-        gaussian_filter(sig[order], sigma=30)
-    # snr = spec[order] / sig[order]
-    plt.plot(wave[order], gaussian_filter(sig[order], sigma=40))
-    print(np.nanmedian(snr))
-    # plt.plot(wave[order], blaze[order])
+    (spec, cont, sig, wave) = carmenes_template(
+        "CARMENES_templates/CARMENES_template_HIP73620.fits")
+    order = 60
+    plt.plot(wave[order], spec[order])
     plt.show()
