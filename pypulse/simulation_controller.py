@@ -13,6 +13,7 @@ from pathlib import Path
 from parse_ini import parse_ticket, parse_global_ini
 import carmenes_simulator as carmenes
 import harps_simulator as harps
+from theoretical_rvs import calc_theoretical_results
 
 
 class SimulationController():
@@ -175,6 +176,8 @@ class SimulationController():
             Teff=int(self.conf["teff"]), wavelength_range=wavelength_range)
 
         # Add the Doppler shifts
+        shift_wavelengths = []
+        spectra = []
         for v, time, bc, bjd in zip(K_sample, time_sample, bcs, bjds):
             print(v)
             vo = v
@@ -182,7 +185,12 @@ class SimulationController():
             a = (1.0 + vo / C) / (1.0 + ve / C)
             shift_wavelength = np.exp(np.log(rest_wavelength) + np.log(a))
 
-            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+            shift_wavelengths.append(shift_wavelength)
+            spectra.append(spectrum)
+
+            # self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+
+        # calc_theoretical_results(shift_wavelengths, spectra, bjds)
 
     def simulate_spot(self):
         """ Simulate the spot spectra."""
@@ -216,7 +224,7 @@ class SimulationController():
         """ Isolated function to actually run the spot simulation.
 
             It is splitted from the simulate_pulsation function to allow
-            mulitprocessing which works via pickling.
+            multiprocessing which works via pickling.
 
             :param idx: Idx of current simulation (just for counting)
             :param v: Current velocity due to barycentric correction in m/s
@@ -282,12 +290,6 @@ class SimulationController():
             P, N_periods=N_periods, N_global=N,
             N_local=(N_local_min, N_local_max),
             random_day_range=(rand_day_min, rand_day_max))
-
-        # TODO REMOVE
-        #time_sample = time_sample[:6]
-        #self.conf["n"] = 6
-        #print(len(time_sample))
-        # END REMOVE
 
         K_sample = np.zeros(len(time_sample))
 
@@ -359,12 +361,42 @@ class SimulationController():
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
-        rest_wavelength, spectrum = star.calc_spectrum(
+        rest_wavelength, spectrum, v = star.calc_spectrum(
             self.conf["min_wave"] - 10,
             self.conf["max_wave"] + 10)
 
+        from pathlib import Path
+        name = "n20_dT200_k1f2_vp400_tphase0"
+        try:
+            Path(name).mkdir()
+        except FileExistsError:
+            pass
+        np.save(f"{name}/wave_{v}_{bjd}.npy", rest_wavelength)
+        np.save(f"{name}/spectrum_{v}_{bjd}.npy", spectrum)
+
+        # TODO REMOVE
+
+        if not Path(f"{name}/spectrum_0.0_0.npy").is_file():
+            # TODO REFACTOR
+            ref_star = GridSpectrumSimulator(
+                N_star=N_star, N_border=3,
+                Teff=int(self.conf["teff"]),
+                logg=float(self.conf["logg"]),
+                feh=float(self.conf["feh"]),
+                v_rot=v_rot, inclination=inclination,
+                limb_darkening=limb_darkening)
+            ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
+                                                           self.conf["max_wave"] + 10)
+            np.save(f"{name}/wave_{v}_{0}.npy", ref_wave)
+            np.save(f"{name}/spectrum_{v}_{0}.npy", ref_spec)
+        return None
+
+        # ref_spec = ref_spec * np.max(spectrum) / np.max(ref_spec)
+        # calc_theoretical_results(
+        #    ref_wave, ref_spec, rest_wavelength, spectrum, bjd)
+
         # Add doppler shift due to barycentric correction
-        shift_wavelength = rest_wavelength + v / C * rest_wavelength
+        # shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
         array_dict = star.get_arrays()
 
@@ -377,7 +409,7 @@ class SimulationController():
         array_dict = None
         del array_dict
 
-        self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+        # self._save_to_disk(rest_wavelength, spectrum, time, bc, bjd)
 
         return(f"Star {idx+1}/{N} finished")
 
@@ -415,5 +447,5 @@ class SimulationController():
 
 
 if __name__ == "__main__":
-    ticket = "hip73620_ticket.ini"
+    ticket = "example_ticket.ini"
     SimulationController(ticket)

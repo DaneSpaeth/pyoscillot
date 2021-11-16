@@ -97,6 +97,11 @@ class GridSpectrumSimulator():
 
         total_spectrum = np.zeros(len(rest_wavelength))
 
+        # import matplotlib.pyplot as plt
+        # plt.imshow(self.pulsation)
+        # plt.show()
+
+        v_total = np.nanmean(self.pulsation)
         for row in range(self.temperature.shape[0]):
             for col in range(self.temperature.shape[1]):
                 if not np.isnan(self.temperature[row, col]):
@@ -110,37 +115,52 @@ class GridSpectrumSimulator():
                                                                          ref_headers=ref_headers)
 
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
-                        # print(f"Skip Star Element {row, col}")
+                        print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
-                    else:
-                        # print(f"Calculate Star Element {row, col}")
 
-                        local_wavelength = rest_wavelength + \
-                            v_c_rot[row, col] * rest_wavelength + \
-                            v_c_pulse[row, col] * rest_wavelength
+                        local_wavelength = rest_wavelength
+
+                    else:
+                        print(
+                            f"Calculate Star Element {row, col} with T={self.temperature[row, col]}, v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
+
+                        # local_wavelength = rest_wavelength + \
+                        #     v_c_rot[row, col] * rest_wavelength + \
+                        #     v_c_pulse[row, col] * rest_wavelength
+
+                        a_pulse = 1.0 + v_c_pulse[row, col]
+                        # local_wavelength = np.exp(
+                        #    np.log(rest_wavelength) + np.log(a_pulse))
+                        local_wavelength = rest_wavelength * a_pulse
                         # Interpolate the spectrum to the same rest wavelength grid
 
+                        #import matplotlib.pyplot as plt
+                        # plt.plot(rest_wavelength, np.abs(
+                        #    rest_wavelength - local_wavelength))
+                        # plt.show()
+
                         interpol_spectrum = interpolate_to_restframe(local_wavelength,
-                                                                     local_spectrum, rest_wavelength)
-                        # interpol_spectrum = local_spectrum
+                                                                     local_spectrum,
+                                                                     rest_wavelength)
 
                         total_spectrum += interpol_spectrum
 
-        total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
+        # total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
 
         # Now adjust the resolution to Carmenes
         if mode == "oneline":
             total_spectrum += np.abs(total_spectrum.min())
             total_spectrum = total_spectrum / total_spectrum.max()
-        # else:
-        #     total_spectrum = adjust_resolution(
-        #         rest_wavelength, total_spectrum, R=90000)
         self.spectrum = total_spectrum
 
         # Also calculate the flux
         self.calc_flux()
 
-        return rest_wavelength, total_spectrum
+        # TODO REMOVE
+        # return local_wavelength, local_spectrum
+        return rest_wavelength, total_spectrum, v_total
+        # END TODO
+        # return rest_wavelength, total_spectrum
 
     def get_arrays(self):
         """ Get all arrays (e.g. pulsation, temp) of the simulation.
