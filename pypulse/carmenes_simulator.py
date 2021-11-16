@@ -5,6 +5,8 @@ from scipy.ndimage import gaussian_filter1d
 from utils import adjust_resolution
 from dataloader import carmenes_template
 
+import matplotlib.pyplot as plt
+
 
 def interpolate(spectrum, wavelength, template_file=None,
                 target_max_snr=300, adjust_snr=True, add_noise=True,
@@ -29,13 +31,21 @@ def interpolate(spectrum, wavelength, template_file=None,
     spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
     for order in range(len(wave_templ)):
 
+        print(f"Order={order}")
+        print(
+            f"Wavelength Range=({np.min(wave_templ[order]), np.max(wave_templ[order])})")
+
         order_spec = []
         func = interp1d(wavelength, spectrum, kind="cubic")
         order_spec = func(wave_templ[order])
 
         # Reduce the level to something similar to CARMENES
+        print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
+        print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
+        # Sometimes there can be negative counts in the templ spec
+        # Therefore we use the abs() here
         order_spec = order_spec * \
-            np.nanmean(spec_templ[order]) / np.nanmean(order_spec)
+            np.abs(np.nanmean(spec_templ[order])) / np.nanmean(order_spec)
 
         # Do not correct for cont anymore
         # order_cont = cont_templ[order] / np.mean(cont_templ[order])
@@ -121,12 +131,11 @@ def adjust_snr_order(sp, sp_templ, sig_templ, wave_templ, add_noise,
     # Now smooth the noise
     filter_width = 40
     sig_templ = gaussian_filter1d(sig_templ, sigma=filter_width)
-    smooth_sp = gaussian_filter1d(sp, sigma=filter_width)
+    # smooth_sp = gaussian_filter1d(sp, sigma=filter_width)
 
     # Now rescale the spec to have the desired snr
-    current_snr = np.nanmedian(smooth_sp / sig_templ)
+    current_snr = np.nanmedian(sp / sig_templ)
     factor = new_median_snr / current_snr
-    sp = sp * np.abs(factor)
 
     print(f"current_snr={current_snr}")
     print(f"new_median_snr={new_median_snr}")
@@ -135,6 +144,12 @@ def adjust_snr_order(sp, sp_templ, sig_templ, wave_templ, add_noise,
     print(f"Max sig_templ={np.max(sig_templ)}")
     print(f"Min sig_templ={np.min(sig_templ)}")
 
+    if factor < 0:
+        print(sp)
+        plt.plot(wave_templ, sp)
+        plt.show()
+        raise ValueError("factor can't be smaller than 0")
+    sp = sp * np.abs(factor)
 
     # Now add some noise
     # global_snr = gaussian_filter1d(spec, sigma=filter_width) / sig_template
