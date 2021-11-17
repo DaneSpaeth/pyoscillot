@@ -98,8 +98,11 @@ class DataSaver():
 
         for key, array in array_dict.items():
             component_folder = array_folder / key
-            if not component_folder.is_dir():
-                component_folder.mkdir(parents=True)
+            try:
+                if not component_folder.is_dir():
+                    component_folder.mkdir(parents=True)
+            except FileExistsError:
+                pass
 
             array_path = component_folder / f"{bjd}.npy"
             print(f"Save {key} array to {array_path}")
@@ -129,12 +132,15 @@ class DataSaver():
         if instrument is not None:
             folder = folder / instrument
 
-        if not folder.is_dir():
-            folder.mkdir(parents=True)
-        if instrument is None:
-            if not (folder / "arrays").is_dir():
-                array_folder = folder / "arrays"
-                array_folder.mkdir()
+        try:
+            if not folder.is_dir():
+                folder.mkdir(parents=True)
+            if instrument is None:
+                if not (folder / "arrays").is_dir():
+                    array_folder = folder / "arrays"
+                    array_folder.mkdir()
+        except FileExistsError:
+            pass
         return folder
 
     def copy_ticket(self, ticket):
