@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import plapy.rv.dataloader as load
 from parse_ini import parse_global_ini
 import sys
-# sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
-# from plotter import plot_rv, plot_activity, plot_activity_rv
+sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
+from plotter import plot_rv, plot_activity, plot_activity_rv
 
 
 def check_time_series(name):

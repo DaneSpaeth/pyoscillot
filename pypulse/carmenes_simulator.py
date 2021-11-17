@@ -53,7 +53,7 @@ def interpolate(spectrum, wavelength, template_file=None,
 
         # Adjust the signal to noise ratio and also adds noise if add_noise
         # is True
-        add_noise = True
+        add_noise = False
         if adjust_snr:
             order_spec = adjust_snr_order(
                 order_spec,
