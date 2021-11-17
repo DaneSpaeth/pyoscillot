@@ -387,6 +387,8 @@ class SimulationController():
         # Save the arrays
         array_dict = star.get_arrays()
         self.saver.save_arrays(array_dict, bjd)
+        array_dict = None
+        del array_dict
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
 
