@@ -27,10 +27,17 @@ def _read_in_arrays(name, min_wave=None, max_wave=None, ref=False):
 
     for wave_file, spec_file in zip(sorted(wave_files),
                                     sorted(spec_files)):
-        v = float(spec_file.name.split("spec_")
-                  [-1].split(".npy")[0].split("_")[-1])
-        bjd = float(spec_file.name.split("spec_")
-                    [-1].split(".npy")[0].split("_")[0])
+        old = False
+        if old:
+            v = float(spec_file.name.split("spec_")
+                      [-1].split(".npy")[0].split("_")[0])
+            bjd = float(spec_file.name.split("spec_")
+                        [-1].split(".npy")[0].split("_")[-1])
+        else:
+            v = float(spec_file.name.split("spec_")
+                      [-1].split(".npy")[0].split("_")[-1])
+            bjd = float(spec_file.name.split("spec_")
+                        [-1].split(".npy")[0].split("_")[0])
         if ref:
             if v == 0:
                 ref_wave = np.load(wave_file)
@@ -38,17 +45,18 @@ def _read_in_arrays(name, min_wave=None, max_wave=None, ref=False):
                 if min_wave is not None and max_wave is not None:
                     ref_wave, ref_spec = _cut_to_waverange(ref_wave, ref_spec,
                                                            min_wave, max_wave)
-        else:
-            wave = np.load(wave_file)
+                continue
 
-            spec = np.load(spec_file)
-            if min_wave is not None and max_wave is not None:
-                wave, spec = _cut_to_waverange(wave, spec,
-                                               min_wave, max_wave)
-            waves.append(wave)
-            specs.append(spec)
-            vs.append(v)
-            bjds.append(bjd)
+        wave = np.load(wave_file)
+
+        spec = np.load(spec_file)
+        if min_wave is not None and max_wave is not None:
+            wave, spec = _cut_to_waverange(wave, spec,
+                                           min_wave, max_wave)
+        waves.append(wave)
+        specs.append(spec)
+        vs.append(v)
+        bjds.append(bjd)
 
     print(waves)
     if not ref:
@@ -71,7 +79,7 @@ def _cut_to_waverange(wave, spec, min_wave, max_wave):
     return wave, spec
 
 
-def calc_theoretical_results(name, min_wave=None, max_wave=None):
+def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False):
     """ Calculate all theoretical results, i.e. RVs, CRX, dLW
 
         :param str name: Name of Simulation
@@ -79,7 +87,8 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None):
 
     ref_wave, ref_spec, waves, specs, vs, bjds = _read_in_arrays(name,
                                                                  min_wave=min_wave,
-                                                                 max_wave=max_wave)
+                                                                 max_wave=max_wave,
+                                                                 ref=ref)
 
     v_fits = []
     crxs = []
@@ -106,6 +115,10 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None):
     fig, ax = plt.subplots(2, 1)
     ax[0].plot(bjds, v_fits, "bo")
     ax[1].plot(bjds, crxs, "bo")
+    ax[0].set_xlabel("BJD")
+    ax[0].set_ylabel("RV [m/s]")
+    ax[1].set_xlabel("BJD")
+    ax[1].set_ylabel("CRX [m/s/Np]")
     plt.show()
 
 
@@ -175,7 +188,7 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
 
 def least_square_rvfit(ref_wave, ref_spec, wave, spec):
     def func(v_shift, ref_wave, ref_spec, wave, spec):
-        shift_wave = wave * 1 / (1 + v_shift[0] / C)
+        shift_wave = wave * 1 / (1 - v_shift[0] / C)
         # Interpolate back to the ref (and therefore simulated wavelength grid)
         interpol_spec = interpolate_to_restframe(shift_wave,
                                                  spec,
@@ -204,4 +217,7 @@ def fit_crx(wave, rv):
 
 
 if __name__ == "__main__":
-    calc_theoretical_results("test_raw", min_wave=5500, max_wave=7500)
+    max_wave_CARM = 9204
+    min_wave_CARM = 5612
+    calc_theoretical_results(
+        "NEW_BIG_TEST", min_wave=5500, max_wave=8000, ref=False)

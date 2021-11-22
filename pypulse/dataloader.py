@@ -147,8 +147,4 @@ def plot_central_order_intensitites():
 
 
 if __name__ == "__main__":
-    (spec, cont, sig, wave) = carmenes_template(
-        "CARMENES_templates/CARMENES_template_HIP73620.fits")
-    order = 60
-    plt.plot(wave[order], spec[order])
-    plt.show()
+    pass
