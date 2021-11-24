@@ -162,7 +162,7 @@ def cut_to_maxshift(spectrum, wavelength, min_wave, max_wave):
 def interpolate_to_restframe(wavelength, spectrum, rest_wavelength):
     """ Interpolate the wavelength and spectrum to the rest_wavelength."""
     # CAUTION: At the moment I allow to extrapolate here
-    func = interpolate.interp1d(wavelength, spectrum, fill_value="extrapolate", kind="cubic")
+    func = interpolate.interp1d(wavelength, spectrum, fill_value="extrapolate", kind="linear")
     shift_spec = func(rest_wavelength)
 
     return shift_spec
