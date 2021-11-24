@@ -57,6 +57,7 @@ def main(ticket, run_laptop=False):
 if __name__ == "__main__":
     # ticket = "small_amplitude.ini"
     # ticket = "ngc2423-3_ticket.ini"
+    # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/talk_ngc2423_90_dt200/talk_ticket.ini"
     ticket = "talk_ticket.ini"
     # ticket = "example_ticket.ini"
     main(ticket, run_laptop=False)
