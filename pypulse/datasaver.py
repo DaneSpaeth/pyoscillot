@@ -143,9 +143,8 @@ class DataSaver():
             pass
         return folder
 
-    def copy_ticket(self, ticket):
-        """ Copy the ticket both to the spectrum folder and the serval output
-            folder.
+    def copy_ticket_spectrafolder(self, ticket):
+        """ Copy the ticket to the spectrum folder.
         """
         ticket = Path(ticket)
         if not ticket.is_file():
@@ -159,6 +158,16 @@ class DataSaver():
         new_ticket = folder / ticket.name
 
         copy2(ticket, new_ticket)
+
+    def copy_ticket_servalfolder(self, ticket):
+        """ Copy the ticket to the spectrum folder."""
+
+        ticket = Path(ticket)
+        if not ticket.is_file():
+            ticket = Path("tickets") / ticket
+        if not ticket.is_file():
+            raise FileNotFoundError(ticket)
+            exit()
 
         # Now copy the ticket to the serval folder
         serval_ticket = self.global_dict["rvlibpath"] / \

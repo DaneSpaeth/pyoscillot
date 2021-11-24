@@ -16,9 +16,12 @@ def main(ticket, run_laptop=False):
     conf_dict = parse_ticket(ticket)
     name = str(conf_dict["name"])
 
+    saver = DataSaver(name)
+
     if not laptop:
         # Run the Simulation
         SimulationController(ticket)
+        saver.copy_ticket_spectrafolder(ticket)
     else:
         if run_laptop:
             # Run the Simulation even if on laptop
@@ -40,7 +43,7 @@ def main(ticket, run_laptop=False):
 
         # Copy the flux and the ticket to the new folders
         saver = DataSaver(name)
-        saver.copy_ticket(ticket)
+        saver.copy_ticket_servalfolder(ticket)
         try:
             saver.copy_flux()
         except FileNotFoundError:
