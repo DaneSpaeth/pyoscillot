@@ -181,7 +181,6 @@ class SimulationController():
         shift_wavelengths = []
         spectra = []
         for v, time, bc, bjd in zip(K_sample, time_sample, bcs, bjds):
-            print(v)
             vo = v
             ve = 0
             a = (1.0 + vo / C) / (1.0 + ve / C)

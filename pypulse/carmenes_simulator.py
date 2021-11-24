@@ -31,17 +31,17 @@ def interpolate(spectrum, wavelength, template_file=None,
     spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
     for order in range(len(wave_templ)):
 
-        print(f"Order={order}")
-        print(
-            f"Wavelength Range=({np.min(wave_templ[order]), np.max(wave_templ[order])})")
+        #print(f"Order={order}")
+        #print(
+        #    f"Wavelength Range=({np.min(wave_templ[order]), np.max(wave_templ[order])})")
 
         order_spec = []
         func = interp1d(wavelength, spectrum, kind="cubic")
         order_spec = func(wave_templ[order])
 
         # Reduce the level to something similar to CARMENES
-        print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
-        print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
+        #print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
+        #print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
         # Sometimes there can be negative counts in the templ spec
         # Therefore we use the abs() here
         order_spec = order_spec * \
@@ -137,12 +137,12 @@ def adjust_snr_order(sp, sp_templ, sig_templ, wave_templ, add_noise,
     current_snr = np.nanmedian(sp / sig_templ)
     factor = new_median_snr / current_snr
 
-    print(f"current_snr={current_snr}")
-    print(f"new_median_snr={new_median_snr}")
-    print(f"SNR factor={factor}")
-    print(f"Median sig_templ={np.median(sig_templ)}")
-    print(f"Max sig_templ={np.max(sig_templ)}")
-    print(f"Min sig_templ={np.min(sig_templ)}")
+    # print(f"current_snr={current_snr}")
+    # print(f"new_median_snr={new_median_snr}")
+    # print(f"SNR factor={factor}")
+    # print(f"Median sig_templ={np.median(sig_templ)}")
+    # print(f"Max sig_templ={np.max(sig_templ)}")
+    # print(f"Min sig_templ={np.min(sig_templ)}")
 
     if factor < 0:
         print(sp)

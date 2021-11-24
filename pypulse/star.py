@@ -115,14 +115,14 @@ class GridSpectrumSimulator():
                                                                          ref_headers=ref_headers)
 
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
-                        print(f"Skip Star Element {row, col}")
+                        # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
 
                         local_wavelength = rest_wavelength
 
                     else:
-                        print(
-                            f"Calculate Star Element {row, col} with T={self.temperature[row, col]}, v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
+                        # print(
+                        #    f"Calculate Star Element {row, col} with T={self.temperature[row, col]}, v_p={self.pulsation[row, col]} and v_rot={self.rotation[row,col]}")
 
                         # local_wavelength = rest_wavelength + \
                         #     v_c_rot[row, col] * rest_wavelength + \

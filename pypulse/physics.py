@@ -44,7 +44,7 @@ def get_interpolated_spectrum(T_local,
     T_high = int(np.ceil(T_local / 100) * 100)
 
     if T_low == T_high:
-        print("No Temperature Interpolation")
+        # print("No Temperature Interpolation")
         spec = ref_spectra[T_low]
         header = ref_headers[T_low]
         wave = ref_wave
@@ -67,8 +67,8 @@ def get_interpolated_spectrum(T_local,
             planck_ratio(wave * 1e-10, T_local, T_low)
         spec_high_interpol = spec_high * \
             planck_ratio(wave * 1e-10, T_local, T_low)
-        print(f"Ratio low= {ratio_low}")
-        print(f"Ratio high={ratio_high}")
+        # print(f"Ratio low= {ratio_low}")
+        # print(f"Ratio high={ratio_high}")
         spec = (spec_low_interpol * ratio_low +
                 spec_high_interpol * ratio_high)
 
