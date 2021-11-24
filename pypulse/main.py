@@ -4,6 +4,7 @@ from parse_ini import parse_global_ini, parse_ticket
 from datasaver import DataSaver
 import socket
 from theoretical_rvs import calc_theoretical_results
+from check_time_series import check_time_series
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
 
@@ -47,13 +48,12 @@ def main(ticket, run_laptop=False):
             pass
 
         calc_theoretical_results(name)
-        from check_time_series import check_time_series
         check_time_series(name)
 
 
 if __name__ == "__main__":
     # ticket = "small_amplitude.ini"
     # ticket = "ngc2423-3_ticket.ini"
-    # ticket = "talk_ticket.ini"
-    ticket = "example_ticket.ini"
+    ticket = "talk_ticket.ini"
+    # ticket = "example_ticket.ini"
     main(ticket, run_laptop=False)

@@ -4,11 +4,14 @@ import matplotlib.pyplot as plt
 import plapy.rv.dataloader as load
 from parse_ini import parse_global_ini
 import sys
-# sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
-# from plotter import plot_rv, plot_activity, plot_activity_rv
+try:
+    sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
+    from plotter import plot_rv, plot_activity, plot_activity_rv
+except ModuleNotFoundError:
+    pass
 
 
-def check_time_series(name):
+def check_time_series(name, instrument=None):
     """ Plot a check plot.
 
             TODO: Change it to use the usual plot functions.
@@ -37,11 +40,11 @@ def check_time_series(name):
     crx_dict = load.crx(name)
     dlw_dict = load.dlw(name)
 
-    plot_rv(rv_dict, ax=ax[0, 0])
-    plot_activity(crx_dict, ax=ax[1, 0])
-    plot_activity(dlw_dict, ax=ax[2, 0])
-    plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1])
-    plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1])
+    plot_rv(rv_dict, ax=ax[0, 0], instrument=instrument)
+    plot_activity(crx_dict, ax=ax[1, 0], instrument=instrument)
+    plot_activity(dlw_dict, ax=ax[2, 0], instrument=instrument)
+    plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument=instrument)
+    plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], instrument=instrument)
     fig.tight_layout()
     plt.show()
 
@@ -64,4 +67,5 @@ def plot_temperature(name):
 
 
 if __name__ == "__main__":
-    check_time_series("NGC2423")
+    check_time_series("talk_ngc2423", instrument="HARPS")
+    check_time_series("NGC2423", instrument="HARPS")
