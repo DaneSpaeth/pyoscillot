@@ -3,11 +3,10 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import wget
+from parse_ini import parse_global_ini
 
-
-# DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
-DATAROOT = Path(__file__).parent.parent / "data"
-
+global_dict = parse_global_ini()
+DATAROOT = global_dict["datapath"]
 
 def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000)):
     """Return phenix spectrum and header."""
