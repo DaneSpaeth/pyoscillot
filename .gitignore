@@ -151,4 +151,6 @@ global.ini
 test_colors.py
 test_multiprocess.py
 test.py
+global.ini
+theoretical_data/
 
