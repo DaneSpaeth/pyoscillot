@@ -40,57 +40,57 @@ def get_interpolated_spectrum(T_local,
         the phoenix spectrum.
     """
 
-    # T_low = int(np.floor(T_local / 100) * 100)
-    # T_high = int(np.ceil(T_local / 100) * 100)
+    T_low = int(np.floor(T_local / 100) * 100)
+    T_high = int(np.ceil(T_local / 100) * 100)
 
-    # if T_low == T_high:
-    #     # print("No Temperature Interpolation")
-    #     spec = ref_spectra[T_low]
-    #     header = ref_headers[T_low]
-    #     wave = ref_wave
-    #     return wave, spec, header
-    # else:
-
-    #     # print(f"Use the given Reference Spectra at T={T_close}")
-    #     assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
-    #     assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
-    #     wave = ref_wave
-    #     spec_low = ref_spectra[T_low]
-    #     spec_high = ref_spectra[T_high]
-    #     header = ref_headers[T_low]
-
-    #     # Now interpolate with the contrast given by the Planck curves
-
-    #     ratio_high = 1 - (np.abs(T_high - T_local)) / 100
-    #     ratio_low = 1 - (np.abs(T_low - T_local)) / 100
-    #     spec_low_interpol = spec_low * \
-    #         planck_ratio(wave * 1e-10, T_local, T_low)
-    #     spec_high_interpol = spec_high * \
-    #         planck_ratio(wave * 1e-10, T_local, T_low)
-    #     # print(f"Ratio low= {ratio_low}")
-    #     # print(f"Ratio high={ratio_high}")
-    #     spec = (spec_low_interpol * ratio_low +
-    #             spec_high_interpol * ratio_high)
-
-    T_close = int(round(T_local, -2))
-
-    # Get closest spectrum
-    if ref_spectra is None:
-        print("I AM HERE")
-        wave, spec, header = phoenix_spectrum(
-            T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
+    if T_low == T_high:
+        # print("No Temperature Interpolation")
+        spec = ref_spectra[T_low]
+        header = ref_headers[T_low]
+        wave = ref_wave
+        return wave, spec, header
     else:
+
         # print(f"Use the given Reference Spectra at T={T_close}")
         assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
         assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
         wave = ref_wave
-        spec = ref_spectra[T_close]
-        header = ref_headers[T_close]
-        assert wave.shape == spec.shape
+        spec_low = ref_spectra[T_low]
+        spec_high = ref_spectra[T_high]
+        header = ref_headers[T_low]
 
         # Now interpolate with the contrast given by the Planck curves
-    if int(T_local) != T_close:
-        spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
+
+        ratio_high = 1 - (np.abs(T_high - T_local)) / 100
+        ratio_low = 1 - (np.abs(T_low - T_local)) / 100
+        spec_low_interpol = spec_low * \
+            planck_ratio(wave * 1e-10, T_local, T_low)
+        spec_high_interpol = spec_high * \
+            planck_ratio(wave * 1e-10, T_local, T_low)
+        # print(f"Ratio low= {ratio_low}")
+        # print(f"Ratio high={ratio_high}")
+        spec = (spec_low_interpol * ratio_low +
+                spec_high_interpol * ratio_high)
+
+    # T_close = int(round(T_local, -2))
+
+    # # Get closest spectrum
+    # if ref_spectra is None:
+    #     print("I AM HERE")
+    #     wave, spec, header = phoenix_spectrum(
+    #         T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
+    # else:
+    #     # print(f"Use the given Reference Spectra at T={T_close}")
+    #     assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
+    #     assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
+    #     wave = ref_wave
+    #     spec = ref_spectra[T_close]
+    #     header = ref_headers[T_close]
+    #     assert wave.shape == spec.shape
+
+    #     # Now interpolate with the contrast given by the Planck curves
+    # if int(T_local) != T_close:
+    #     spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
 
 
     return wave, spec, header
