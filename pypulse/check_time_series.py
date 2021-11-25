@@ -67,5 +67,5 @@ def plot_temperature(name):
 
 
 if __name__ == "__main__":
-    check_time_series("talk_ngc2423_90", instrument="CARMENES_VIS")
+    check_time_series("talk_ngc2423_90_dt200", instrument="CARMENES_VIS")
     # check_time_series("NGC2423", instrument="HARPS")
