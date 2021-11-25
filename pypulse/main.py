@@ -50,7 +50,7 @@ def main(ticket, run_laptop=False):
             print("Flux could not be copied!")
             pass
 
-        calc_theoretical_results(name)
+        # calc_theoretical_results(name)
         check_time_series(name)
 
 

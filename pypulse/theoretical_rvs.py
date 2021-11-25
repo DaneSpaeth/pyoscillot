@@ -95,16 +95,16 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False):
     for wave, spec, v_theo, bjd in zip(waves, specs, vs, bjds):
         wave_chunks, rv_chunks, chunk_sizes = calc_rv_chunks(
             ref_wave.copy(), ref_spec.copy(), wave.copy(), spec.copy())
-        fig, ax = plt.subplots()
-        ax.semilogx(wave_chunks, rv_chunks, "bo")
+        #fig, ax = plt.subplots()
+        #ax.semilogx(wave_chunks, rv_chunks, "bo")
         crx, alpha = fit_crx(wave_chunks, rv_chunks)
         lin_wave = np.linspace(np.min(wave_chunks),
                                np.max(wave_chunks))
 
-        ax.semilogx(lin_wave, np.log(lin_wave) * crx +
-                    alpha, label=f"CRX={round(crx,2)}")
-        ax.set_title(f"BJD={bjd}")
-        ax.legend()
+        # ax.semilogx(lin_wave, np.log(lin_wave) * crx +
+        #            alpha, label=f"CRX={round(crx,2)}")
+        # ax.set_title(f"BJD={bjd}")
+        # ax.legend()
         crxs.append(crx)
 
         v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)
