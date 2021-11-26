@@ -293,6 +293,10 @@ class SimulationController():
             N_local=(N_local_min, N_local_max),
             random_day_range=(rand_day_min, rand_day_max))
 
+        # TODO REMOVE
+        time_sample = time_sample - timedelta(days=150)
+        # END TODO
+
         K_sample = np.zeros(len(time_sample))
 
         bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
