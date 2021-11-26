@@ -49,8 +49,8 @@ def interpolate(spectrum, wavelength, template_file=None,
 
         # TODO REMOVE BACK
         # Do not correct for cont anymore
-        order_cont = cont_templ[order] / np.mean(cont_templ[order])
-        order_spec = order_spec * order_cont
+        # order_cont = cont_templ[order] / np.mean(cont_templ[order])
+        # order_spec = order_spec * order_cont
 
         # Adjust the signal to noise ratio and also adds noise if add_noise
         # is True
