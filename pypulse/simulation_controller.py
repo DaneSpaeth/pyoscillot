@@ -86,7 +86,7 @@ class SimulationController():
                 snr_profile = None
 
             # TODO REMOVE
-            snr_profile = None
+            # snr_profile = None
 
             shifted_spec, wave = carmenes.interpolate(
                 spectrum, shift_wavelength,
