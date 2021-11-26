@@ -31,8 +31,8 @@ def interpolate(spectrum, wavelength, template_file=None,
     spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
     for order in range(len(wave_templ)):
 
-        #print(f"Order={order}")
-        #print(
+        # print(f"Order={order}")
+        # print(
         #    f"Wavelength Range=({np.min(wave_templ[order]), np.max(wave_templ[order])})")
 
         order_spec = []
@@ -47,9 +47,10 @@ def interpolate(spectrum, wavelength, template_file=None,
         order_spec = order_spec * \
             np.abs(np.nanmean(spec_templ[order])) / np.nanmean(order_spec)
 
+        # TODO REMOVE BACK
         # Do not correct for cont anymore
-        # order_cont = cont_templ[order] / np.mean(cont_templ[order])
-        # order_spec = order_spec * order_cont
+        order_cont = cont_templ[order] / np.mean(cont_templ[order])
+        order_spec = order_spec * order_cont
 
         # Adjust the signal to noise ratio and also adds noise if add_noise
         # is True
