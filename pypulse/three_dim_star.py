@@ -180,7 +180,7 @@ class ThreeDimStar():
         temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         temp_variation = T_var * temp_variation / np.nanmax(temp_variation)
 
-        self.temperature += temp_variation
+        self.temperature = self.base_temp + temp_variation
 
     def add_pulsation_phi(self, t, l, m, nu, v_p, k):
         """ Get phi component of displacement.
@@ -449,6 +449,7 @@ class TwoDimProjector():
         p = self.star.phi.flatten()
         t = self.star.theta.flatten()
         if self.line_of_sight:
+            print("LINE OF SIGHT IS TRUE!")
             rad_los = geo.project_line_of_sight(p,
                                                 t,
                                                 self.star.pulsation_rad.flatten(),
