@@ -68,13 +68,14 @@ class SimulationController():
 
             global_dict = parse_global_ini()
             # TODO CHANGE BACK
-            template_directory = Path(
-                global_dict["datapath"]) / "CARMENES_templates"
-            fits_template = template_directory / \
-                f"CARMENES_template_{star}.fits"
-            if not fits_template.is_file():
-                fits_template = None
-            # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
+            # template_directory = Path(
+            #     global_dict["datapath"]) / "CARMENES_templates"
+            # fits_template = template_directory / \
+            #     f"CARMENES_template_{star}.fits"
+            # if not fits_template.is_file():
+            #     fits_template = None
+            # TODO REMOVE
+            fits_template = global_dict["datapath"] / "CARMENES_template.fits"
 
             global_dict = parse_global_ini()
             snr_directory = Path(
@@ -86,14 +87,14 @@ class SimulationController():
                 snr_profile = None
 
             # TODO REMOVE
-            # snr_profile = None
+            snr_profile = None
 
             shifted_spec, wave = carmenes.interpolate(
                 spectrum, shift_wavelength,
                 template_file=fits_template,
                 snr_profile=snr_profile,
                 target_max_snr=float(self.conf["snr"]),
-                adjust_snr=True)
+                adjust_snr=False)
 
             new_header = carmenes.get_new_header(time, bc, bjd,
                                                  snr_profile=snr_profile,
