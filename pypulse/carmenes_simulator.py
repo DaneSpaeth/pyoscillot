@@ -56,6 +56,7 @@ def interpolate(spectrum, wavelength, template_file=None,
         # is True
         add_noise = False
         if adjust_snr:
+            print("Adjust SNR")
             order_spec = adjust_snr_order(
                 order_spec,
                 spec_templ[order],

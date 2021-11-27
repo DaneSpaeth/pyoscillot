@@ -93,7 +93,7 @@ class SimulationController():
                 template_file=fits_template,
                 snr_profile=snr_profile,
                 target_max_snr=float(self.conf["snr"]),
-                adjust_snr=False)
+                adjust_snr=True)
 
             new_header = carmenes.get_new_header(time, bc, bjd,
                                                  snr_profile=snr_profile,
