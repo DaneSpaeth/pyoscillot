@@ -140,7 +140,7 @@ class SimulationController():
             It therefore replaces the previous function.
         """
         # stop = datetime.combine(date.today(), datetime.min.time())
-        stop = datetime.datetime(2021, 6, 10, hour=0, minute=0, second=0)
+        stop = datetime(2021, 6, 10, hour=0, minute=0, second=0)
 
         start = stop - timedelta(days=int(sample_P * N_periods))
 
