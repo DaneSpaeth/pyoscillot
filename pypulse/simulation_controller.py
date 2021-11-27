@@ -68,13 +68,13 @@ class SimulationController():
 
             global_dict = parse_global_ini()
             # TODO CHANGE BACK
-            # template_directory = Path(
-            #     global_dict["datapath"]) / "CARMENES_templates"
-            # fits_template = template_directory / \
-            #     f"CARMENES_template_{star}.fits"
-            # if not fits_template.is_file():
-            #     fits_template = None
-            fits_template = global_dict["datapath"] / "CARMENES_template.fits"
+            template_directory = Path(
+                global_dict["datapath"]) / "CARMENES_templates"
+            fits_template = template_directory / \
+                f"CARMENES_template_{star}.fits"
+            if not fits_template.is_file():
+                fits_template = None
+            # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
 
             global_dict = parse_global_ini()
             snr_directory = Path(
