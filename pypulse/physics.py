@@ -92,7 +92,7 @@ def get_interpolated_spectrum(T_local,
         # wave, spec, header = phoenix_spectrum(
         #    T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
     else:
-        print("WE HAVE REF SPECTRA")
+        # print("WE HAVE REF SPECTRA")
         # print(f"Use the given Reference Spectra at T={T_close}")
         assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
         assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
