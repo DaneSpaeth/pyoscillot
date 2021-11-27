@@ -178,7 +178,7 @@ class ThreeDimStar():
 
         # Caution temperature is not reseted
         temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
-        temp_variation = T_var * temp_variation / np.nanmax(temp_variation)
+        temp_variation = T_var * temp_variation # / np.nanmax(temp_variation)
 
         self.temperature += temp_variation
 
@@ -346,6 +346,7 @@ class TwoDimProjector():
         tempmap = self._project(self.star.temperature, line_of_sight=False)
 
         if self.limb_darkening:
+            print("I GET HERE AND THE LIMBDARKENING IS TRUE")
             self._add_limb_darkening()
             # Calculate the facrot for the itensity
             factor = limb.schwarzschild_law(self.limb_angle_2d)
