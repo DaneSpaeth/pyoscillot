@@ -51,7 +51,7 @@ def main(ticket, run_laptop=False):
             pass
 
         # calc_theoretical_results(name)
-        check_time_series(name)
+        # check_time_series(name)
 
 
 if __name__ == "__main__":
@@ -61,9 +61,9 @@ if __name__ == "__main__":
     # ticket = "example_ticket.ini"
     ticket = "talk_ticket.ini"
     main(ticket, run_laptop=False)
-    ticket2 = "talk_ticket2.ini"
-    main(ticket2, run_laptop=False)
-    ticket3 = "talk_ticket3.ini"
-    main(ticket3, run_laptop=False)
-    ticket4 = "talk_ticket4.ini"
-    main(ticket4, run_laptop=False)
+    # ticket2 = "talk_ticket2.ini"
+    # main(ticket2, run_laptop=False)
+    # ticket3 = "talk_ticket3.ini"
+    # main(ticket3, run_laptop=False)
+    # ticket4 = "talk_ticket4.ini"
+    # main(ticket4, run_laptop=False)
