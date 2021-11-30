@@ -53,7 +53,6 @@ class ThreeDimStar():
         self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
 
         self.temperature = self.Teff * np.ones(self.phi.shape)
-        self.base_temp = self.temperature
 
     def add_spot(self, rad, theta_pos=90, phi_pos=90, T_spot=4000):
         """ Add a spot to the 3D star.
@@ -178,7 +177,7 @@ class ThreeDimStar():
 
         # Caution temperature is not reseted
         temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
-        temp_variation = T_var * temp_variation / np.nanmax(temp_variation)
+        temp_variation = T_var * temp_variation  # / np.nanmax(temp_variation)
 
         self.temperature += temp_variation
 
