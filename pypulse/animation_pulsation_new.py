@@ -10,6 +10,17 @@ global_dict = parse_global_ini()
 DATADIR = global_dict["datapath"]
 SPECTRADIR = DATADIR / "fake_spectra"
 
+COLOR_DICT = {"Lick": "blue",
+              "SONG": "orange",
+              "CARMENES_VIS": "green",
+              "CARMENES_NIR": "red",
+              "EXPRESS": "black",
+              "SIMULATION": "green",
+              "HARPS_RVBANK": "purple",
+              "HARPS": "purple",
+              "HARPS-N": "magenta",
+              "BOAO": "black"}
+
 
 def get_arrays(projector):
     """ Get all arrays (e.g. pulsation, temp) of the simulation.
@@ -99,10 +110,11 @@ def create_high_res_arrays(ticket):
     return None
 
 
-def read_in_saved_arrays_pulsation(sim_name):
+def read_in_saved_arrays_pulsation(sim_name, mode="pulsation"):
 
     highres_array_dir = SPECTRADIR / sim_name / "highres_arrays"
-    array_dir = highres_array_dir / "pulsation"
+    # Be clever, use the mode as the directoy
+    array_dir = highres_array_dir / mode
     array_paths = array_dir.glob("*npy")
     pulse_maps = []
     bjds = []
@@ -138,40 +150,72 @@ def create_layout(dlw=False):
     return fig, ax
 
 
-def animate_pulse(ticket, instrument="CARMENES_VIS"):
+def animate_pulse(ticket, instrument=None, mode="pulsation"):
     """ Animate the pulsation.
 
         At the moment only allow one instruments at a time.
     """
+    instruments = ["CARMENES_VIS", "HARPS"]
+
     conf = parse_ticket(ticket)
     sim_star = conf["name"]
-    pulsations = read_in_saved_arrays_pulsation(sim_star)
+    pulsations = read_in_saved_arrays_pulsation(sim_star, mode=mode)
+    crx_dict = load.crx(sim_star)
+    dlw_dict = load.dlw(sim_star)
 
     # Read in data
     rv_dict = load.rv(sim_star)
-    time = np.array(rv_dict[instrument]["bjd"])
-    time = time - 2400000
-    rv = np.array(rv_dict[instrument]["rv"])
-    rve = np.array(rv_dict[instrument]["rve"])
-    crx_dict = load.crx(sim_star)
-    crx = np.array(crx_dict[instrument]["crx"])
-    crxe = np.array(crx_dict[instrument]["crxe"])
-    dlw_dict = load.dlw(sim_star)
-    dlw = np.array(dlw_dict[instrument]["dlw"])
-    dlwe = np.array(dlw_dict[instrument]["dlwe"])
+    for key in rv_dict.keys():
+        rv_dict[key]["bjd"] = rv_dict[key]["bjd"] - 2400000
+        crx_dict[key]["bjd"] = crx_dict[key]["bjd"] - 2400000
+        dlw_dict[key]["bjd"] = dlw_dict[key]["bjd"] - 2400000
+        rv_dict[key]["rv"] = rv_dict[key]["rv"] - np.median(rv_dict[key]["rv"])
 
-    rv = rv - np.median(rv)
+    all_crx = np.array([])
+    for instrument in crx_dict.keys():
+        all_crx = np.concatenate((all_crx, crx_dict[instrument]["crx"]))
+    MIN_CRX = np.min(all_crx)
+    MAX_CRX = np.max(all_crx)
+    all_dlw = np.array([])
+    for instrument in dlw_dict.keys():
+        all_dlw = np.concatenate((all_dlw, dlw_dict[instrument]["dlw"]))
+    MIN_DLW = np.min(all_dlw)
+    MAX_DLW = np.max(all_dlw)
+
+    all_rv = np.array([])
+    for instrument in rv_dict.keys():
+        all_rv = np.concatenate((all_rv, rv_dict[instrument]["rv"]))
+
+    MIN_RV = np.min(all_rv)
+    MAX_RV = np.max(all_rv)
+    lims = {"MIN_RV": MIN_RV,
+            "MAX_RV": MAX_RV,
+            "MIN_CRX": MIN_CRX,
+            "MAX_CRX": MAX_CRX,
+            "MIN_DLW": MIN_DLW,
+            "MAX_DLW": MAX_DLW}
 
     # Initialize the plot part
     images = pulsations
     # fig, ax = plt.subplots(4, 1, figsize=(16, 9))
     fig, ax = create_layout()
     index = 0
-    im = ax[0].imshow(images[index], animated=True,
-                      origin="lower", cmap="seismic", vmin=-50, vmax=50)
-    ax = init_plots(ax, index + 1, time, rv, rve, crx, crxe)
 
-    def create_plot(im, fig, ax, images, index, time, rv, rve, crx, crxe, dlw=False):
+    if mode == "pulsation":
+        VMIN = -100
+        VMAX = 100
+    elif mode == "pulsation_rad":
+        VMIN = -1
+        VMAX = 1
+    elif mode == "temperature":
+        VMIN = 4600
+        VMAX = 5000
+
+    im = ax[0].imshow(images[index], animated=True,
+                      origin="lower", cmap="seismic", vmin=VMIN, vmax=VMAX)
+    ax = init_plots(ax, index + 1, rv_dict, crx_dict, instruments)
+
+    def create_plot(im, fig, ax, images, index, rv_dict, crx_dict, instruments, lims, dlw=False):
         """ Convienence function to create the same plots once with crx and once with dlw.
         """
         def updatefig(*args):
@@ -185,86 +229,134 @@ def animate_pulse(ticket, instrument="CARMENES_VIS"):
             # update the image
             print(index)
             im.set_array(images[index])
-            ax = update_plots(ax, index + 1, time, rv, rve, crx, crxe, dlw=dlw)
+            ax = update_plots(ax, index + 1, rv_dict,
+                              crx_dict, instruments, lims, dlw=dlw)
             return im,
 
-        ani = animation.FuncAnimation(
-            fig, updatefig, images, interval=175, blit=False, repeat=False)
+        # ani = animation.FuncAnimation(
+        #     fig, updatefig, images, interval=125, blit=False, repeat=False)
         outfolder = Path("/home/dane/Documents/PhD/pypulse/animations")
-        if not dlw:
-            ani.save(outfolder / f"{sim_star}_crx.gif")
-        else:
-            ani.save(outfolder / f"{sim_star}_dlw.gif")
+        # if not dlw:
+        #     ani.save(outfolder / f"{sim_star}_{mode}_crx.gif")
+        # else:
+        #     ani.save(outfolder / f"{sim_star}_{mode}_dlw.gif")
 
         plt.close()
         fig, ax = create_layout()
         index = len(images) - 1
         im = ax[0].imshow(images[index], animated=True,
-                          origin="lower", cmap="seismic", vmin=-100, vmax=100)
-        ax = init_plots(ax, index, time, rv, rve, crx, crxe, )
-        ax = update_plots(ax, index + 1, time, rv, rve, crx, crxe, dlw=dlw)
+                          origin="lower", cmap="seismic", vmin=VMIN, vmax=VMAX)
+        ax = init_plots(ax, index, rv_dict, crx_dict, instruments, dlw=dlw)
+        ax = update_plots(ax, index + 1, rv_dict,
+                          crx_dict, instruments, lims, dlw=dlw)
         if not dlw:
-            plt.savefig(outfolder / f"{sim_star}_crx.pdf")
+            plt.savefig(outfolder / f"{sim_star}_{mode}_crx.pdf")
         else:
-            plt.savefig(outfolder / f"{sim_star}_dlw.pdf")
+            plt.savefig(outfolder / f"{sim_star}_{mode}_dlw.pdf")
 
-    create_plot(im, fig, ax, images, index, time,
-                rv, rve, crx, crxe, dlw=False)
-    create_plot(im, fig, ax, images, index, time, rv, rve, dlw, dlwe, dlw=True)
+    # create_plot(im, fig, ax, images, index, rv_dict,
+    #            crx_dict, instruments, lims, dlw=False)
+    create_plot(im, fig, ax, images, index, rv_dict,
+                dlw_dict, instruments, lims, dlw=True)
 
 
-def init_plots(ax, index, time, rv, rve, crx, crxe):
+def init_plots(ax, index, rv_dict, crx_dict, instruments, dlw=False):
     """ Init plots."""
-    ax[1].errorbar(time[:index], rv[:index],
-                   yerr=rve[:index], linestyle="None", marker="o")
+    for instrument in instruments:
+        ax[1].errorbar(rv_dict[instrument]["bjd"][:index],
+                       rv_dict[instrument]["rv"][:index],
+                       yerr=rv_dict[instrument]["rve"][:index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument])
 
-    ax[2].errorbar(time[:index], crx[:index],
-                   yerr=crxe[:index], linestyle="None", marker="o")
+        if dlw:
+            key = "dlw"
+        else:
+            key = "crx"
+        ax[2].errorbar(crx_dict[instrument]["bjd"][:index],
+                       crx_dict[instrument][key][:index],
+                       yerr=crx_dict[instrument][key + "e"][:index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument])
 
-    ax[3].errorbar(rv[:index], crx[:index],
-                   yerr=crxe[:index], linestyle="None", marker="o")
-    # if dlw is not None:
+        ax[3].errorbar(rv_dict[instrument]["rv"][:index],
+                       crx_dict[instrument][key][:index],
+                       yerr=crx_dict[instrument][key + "e"][:index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument])
+        # if dlw is not None:
     #     ax[4].errorbar(time[:index], dlw[:index],
     #                    yerr=dlwe[:index], linestyle="None", marker="o")
+    ax[1].legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+                 mode="expand", borderaxespad=0, ncol=len(ax[1].lines))
     return ax
 
 
-def update_plots(ax, index, time, rv, rve, crx, crxe, dlw=False):
+def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
     """ Init plots."""
-
-    # update the first plot
     ax[1].clear()
-    ax[1].errorbar(time[:index], rv[:index],
-                   yerr=rve[:index], linestyle="None", marker="o")
-    ax[1].set_xlim(time.min() - 1, time.max() + 1)
-    ax[1].set_ylim(rv.min() - 5, rv.max() + 5,)
-    ax[1].set_xlabel("Time [JD] - 2400000")
-    ax[1].set_ylabel("RV [m/s]")
-    ax[1].ticklabel_format(useOffset=False, style='plain')
-
     ax[2].clear()
-    ax[2].errorbar(time[:index], crx[:index],
-                   yerr=crxe[:index], linestyle="None", marker="o")
-    ax[2].set_xlim(time.min() - 1, time.max() + 1)
-    ax[2].set_ylim(crx.min() - 5, crx.max() + 5,)
-    ax[2].set_xlabel("Time [JD] - 2400000")
-    if not dlw:
-        ax[2].set_ylabel("CRX [m/s/Np]")
-    else:
-        ax[2].set_ylabel("dLW [m^2/s^2]")
-    ax[2].ticklabel_format(useOffset=False, style='plain')
-
     if len(ax) == 4:
         ax[3].clear()
-        ax[3].errorbar(rv[:index], crx[:index],
-                       yerr=crxe[:index], linestyle="None", marker="o")
-        ax[3].set_xlim(rv.min() - 5, rv.max() + 5)
-        ax[3].set_ylim(crx.min() - 5, crx.max() + 5)
-        ax[3].set_xlabel("RV [m/s]")
+
+    for instrument in instruments:
+        # update the first plot
+        ax[1].errorbar(rv_dict[instrument]["bjd"][:index],
+                       rv_dict[instrument]["rv"][:index],
+                       yerr=rv_dict[instrument]["rve"][:index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument])
+        min_time = rv_dict["CARMENES_VIS"]["bjd"].min()
+        max_time = rv_dict["CARMENES_VIS"]["bjd"].max()
+        ax[1].set_xlim(min_time - 1, max_time + 1)
+        ax[1].set_ylim(lims["MIN_RV"] - 5, lims["MAX_RV"] + 5,)
+        ax[1].set_xlabel("Time [JD] - 2400000")
+        ax[1].set_ylabel("RV [m/s]")
+        ax[1].ticklabel_format(useOffset=False, style='plain')
+
         if not dlw:
-            ax[3].set_ylabel("CRX [m/s/Np]")
+            key = "crx"
         else:
-            ax[3].set_ylabel("dLW [m^2/s^2]")
+            key = "dlw"
+        ax[2].errorbar(crx_dict[instrument]["bjd"][:index],
+                       crx_dict[instrument][key][:index],
+                       yerr=crx_dict[instrument][key + "e"][:index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument])
+        ax[2].set_xlim(min_time - 1, max_time + 1)
+        if not dlw:
+            ax[2].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
+        else:
+            ax[2].set_ylim(lims["MIN_DLW"] - 5, lims["MAX_DLW"] + 5,)
+        ax[2].set_xlabel("Time [JD] - 2400000")
+        if not dlw:
+            ax[2].set_ylabel("CRX [m/s/Np]")
+        else:
+            ax[2].set_ylabel("dLW [m^2/s^2]")
+        ax[2].ticklabel_format(useOffset=False, style='plain')
+
+        if len(ax) == 4:
+            ax[3].errorbar(rv_dict[instrument]["rv"][:index],
+                           crx_dict[instrument][key][:index],
+                           yerr=crx_dict[instrument][key + "e"][:index],
+                           linestyle="None", marker="o",
+                           label=instrument,
+                           color=COLOR_DICT[instrument])
+            ax[3].set_xlim(lims["MIN_RV"] - 5, lims["MAX_RV"] + 5)
+            if not dlw:
+                ax[3].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
+            else:
+                ax[3].set_ylim(lims["MIN_DLW"] - 5, lims["MAX_DLW"] + 5,)
+            ax[3].set_xlabel("RV [m/s]")
+            if not dlw:
+                ax[3].set_ylabel("CRX [m/s/Np]")
+            else:
+                ax[3].set_ylabel("dLW [m^2/s^2]")
 
     # if dlw is not None:
     #     ax[4].clear()
@@ -275,11 +367,20 @@ def update_plots(ax, index, time, rv, rve, crx, crxe, dlw=False):
     #     ax[4].set_xlabel("Time [JD] - 2400000")
     #     ax[4].set_ylabel("dLW [m^2/s^2]")
     #     ax[4].ticklabel_format(useOffset=False, style='plain')
+    ax[1].legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+                 mode="expand", borderaxespad=0, ncol=len(ax[1].lines))
 
     return ax
 
 
 if __name__ == "__main__":
-    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/talk_ngc2423_0_dt200_k100_vrot3000/talk_ticket.ini"
-    create_high_res_arrays(ticket)
-    animate_pulse(ticket)
+    # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_180/talk_ticket.ini"
+    # create_high_res_arrays(ticket)
+    # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0_m-1/talk_ticket.ini"
+    # create_high_res_arrays(ticket)
+    # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_180_m-1/talk_ticket.ini"
+    # create_high_res_arrays(ticket)
+    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0_m-1/talk_ticket3.ini"
+    animate_pulse(ticket, mode="pulsation")
+    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0/talk_ticket.ini"
+    animate_pulse(ticket, mode="pulsation")
