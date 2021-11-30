@@ -23,5 +23,5 @@ def exec_sim(ticket):
 if __name__ == "__main__":
     ticket = "talk_ticket.ini"
     exec_sim(ticket)
-    # icket = "talk_ticket_2.ini"
-    # exec_sim(ticket)
+    ticket = "talk_ticket_2.ini"
+    exec_sim(ticket)
