@@ -26,6 +26,7 @@ def main(ticket, run_laptop=False):
         if run_laptop:
             # Run the Simulation even if on laptop
             SimulationController(ticket)
+            exit()
         # Run Serval
         if conf_dict["instrument"].upper() == "ALL":
 
@@ -59,8 +60,8 @@ if __name__ == "__main__":
     # ticket = "ngc2423-3_ticket.ini"
     # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/talk_ngc2423_90_dt200/talk_ticket.ini"
     # ticket = "example_ticket.ini"
-    ticket = "talk_ticket.ini"
-    main(ticket, run_laptop=False)
+    ticket = "talk_ticket_small.ini"
+    main(ticket, run_laptop=True)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)
     # ticket3 = "talk_ticket3.ini"

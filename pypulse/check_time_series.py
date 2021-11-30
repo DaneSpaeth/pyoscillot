@@ -67,5 +67,6 @@ def plot_temperature(name):
 
 
 if __name__ == "__main__":
-    check_time_series("pulsation_inclination60", instrument="CARMENES_VIS")
-    # check_time_series("NGC2423", instrument="HARPS")
+    check_time_series("TALK_allm")
+
+    # check_time_series("talk_ngc2423_0_dt50_k100_vrot3000_oldtemplate_snronlyheader", instrument="CARMENES_VIS")
