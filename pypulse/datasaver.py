@@ -159,6 +159,8 @@ class DataSaver():
 
         copy2(ticket, new_ticket)
 
+        return new_ticket
+
     def copy_ticket_servalfolder(self, ticket):
         """ Copy the ticket to the spectrum folder."""
 
