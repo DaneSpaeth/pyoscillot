@@ -8,24 +8,12 @@ from parse_ini import parse_global_ini
 global_dict = parse_global_ini()
 DATAROOT = global_dict["datapath"]
 
+
 def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000)):
     """Return phenix spectrum and header."""
-    assert 2300 <= Teff <= 12000, f"Teff={Teff} out of range [2300, 12000]"
-    assert 0.0 <= logg <= 6.0, f"logg={logg} out of range [0.0, 6.0]"
-    assert -4.0 <= feh <= 1.0, f"[Fe/H]={feh} out of range [-4.0, 1.0]"
-
-    # Round to full .5
-    logg = round(logg / 5, 1) * 5
-    feh = round(feh / 5, 1) * 5
-    # Round to full 100
-    Teff = round(Teff / 100, 0) * 100
+    Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
 
     folder = DATAROOT / "phoenix_spectra"
-
-    # Give feh=0 a small negative number such that the sign operation
-    # in the string formatting gives a minus (this is how it works for PHOENIX)
-    if feh == 0.0:
-        feh = -0.0000001
 
     filename = f"lte{int(Teff):05d}-{logg:.2f}{feh:+.1f}.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits"
     file = folder / filename
@@ -53,7 +41,79 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
     return wavelength, spectrum, header
 
 
-def download_phoenix(filename, out_dir, feh):
+def _check_and_prepare_for_phoenix(Teff, logg, feh):
+    """ Check the values and prepare for filename determination.
+
+        This is a refactored function to make the code DRY.
+    """
+    assert 2300 <= Teff <= 12000, f"Teff={Teff} out of range [2300, 12000]"
+    assert 0.0 <= logg <= 6.0, f"logg={logg} out of range [0.0, 6.0]"
+    assert -4.0 <= feh <= 1.0, f"[Fe/H]={feh} out of range [-4.0, 1.0]"
+
+    # Round to full .5
+    logg = round(logg / 5, 1) * 5
+    feh = round(feh / 5, 1) * 5
+    # Round to full 100
+    Teff = round(Teff / 100, 0) * 100
+
+    # Give feh=0 a small negative number such that the sign operation
+    # in the string formatting gives a minus (this is how it works for PHOENIX)
+    if feh == 0.0:
+        feh = -0.0000001
+
+    return Teff, logg, feh
+
+
+def phoenix_spec_intensity(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000)):
+    """Return phenix spectrum and header."""
+    Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
+
+    folder = DATAROOT / "phoenix_spec_intensities"
+
+    filename = f"lte{int(Teff):05d}-{logg:.2f}{feh:+.1f}.PHOENIX-ACES-AGSS-COND-SPECINT-2011.fits"
+    file = folder / filename
+
+    if not file.is_file():
+        print(f"File not found. Begin download!")
+        download_phoenix(file.name, folder, feh, spec_intensity=True)
+
+    print(f"Load file {file}")
+    with fits.open(file) as hdul:
+        header = hdul[0].header
+        # The wave grid is essentially defined with a reference pixel
+        # with a reference wavelength in Angstrom and a step size
+        wave_step_size = header["CDELT1"]
+        wave_reference = header["CRVAL1"]
+        wave_ref_pix = header["CRPIX1"]
+
+        msg = "The wavelength grid is not in Angstrom"
+        assert header["CUNIT1"] == "Angstrom", msg
+        # The spec_int will be an array of shape (25500, 78) with the first
+        # axis being along the spectrum and the second column corresponding
+        # to the values stored in the mu array
+        spec_int = hdul[0].data
+        # This will be a 1d array of length 78 containing all the values of mu
+        mu = hdul[1].data
+        # Not sure if I will need these
+        abundances = hdul[2].data
+
+    wave_idx = np.arange(0, spec_int.shape[1], 1)
+    # We need the 1 since I believe it starts indxing with 1 in the FITS header
+    wavelength = (wave_reference +
+                  ((wave_idx + 1) - wave_ref_pix) * wave_step_size)
+
+    if wavelength_range:
+        wavelength_mask = np.logical_and(wavelength >= wavelength_range[0],
+                                         wavelength <= wavelength_range[1],)
+        spec_int = spec_int[:, wavelength_mask]
+        wavelength = wavelength[wavelength_mask]
+
+    print(spec_int.shape)
+
+    return wavelength, spec_int, mu, header
+
+
+def download_phoenix(filename, out_dir, feh, spec_intensity=False):
     """ Download the file from the PHOENIX ftp server.
 
         :param filename: Name of file to download.
@@ -61,7 +121,10 @@ def download_phoenix(filename, out_dir, feh):
         :param float feh: Metallicity of the star (needed again for the correct
                           ftp folder)
     """
-    ftp_root = f"ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/Z{feh:+.1f}/"
+    if not spec_intensity:
+        ftp_root = f"ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/Z{feh:+.1f}/"
+    else:
+        ftp_root = f"ftp://phoenix.astro.physik.uni-goettingen.de/SpecIntFITS/PHOENIX-ACES-AGSS-COND-SPECINT-2011/Z{feh:+.1f}/"
     ftp_link = ftp_root.strip() + filename.strip()
 
     print(f"Download from {ftp_link}")
@@ -146,4 +209,11 @@ def plot_central_order_intensitites():
 
 
 if __name__ == "__main__":
-    pass
+
+    wavelength, spec_int, mu, header = phoenix_spec_intensity(4400, 4.5, -4.0)
+
+    print(mu)
+    plt.plot(wavelength, spec_int[-1])
+    plt.show()
+
+    # ftp://phoenix.astro.physik.uni-goettingen.de/SpecIntFITS/PHOENIX-ACES-AGSS-COND-SPECINT-2011/Z-0.0/lte06000-4.50-0.0.PHOENIX-ACES-AGSS-COND-SPECINT-2011.fits
