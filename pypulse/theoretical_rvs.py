@@ -79,7 +79,7 @@ def _cut_to_waverange(wave, spec, min_wave, max_wave):
     return wave, spec
 
 
-def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False):
+def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, plot=True):
     """ Calculate all theoretical results, i.e. RVs, CRX, dLW
 
         :param str name: Name of Simulation
@@ -95,16 +95,20 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False):
     for wave, spec, v_theo, bjd in zip(waves, specs, vs, bjds):
         wave_chunks, rv_chunks, chunk_sizes = calc_rv_chunks(
             ref_wave.copy(), ref_spec.copy(), wave.copy(), spec.copy())
-        #fig, ax = plt.subplots()
-        #ax.semilogx(wave_chunks, rv_chunks, "bo")
+        fig, ax = plt.subplots()
+        ax.semilogx(wave_chunks, rv_chunks, "bo")
         crx, alpha = fit_crx(wave_chunks, rv_chunks)
         lin_wave = np.linspace(np.min(wave_chunks),
                                np.max(wave_chunks))
 
-        # ax.semilogx(lin_wave, np.log(lin_wave) * crx +
-        #            alpha, label=f"CRX={round(crx,2)}")
-        # ax.set_title(f"BJD={bjd}")
-        # ax.legend()
+        ax.semilogx(lin_wave, np.log(lin_wave) * crx +
+                    alpha, label=f"CRX={round(crx,2)}")
+        ax.set_title(f"BJD={bjd}")
+        ax.legend()
+        ax.set_ylabel("RV [m/s]")
+        ax.set_xlabel("Wavelength [A]")
+        plt.savefig(f"tmp_plots/{min_wave}-{max_wave}_{bjd}.pdf")
+        plt.close()
         crxs.append(crx)
 
         v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)
@@ -112,14 +116,17 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False):
             f"v_fit={round(v_fit,3)}, v_theo={round(v_theo,3)}, delta_v={round(v_fit - v_theo,3)}")
         v_fits.append(v_fit)
 
-    fig, ax = plt.subplots(2, 1)
-    ax[0].plot(bjds, v_fits, "bo")
-    ax[1].plot(bjds, crxs, "bo")
-    ax[0].set_xlabel("BJD")
-    ax[0].set_ylabel("RV [m/s]")
-    ax[1].set_xlabel("BJD")
-    ax[1].set_ylabel("CRX [m/s/Np]")
-    plt.show()
+    if plot:
+        fig, ax = plt.subplots(2, 1)
+        ax[0].plot(bjds, v_fits, "bo")
+        ax[1].plot(bjds, crxs, "bo")
+        ax[0].set_xlabel("BJD")
+        ax[0].set_ylabel("RV [m/s]")
+        ax[1].set_xlabel("BJD")
+        ax[1].set_ylabel("CRX [m/s/Np]")
+        plt.savefig(f"{name}_theoretical.pdf")
+    else:
+        return bjds, v_fits, crxs
 
 
 def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
@@ -219,5 +226,32 @@ def fit_crx(wave, rv):
 if __name__ == "__main__":
     max_wave_CARM = 9204
     min_wave_CARM = 5612
-    calc_theoretical_results(
-        "NEW_BIG_TEST", min_wave=5500, max_wave=8000, ref=False)
+
+    min_wave_HARPS = 3830
+    max_wave_HARPS = 6930
+
+    name = "TALK_0"
+    fig, ax = plt.subplots(2)
+    bjds, v_fits, crxs = calc_theoretical_results(
+        name, min_wave=min_wave_CARM, max_wave=max_wave_CARM, ref=False, plot=False)
+
+    label = f"Theoretical CARM_VIS ({min_wave_CARM}A,{max_wave_CARM}A)"
+    ax[0].plot(bjds, v_fits - np.median(v_fits), "go", label=label)
+    ax[1].plot(bjds, crxs - np.median(crxs), "go", label=label)
+    ax[0].set_xlabel("BJD")
+    ax[0].set_ylabel("RV [m/s]")
+    ax[1].set_xlabel("BJD")
+    ax[1].set_ylabel("CRX [m/s/Np]")
+
+    bjds, v_fits, crxs = calc_theoretical_results(
+        name, min_wave=min_wave_HARPS, max_wave=max_wave_HARPS, ref=False, plot=False)
+    label = f"Theoretical HARPS ({min_wave_HARPS}A,{max_wave_HARPS}A)"
+    ax[0].plot(bjds, v_fits - np.median(v_fits),
+               marker="o", color="purple", label=label)
+    ax[1].plot(bjds, crxs - np.median(crxs),
+               marker="o", color="purple", label=label)
+
+    ax[0].legend()
+    ax[1].legend()
+
+    plt.savefig(f"{name}_theoretical.pdf")
