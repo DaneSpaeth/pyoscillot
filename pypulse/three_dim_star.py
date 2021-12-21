@@ -324,6 +324,31 @@ class TwoDimProjector():
 
         self.limb_angle_2d = limb_angle_2d
 
+    def mu(self):
+        """ Return a 2D map of the angle mu.
+
+            According to Claret et al. 2014 mu is defined as
+            mu = cos(gamma),
+            where gamma is the angle between the line of sight and the surface
+            normal.
+
+            I copy the first part from the limb_darkening function which
+            essentially tries to do the same thing.
+        """
+        # Try to be clever
+        # Create an array with ones of the same shape as the 3D star
+        unit_array = np.ones(self.star.phi.shape)
+
+        # Now project the ones onto the radial component
+        # This gives you the cos of the angle between the line of sight
+        # and the radial unit vector
+        # this should be exactly the definition of mu
+        mu = self._project(unit_array,
+                           line_of_sight=True,
+                           component="rad")
+
+        return mu
+
     def starmask(self):
         """ Return a 2D projected starmask."""
         starmask_2d = self._project(self.star.starmask, line_of_sight=False)
@@ -560,11 +585,11 @@ if __name__ == "__main__":
     # star.add_granulation_new()
     #star.add_pulsation(l=1, m=-1)
     # star.add_pulsation(l=2, m=0)
-    star.add_pulsation(l=1, m=0, t=10)
+    # star.add_pulsation(l=1, m=0, t=10)
     # star.add_pulsation(l=1, m=1)
     # star.add_pulsation(l=1, m=-1)
     projector = TwoDimProjector(
         star, line_of_sight=False, limb_darkening=False, N=1000, inclination=30)
-    plt.imshow(projector.pulsation_rad(),
-               cmap="seismic", vmin=-0.5, vmax=0.5)
+    plt.imshow(projector.mu(),
+               cmap="Reds", vmin=0, vmax=1)
     plt.show()
