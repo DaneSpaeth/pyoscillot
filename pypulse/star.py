@@ -76,6 +76,8 @@ class GridSpectrumSimulator():
                                             logg=self.logg,
                                             feh=self.feh,
                                             wavelength_range=wavelength_range)
+        elif mode == "spec_intensity":
+            raise NotImplementedError
         elif mode == "gaussian":
             print("Gaussian mode")
             # Does not work with Temperature variations at the moment
@@ -96,10 +98,6 @@ class GridSpectrumSimulator():
         v_c_pulse = self.pulsation / C
 
         total_spectrum = np.zeros(len(rest_wavelength))
-
-        # import matplotlib.pyplot as plt
-        # plt.imshow(self.pulsation)
-        # plt.show()
 
         v_total = np.nanmean(self.pulsation)
         for row in range(self.temperature.shape[0]):
@@ -134,9 +132,6 @@ class GridSpectrumSimulator():
 
                         total_spectrum += interpol_spectrum
 
-        # total_spectrum = total_spectrum  # / np.abs(np.median(total_spectrum))
-
-        # Now adjust the resolution to Carmenes
         if mode == "oneline":
             total_spectrum += np.abs(total_spectrum.min())
             total_spectrum = total_spectrum / total_spectrum.max()
@@ -145,11 +140,7 @@ class GridSpectrumSimulator():
         # Also calculate the flux
         self.calc_flux()
 
-        # TODO REMOVE
-        # return local_wavelength, local_spectrum
         return rest_wavelength, total_spectrum, v_total
-        # END TODO
-        # return rest_wavelength, total_spectrum
 
     def get_arrays(self):
         """ Get all arrays (e.g. pulsation, temp) of the simulation.
