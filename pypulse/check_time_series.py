@@ -35,16 +35,23 @@ def check_time_series(name, instrument=None):
     flux = flux / np.median(flux)
 
     # Read in RV, CRX and DLW
-    fig, ax = plt.subplots(3, 2, figsize=(20, 10))
+    fig, ax = plt.subplots(4, 2, figsize=(20, 10))
     rv_dict = load.rv(name)
     crx_dict = load.crx(name)
     dlw_dict = load.dlw(name)
+    halpha_dict = load.halpha(name)
+
+    ax[0, 1].plot(bjd, flux / np.median(flux), "bo")
+    ax[0, 1].set_ylabel("Flux Variation")
+    ax[0, 1].set_xlabel("BJD")
 
     plot_rv(rv_dict, ax=ax[0, 0], instrument=instrument)
     plot_activity(crx_dict, ax=ax[1, 0], instrument=instrument)
     plot_activity(dlw_dict, ax=ax[2, 0], instrument=instrument)
+    plot_activity(halpha_dict, ax=ax[3, 0], instrument=instrument)
     plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument=instrument)
     plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], instrument=instrument)
+    plot_activity_rv(rv_dict, halpha_dict, ax=ax[3, 1], instrument=instrument)
     fig.tight_layout()
     plt.show()
 
@@ -67,6 +74,6 @@ def plot_temperature(name):
 
 
 if __name__ == "__main__":
-    check_time_series("TALK_allm")
+    check_time_series("TALK_0")
 
     # check_time_series("talk_ngc2423_0_dt50_k100_vrot3000_oldtemplate_snronlyheader", instrument="CARMENES_VIS")
