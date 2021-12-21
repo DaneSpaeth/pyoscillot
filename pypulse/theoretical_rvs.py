@@ -230,7 +230,7 @@ if __name__ == "__main__":
     min_wave_HARPS = 3830
     max_wave_HARPS = 6930
 
-    name = "TALK_0"
+    name = "TEST_SPEC_INT"
     fig, ax = plt.subplots(2)
     bjds, v_fits, crxs = calc_theoretical_results(
         name, min_wave=min_wave_CARM, max_wave=max_wave_CARM, ref=False, plot=False)
