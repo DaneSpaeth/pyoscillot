@@ -53,12 +53,12 @@ def _read_in_arrays(name, min_wave=None, max_wave=None, ref=False):
         if min_wave is not None and max_wave is not None:
             wave, spec = _cut_to_waverange(wave, spec,
                                            min_wave, max_wave)
+
         waves.append(wave)
         specs.append(spec)
         vs.append(v)
         bjds.append(bjd)
 
-    print(waves)
     if not ref:
         ref_wave = waves[0]
         ref_spec = specs[0]
@@ -111,9 +111,12 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, plot
         plt.close()
         crxs.append(crx)
 
-        v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)
-        print(
-            f"v_fit={round(v_fit,3)}, v_theo={round(v_theo,3)}, delta_v={round(v_fit - v_theo,3)}")
+        print(rv_chunks)
+
+        # v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)
+        # print(
+        #     f"v_fit={round(v_fit,3)}, v_theo={round(v_theo,3)}, delta_v={round(v_fit - v_theo,3)}")
+        v_fit = np.mean(rv_chunks)
         v_fits.append(v_fit)
 
     if plot:
@@ -131,8 +134,8 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, plot
 
 def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
     """ Calculate RV in chunks which allows to calculate a CRX."""
-    n_chunks = 50
-    border = 100
+    n_chunks = 40
+    border = 10
 
     chunk_size_px = int((len(ref_wave) - 2 * border) / n_chunks)
 
@@ -146,6 +149,8 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
         ref_spec_chunk = ref_spec[idx_range]
         wave_chunk = wave[idx_range]
         spec_chunk = spec[idx_range]
+
+        print(f"Chunk size={len(wave_chunk)}")
 
         # try to fit the continuum
         filter_width = 1000
@@ -163,6 +168,7 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
             ref_wave_chunk  # + coef[2] * lin_wave**2
         ref_spec_chunk /= continuum
         spec_chunk /= continuum
+
         if n_chunk == 40:
             lin_wave = np.linspace(
                 np.min(ref_wave_chunk), np.max(ref_wave_chunk))
@@ -181,7 +187,7 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
             ref_wave_chunk, ref_spec_chunk, wave_chunk, spec_chunk)
         stop = time.time()
 
-        print(f"RV={round(rv_chunk, 3)}m/s. Fit took {round(stop-start,2)}s")
+        # print(f"RV={round(rv_chunk, 3)}m/s. Fit took {round(stop-start,2)}s")
 
         rv_chunks.append(rv_chunk)
         wave_chunks.append(np.mean(ref_wave_chunk))
@@ -230,7 +236,7 @@ if __name__ == "__main__":
     min_wave_HARPS = 3830
     max_wave_HARPS = 6930
 
-    name = "TEST_SPEC_INT"
+    name = "TEST_SPEC_INT4"
     fig, ax = plt.subplots(2)
     bjds, v_fits, crxs = calc_theoretical_results(
         name, min_wave=min_wave_CARM, max_wave=max_wave_CARM, ref=False, plot=False)
@@ -247,11 +253,11 @@ if __name__ == "__main__":
         name, min_wave=min_wave_HARPS, max_wave=max_wave_HARPS, ref=False, plot=False)
     label = f"Theoretical HARPS ({min_wave_HARPS}A,{max_wave_HARPS}A)"
     ax[0].plot(bjds, v_fits - np.median(v_fits),
-               marker="o", color="purple", label=label)
+               marker="o", color="purple", label=label, linestyle="None")
     ax[1].plot(bjds, crxs - np.median(crxs),
-               marker="o", color="purple", label=label)
+               marker="o", color="purple", label=label, linestyle="None")
 
-    ax[0].legend()
-    ax[1].legend()
+    # ax[0].legend()
+    # ax[1].legend()
 
     plt.savefig(f"{name}_theoretical.pdf")
