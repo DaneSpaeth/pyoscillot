@@ -44,6 +44,15 @@ def parse_ticket(ticketpath):
             except ValueError:
                 conf_dict[key] = conf[key]
 
+    # If no mode is given assume the mode to be the spectrum mode
+    if not "mode" in list(conf_dict.keys()):
+        conf_dict["mode"] = "spectrum"
+    # It the mode is the specific intensity mode only allow the theoretical RVs
+    # Since the resolution is too small to be a sensible choice for CARMENES
+    # or HARPS
+    if conf_dict["mode"] == "spec_intensity":
+        conf_dict["instrument"] = "RAW"
+
     # Save the keys of all simulations as keys
     superkeys.pop(superkeys.index("GLOBAL"))
     superkeys.pop(superkeys.index("DEFAULT"))

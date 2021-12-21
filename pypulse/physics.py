@@ -1,6 +1,6 @@
 import numpy as np
 import plapy.constants as const
-from dataloader import phoenix_spectrum
+from dataloader import phoenix_spectrum, phoenix_spec_intensity
 import matplotlib.pyplot as plt
 
 
@@ -75,39 +75,47 @@ def planck_ratio(wav, T_1, T_2):
 def get_interpolated_spectrum(T_local,
                               ref_wave=None,
                               ref_spectra=None,
-                              ref_headers=None):
+                              ref_headers=None,
+                              spec_intensity=False,
+                              mu_local=1,
+                              ref_mu=None):
     """ Return a potentially interpolated spectrum. Returns the same format as
         the phoenix spectrum.
 
         At the moment:
         logg=3.0, feh=0.0
     """
+    assert ref_spectra is not None, "Please add a Reference Wavelength using the ref_spectra param"
+    assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
+    assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
+    if spec_intensity:
+        assert ref_mu is not None, "You have to provide mu if spec_intensity is True"
 
     T_close = int(round(T_local, -2))
 
     # Get closest spectrum
-    if ref_spectra is None:
-        print("REF SPECTRA IS NONE")
-        exit()
-        # wave, spec, header = phoenix_spectrum(
-        #    T_close, logg=3.0, feh=0.0, wavelength_range=wavelength_range)
-    else:
-        # print("WE HAVE REF SPECTRA")
-        # print(f"Use the given Reference Spectra at T={T_close}")
-        assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
-        assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
-        wave = ref_wave
+    wave = ref_wave
+    header = ref_headers[T_close]
+    if not spec_intensity:
         spec = ref_spectra[T_close]
-        header = ref_headers[T_close]
-        assert wave.shape == spec.shape
+    else:
+        # The specific intensities are saved as a datacube
+        spec_int_cube = ref_spectra[T_close]
+        # Get the closest index of the mu
+        idx = np.abs(ref_mu - mu_local).argmin()
+        print(f"Closest mu to {mu_local} at idx={idx}")
+        spec = ref_spectra[T_close][idx]
 
-        # Now interpolate with the contrast given by the Planck curves
+    assert wave.shape == spec.shape
+
+    # Now interpolate with the contrast given by the Planck curves
     if int(T_local) != T_close:
         spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
     return wave, spec, header
 
 
-def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000)):
+def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
+                    spec_intensity=False):
     """ Return a wavelength grid and a dict of phoenix spectra and a dict of
         pheonix headers.
 
@@ -124,7 +132,11 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000)):
         :param float feh: [Fe/H] for PHOENIX spectrum
         :param tuple wavelength_range: Wavelength range fro spectrum in A
 
-        :return: tuple of (wavelength grid, T:spec dict, T:header dict)
+        :param bool spec_intensity: If True it will return the spec intensity
+                                    spectra cubes and the mu angle as the final
+                                    parameter
+
+        :return: tuple of (wavelength grid, T:spec dict, T:header dict, [mu])
 
     """
     T_grid = T_grid[~np.isnan(T_grid)]
@@ -144,12 +156,22 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000)):
 
     ref_spectra = {}
     ref_headers = {}
-    for T in T_unique:
-        wave, ref_spectra[T], ref_headers[T] = phoenix_spectrum(
-            Teff=float(T), logg=logg, feh=feh, wavelength_range=wavelength_range)
-        # All waves are the same, so just return the last one
+    if not spec_intensity:
+        for T in T_unique:
+            wave, ref_spectra[T], ref_headers[T] = phoenix_spectrum(
+                Teff=float(T), logg=logg, feh=feh,
+                wavelength_range=wavelength_range)
+            # All waves are the same, so just return the last one
 
-    return wave, ref_spectra, ref_headers
+        return wave, ref_spectra, ref_headers
+    else:
+        for T in T_unique:
+            wave, ref_spectra[T], mu, ref_headers[T] = phoenix_spec_intensity(
+                Teff=float(T), logg=logg, feh=feh,
+                wavelength_range=wavelength_range)
+            # All waves are the same, also all mu should be the same
+            # So just return the last one
+        return wave, ref_spectra, ref_headers, mu
 
 
 if __name__ == "__main__":

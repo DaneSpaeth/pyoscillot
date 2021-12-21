@@ -369,9 +369,16 @@ class SimulationController():
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation
+        if self.conf["mode"] == "spectrum":
+            print(f"Run in FULL SPECTRUM MODE")
+            mode = "phoenix"
+        elif self.conf["mode"] == "spec_intensity":
+            print(f"Run in SPECIFIC INTENSITY MODE")
+            mode = "spec_intensity"
         rest_wavelength, spectrum, v_theo = star.calc_spectrum(
             self.conf["min_wave"] - 10,
-            self.conf["max_wave"] + 10)
+            self.conf["max_wave"] + 10,
+            mode=mode)
 
         # if not Path(f"{name}/spectrum_0.0_0.npy").is_file():
         #     # TODO REFACTOR
@@ -436,5 +443,5 @@ class SimulationController():
 
 
 if __name__ == "__main__":
-    ticket = "example_ticket.ini"
+    ticket = "tickets/spec_intensity.ini"
     SimulationController(ticket)

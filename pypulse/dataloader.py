@@ -213,7 +213,7 @@ if __name__ == "__main__":
     wavelength, spec_int, mu, header = phoenix_spec_intensity(4400, 4.5, -4.0)
 
     print(mu)
-    plt.plot(wavelength, spec_int[-1])
+    plt.plot(wavelength, spec_int[0])
     plt.show()
 
     # ftp://phoenix.astro.physik.uni-goettingen.de/SpecIntFITS/PHOENIX-ACES-AGSS-COND-SPECINT-2011/Z-0.0/lte06000-4.50-0.0.PHOENIX-ACES-AGSS-COND-SPECINT-2011.fits

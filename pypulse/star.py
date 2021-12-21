@@ -75,9 +75,17 @@ class GridSpectrumSimulator():
              ref_headers) = get_ref_spectra(self.temperature,
                                             logg=self.logg,
                                             feh=self.feh,
-                                            wavelength_range=wavelength_range)
+                                            wavelength_range=wavelength_range,
+                                            spec_intensity=False)
         elif mode == "spec_intensity":
-            raise NotImplementedError
+            (rest_wavelength,
+             ref_spectra,
+             ref_headers,
+             ref_mu) = get_ref_spectra(self.temperature,
+                                       logg=self.logg,
+                                       feh=self.feh,
+                                       wavelength_range=wavelength_range,
+                                       spec_intensity=True)
         elif mode == "gaussian":
             print("Gaussian mode")
             # Does not work with Temperature variations at the moment
@@ -92,6 +100,8 @@ class GridSpectrumSimulator():
         # Get the projected rotation and pulsation
         self.rotation = self.projector.rotation()
         self.pulsation = self.projector.pulsation()
+        if mode == "spec_intensity":
+            self.mu = self.projector.mu()
 
         # Calc v over c
         v_c_rot = self.rotation / C
@@ -106,11 +116,20 @@ class GridSpectrumSimulator():
                     T_local = self.temperature[row, col]
                     if mode == "gaussian":
                         local_spectrum = ref_spectra[self.three_dim_star.Teff]
-                    else:
+                    elif mode == "phoenix" or mode == "oneline":
                         _, local_spectrum, _ = get_interpolated_spectrum(T_local,
                                                                          ref_wave=rest_wavelength,
                                                                          ref_spectra=ref_spectra,
                                                                          ref_headers=ref_headers)
+                    elif mode == "spec_intensity":
+                        mu_local = self.mu[row, col]
+                        _, local_spectrum, _ = get_interpolated_spectrum(T_local,
+                                                                         ref_wave=rest_wavelength,
+                                                                         ref_spectra=ref_spectra,
+                                                                         ref_headers=ref_headers,
+                                                                         spec_intensity=True,
+                                                                         mu_local=mu_local,
+                                                                         ref_mu=ref_mu)
 
                     if not v_c_rot[row, col] and not v_c_pulse[row, col]:
                         # print(f"Skip Star Element {row, col}")
