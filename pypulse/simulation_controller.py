@@ -6,7 +6,7 @@ from astropy.time import Time
 from concurrent.futures import ProcessPoolExecutor
 from plapy.obs import observatories
 from plapy.constants import C
-from dataloader import phoenix_spectrum
+from dataloader import phoenix_spectrum, phoenix_spec_intensity
 from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from pathlib import Path
@@ -181,22 +181,29 @@ class SimulationController():
         # Load one rest_spectrum, all units in Angstrom
         wavelength_range = (self.conf["min_wave"] - 10,
                             self.conf["max_wave"] + 10)
-        rest_wavelength, spectrum, _ = phoenix_spectrum(
-            Teff=int(self.conf["teff"]), wavelength_range=wavelength_range)
+        if self.conf["mode"] == "spectrum":
+            rest_wavelength, spectrum, _ = phoenix_spectrum(
+                Teff=int(self.conf["teff"]), wavelength_range=wavelength_range)
+        else:
+            # Actually just for testing in low res mode
+            rest_wavelength, spectra, mu, _, = phoenix_spec_intensity(
+                Teff=int(self.conf["teff"]), wavelength_range=wavelength_range)
+            spectrum = spectra[-1]
 
         # Add the Doppler shifts
         shift_wavelengths = []
         spectra = []
         for v, time, bc, bjd in zip(K_sample, time_sample, bcs, bjds):
             vo = v
-            ve = 0
-            a = (1.0 + vo / C) / (1.0 + ve / C)
-            shift_wavelength = np.exp(np.log(rest_wavelength) + np.log(a))
+            # ve = 0
+            a = (1.0 + vo / C)  # / (1.0 + ve / C)
+            # shift_wavelength = np.exp(np.log(rest_wavelength) + np.log(a))
+            shift_wavelength = rest_wavelength * v / C + rest_wavelength
 
             shift_wavelengths.append(shift_wavelength)
             spectra.append(spectrum)
 
-            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd)
+            self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd, v)
 
         # calc_theoretical_results(shift_wavelengths, spectra, bjds)
 
