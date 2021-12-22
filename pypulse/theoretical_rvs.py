@@ -25,6 +25,7 @@ def _read_in_arrays(name, min_wave=None, max_wave=None, ref=False):
     vs = []
     bjds = []
 
+    wave_mask = None
     for wave_file, spec_file in zip(sorted(wave_files),
                                     sorted(spec_files)):
         old = False
@@ -43,16 +44,20 @@ def _read_in_arrays(name, min_wave=None, max_wave=None, ref=False):
                 ref_wave = np.load(wave_file)
                 ref_spec = np.load(spec_file)
                 if min_wave is not None and max_wave is not None:
-                    ref_wave, ref_spec = _cut_to_waverange(ref_wave, ref_spec,
-                                                           min_wave, max_wave)
+                    ref_wave, ref_spec, wave_mask = _cut_to_waverange(ref_wave, ref_spec,
+                                                                      min_wave, max_wave)
                 continue
 
         wave = np.load(wave_file)
 
         spec = np.load(spec_file)
-        if min_wave is not None and max_wave is not None:
-            wave, spec = _cut_to_waverange(wave, spec,
-                                           min_wave, max_wave)
+        if wave_mask is None:
+            if min_wave is not None and max_wave is not None:
+                wave, spec, wave_mask = _cut_to_waverange(wave, spec,
+                                                          min_wave, max_wave)
+        else:
+            wave = wave[wave_mask]
+            spec = spec[wave_mask]
 
         waves.append(wave)
         specs.append(spec)
@@ -76,7 +81,7 @@ def _cut_to_waverange(wave, spec, min_wave, max_wave):
     wave = wave[wave_mask]
     spec = spec[wave_mask]
 
-    return wave, spec
+    return wave, spec, wave_mask
 
 
 def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, out_dir=None):
@@ -93,17 +98,20 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, out_
     v_fits = []
     crxs = []
     for wave, spec, v_theo, bjd in zip(waves, specs, vs, bjds):
+        spec_out_dir = out_dir / f"{min_wave}-{max_wave}_{bjd}"
         wave_chunks, rv_chunks, chunk_sizes = calc_rv_chunks(
-            ref_wave.copy(), ref_spec.copy(), wave.copy(), spec.copy())
+            ref_wave.copy(), ref_spec.copy(), wave.copy(), spec.copy(),
+            out_dir=spec_out_dir)
         crx, alpha = fit_crx(wave_chunks, rv_chunks)
 
         if out_dir is not None:
-            fig, ax = plt.subplots(1)
+            fig, ax = plt.subplots(1, figsize=(16, 9))
             ax.semilogx(wave_chunks, rv_chunks, "bo")
-            lin_wave = np.linspace(np.min(wave_chunks),
-                                   np.max(wave_chunks))
-            ax.semilogx(lin_wave, np.log(lin_wave) * crx +
-                        alpha, label=f"CRX={round(crx,2)}")
+            wave = np.logspace(np.log10(np.min(wave_chunks)),
+                               np.log10(np.max(wave_chunks)))
+            ax.semilogx(wave, np.log(wave) * crx +
+                        alpha, label=f"CRX={crx}")
+            ax.get_yaxis().get_major_formatter().set_useOffset(False)
             ax.set_title(f"BJD={bjd}")
             ax.legend()
             ax.set_ylabel("RV [m/s]")
@@ -111,6 +119,7 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, out_
             plot_dir = out_dir / "RV_chunks"
             if not plot_dir.is_dir():
                 plot_dir.mkdir()
+            fig.set_tight_layout(True)
             plt.savefig(plot_dir / f"{min_wave}-{max_wave}_{bjd}.pdf")
             plt.close()
 
@@ -124,9 +133,13 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, out_
     return bjds, v_fits, crxs
 
 
-def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
+def calc_rv_chunks(ref_wave, ref_spec, wave, spec, out_dir=None):
     """ Calculate RV in chunks which allows to calculate a CRX."""
-    n_chunks = 40
+    # Good for high-res
+    # n_chunks = 40
+    # border = 10
+
+    n_chunks = 30
     border = 10
 
     chunk_size_px = int((len(ref_wave) - 2 * border) / n_chunks)
@@ -141,8 +154,6 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
         ref_spec_chunk = ref_spec[idx_range]
         wave_chunk = wave[idx_range]
         spec_chunk = spec[idx_range]
-
-        print(f"Chunk size={len(wave_chunk)}")
 
         # try to fit the continuum
         filter_width = 1000
@@ -163,11 +174,23 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
 
         chunk_sizes.append(wave_chunk[-1] - wave_chunk[0])
 
-        print(f"Calculate RV via least_square_rvfit for chunk {n_chunk}")
-        start = time.time()
+        # print(f"Calculate RV via least_square_rvfit for chunk {n_chunk}")
         rv_chunk = least_square_rvfit(
-            ref_wave_chunk, ref_spec_chunk, wave_chunk, spec_chunk)
-        stop = time.time()
+            ref_wave_chunk.copy(), ref_spec_chunk.copy(), wave_chunk.copy(), spec_chunk.copy())
+
+        if out_dir is not None:
+            out_dir
+            if not out_dir.is_dir():
+                out_dir.mkdir()
+            # shift_wave = wave_chunk * (1 - rv_chunk / C)
+            fig, ax = plt.subplots(1)
+            ax.plot(ref_wave_chunk, ref_spec_chunk, "blue", label="Reference")
+            ax.plot(wave_chunk, spec_chunk, "red",
+                    label=f"Unshifted Spec, RV={rv_chunk}", linestyle="--")
+            ax.set_xlabel("Wavelength")
+            ax.legend()
+            plt.savefig(out_dir / f"{n_chunk}.pdf")
+            plt.close()
 
         # print(f"RV={round(rv_chunk, 3)}m/s. Fit took {round(stop-start,2)}s")
 
@@ -183,7 +206,8 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
 
 def least_square_rvfit(ref_wave, ref_spec, wave, spec):
     def func(v_shift, ref_wave, ref_spec, wave, spec):
-        shift_wave = wave * 1 / (1 - v_shift[0] / C)
+        # shift_wave = wave * 1 / (1 - v_shift[0] / C)
+        shift_wave = wave * (1 + v_shift[0] / C)
         # Interpolate back to the ref (and therefore simulated wavelength grid)
         interpol_spec = interpolate_to_restframe(shift_wave,
                                                  spec,
@@ -202,7 +226,7 @@ def fit_crx(wave, rv):
     """ Fit the chromatic index."""
     def func(log_wave, alpha, crx):
         return alpha + log_wave * crx
-    popt, pcov = curve_fit(func, np.log(wave), rv)
+    popt, pcov = curve_fit(func, np.log(wave), rv, p0=[np.mean(rv), 0])
 
     alpha, crx = popt
 
