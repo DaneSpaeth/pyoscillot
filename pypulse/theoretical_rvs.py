@@ -79,7 +79,7 @@ def _cut_to_waverange(wave, spec, min_wave, max_wave):
     return wave, spec
 
 
-def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, plot=True):
+def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, out_dir=None):
     """ Calculate all theoretical results, i.e. RVs, CRX, dLW
 
         :param str name: Name of Simulation
@@ -95,41 +95,33 @@ def calc_theoretical_results(name, min_wave=None, max_wave=None, ref=False, plot
     for wave, spec, v_theo, bjd in zip(waves, specs, vs, bjds):
         wave_chunks, rv_chunks, chunk_sizes = calc_rv_chunks(
             ref_wave.copy(), ref_spec.copy(), wave.copy(), spec.copy())
-        fig, ax = plt.subplots()
-        ax.semilogx(wave_chunks, rv_chunks, "bo")
         crx, alpha = fit_crx(wave_chunks, rv_chunks)
-        lin_wave = np.linspace(np.min(wave_chunks),
-                               np.max(wave_chunks))
 
-        ax.semilogx(lin_wave, np.log(lin_wave) * crx +
-                    alpha, label=f"CRX={round(crx,2)}")
-        ax.set_title(f"BJD={bjd}")
-        ax.legend()
-        ax.set_ylabel("RV [m/s]")
-        ax.set_xlabel("Wavelength [A]")
-        plt.savefig(f"tmp_plots/{min_wave}-{max_wave}_{bjd}.pdf")
-        plt.close()
-        crxs.append(crx)
-
-        print(rv_chunks)
+        if out_dir is not None:
+            fig, ax = plt.subplots(1)
+            ax.semilogx(wave_chunks, rv_chunks, "bo")
+            lin_wave = np.linspace(np.min(wave_chunks),
+                                   np.max(wave_chunks))
+            ax.semilogx(lin_wave, np.log(lin_wave) * crx +
+                        alpha, label=f"CRX={round(crx,2)}")
+            ax.set_title(f"BJD={bjd}")
+            ax.legend()
+            ax.set_ylabel("RV [m/s]")
+            ax.set_xlabel("Wavelength [A]")
+            plot_dir = out_dir / "RV_chunks"
+            if not plot_dir.is_dir():
+                plot_dir.mkdir()
+            plt.savefig(plot_dir / f"{min_wave}-{max_wave}_{bjd}.pdf")
+            plt.close()
 
         # v_fit = least_square_rvfit(ref_wave, ref_spec, wave, spec)
         # print(
         #     f"v_fit={round(v_fit,3)}, v_theo={round(v_theo,3)}, delta_v={round(v_fit - v_theo,3)}")
         v_fit = np.mean(rv_chunks)
         v_fits.append(v_fit)
+        crxs.append(crx)
 
-    if plot:
-        fig, ax = plt.subplots(2, 1)
-        ax[0].plot(bjds, v_fits, "bo")
-        ax[1].plot(bjds, crxs, "bo")
-        ax[0].set_xlabel("BJD")
-        ax[0].set_ylabel("RV [m/s]")
-        ax[1].set_xlabel("BJD")
-        ax[1].set_ylabel("CRX [m/s/Np]")
-        plt.savefig(f"{name}_theoretical.pdf")
-    else:
-        return bjds, v_fits, crxs
+    return bjds, v_fits, crxs
 
 
 def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
@@ -168,16 +160,6 @@ def calc_rv_chunks(ref_wave, ref_spec, wave, spec):
             ref_wave_chunk  # + coef[2] * lin_wave**2
         ref_spec_chunk /= continuum
         spec_chunk /= continuum
-
-        if n_chunk == 40:
-            lin_wave = np.linspace(
-                np.min(ref_wave_chunk), np.max(ref_wave_chunk))
-            # plt.plot(wave_chunk, spec_chunk, label="Observed")
-            # plt.plot(ref_wave_chunk, ref_spec_chunk, label="Reference")
-            # plt.plot(ref_wave_chunk, smoothed_ref_spec_chunk)
-            #         np.median(ref_spec_chunk))
-            # plt.plot(lin_wave, continuum)
-            # plt.show()            # exit()
 
         chunk_sizes.append(wave_chunk[-1] - wave_chunk[0])
 
@@ -229,35 +211,53 @@ def fit_crx(wave, rv):
     return crx, alpha
 
 
-if __name__ == "__main__":
+def save_results(file, bjd, rv, crx):
+    """ Save the results to a file."""
+    with open(file, "w") as f:
+        for b, r, c in zup(bjd, rv, crx):
+            f.write(f"{b}    {r}    {c}\n")
+
+
+def theoretical_main(name):
+    """ Calculate and save all the theoretical results."""
+    # Create the folder that will contain the plots
+    dataroot = parse_global_ini()["datapath"]
+    out_dir = dataroot / "fake_spectra" / name / "theoretical_RVs"
+    if not out_dir.is_dir():
+        out_dir.mkdir()
+
+    # Define the wavelength ranges for CARMENES and HARPS
     max_wave_CARM = 9204
     min_wave_CARM = 5612
-
     min_wave_HARPS = 3830
     max_wave_HARPS = 6930
 
-    name = "TEST_SPEC_INT4"
-    fig, ax = plt.subplots(2)
-    bjds, v_fits, crxs = calc_theoretical_results(
-        name, min_wave=min_wave_CARM, max_wave=max_wave_CARM, ref=False, plot=False)
+    fig, ax = plt.subplots(2, figsize=(16, 9))
+    bjd, rv, crx = calc_theoretical_results(
+        name, min_wave=min_wave_CARM, max_wave=max_wave_CARM, ref=False, out_dir=out_dir)
+    out_file = out_dir / "CARMENES_theoretical.txt"
+    save_results(out_file, bjd, rv, crx)
 
     label = f"Theoretical CARM_VIS ({min_wave_CARM}A,{max_wave_CARM}A)"
-    ax[0].plot(bjds, v_fits - np.median(v_fits), "go", label=label)
-    ax[1].plot(bjds, crxs - np.median(crxs), "go", label=label)
+    ax[0].plot(bjd, rv - np.median(rv), "go", label=label)
+    ax[1].plot(bjd, crx, "go", label=label)
+
+    bjd, rv, crx = calc_theoretical_results(
+        name, min_wave=min_wave_HARPS, max_wave=max_wave_HARPS, ref=False, out_dir=out_dir)
+    out_file = out_dir / "HARPS_theoretical.txt"
+    save_results(out_file, bjd, rv, crx)
+    label = f"Theoretical HARPS ({min_wave_HARPS}A,{max_wave_HARPS}A)"
+    ax[0].plot(bjd, rv - np.median(rv),
+               marker="o", color="purple", label=label, linestyle="None")
+    ax[1].plot(bjd, crx,
+               marker="o", color="purple", label=label, linestyle="None")
+
+    # Labels and Legends
     ax[0].set_xlabel("BJD")
     ax[0].set_ylabel("RV [m/s]")
     ax[1].set_xlabel("BJD")
     ax[1].set_ylabel("CRX [m/s/Np]")
-
-    bjds, v_fits, crxs = calc_theoretical_results(
-        name, min_wave=min_wave_HARPS, max_wave=max_wave_HARPS, ref=False, plot=False)
-    label = f"Theoretical HARPS ({min_wave_HARPS}A,{max_wave_HARPS}A)"
-    ax[0].plot(bjds, v_fits - np.median(v_fits),
-               marker="o", color="purple", label=label, linestyle="None")
-    ax[1].plot(bjds, crxs - np.median(crxs),
-               marker="o", color="purple", label=label, linestyle="None")
-
-    # ax[0].legend()
-    # ax[1].legend()
-
+    ax[0].legend()
+    ax[1].legend()
+    fig.set_tight_layout(True)
     plt.savefig(f"{name}_theoretical.pdf")

@@ -3,7 +3,7 @@ from simulation_controller import SimulationController
 from parse_ini import parse_global_ini, parse_ticket
 from datasaver import DataSaver
 import socket
-from theoretical_rvs import calc_theoretical_results
+from theoretical_rvs import theoretical_main
 from check_time_series import check_time_series
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
@@ -22,6 +22,9 @@ def main(ticket, run_laptop=False):
         # Run the Simulation
         SimulationController(ticket)
         saver.copy_ticket_spectrafolder(ticket)
+
+        # Now also calculate the theoretical results
+        theoretical_main(name)
     else:
         if run_laptop:
             # Run the Simulation even if on laptop
@@ -51,7 +54,6 @@ def main(ticket, run_laptop=False):
             print("Flux could not be copied!")
             pass
 
-        # calc_theoretical_results(name)
         check_time_series(name)
 
 
