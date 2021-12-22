@@ -101,7 +101,8 @@ class GridSpectrumSimulator():
         self.rotation = self.projector.rotation()
         self.pulsation = self.projector.pulsation()
         if mode == "spec_intensity":
-            self.mu = self.projector.mu()
+            # TODO REMOVE ceil
+            self.mu = np.ceil(self.projector.mu())
 
         # Calc v over c
         v_c_rot = self.rotation / C
