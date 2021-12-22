@@ -214,7 +214,7 @@ def fit_crx(wave, rv):
 def save_results(file, bjd, rv, crx):
     """ Save the results to a file."""
     with open(file, "w") as f:
-        for b, r, c in zup(bjd, rv, crx):
+        for b, r, c in zip(bjd, rv, crx):
             f.write(f"{b}    {r}    {c}\n")
 
 
@@ -260,4 +260,4 @@ def theoretical_main(name):
     ax[0].legend()
     ax[1].legend()
     fig.set_tight_layout(True)
-    plt.savefig(f"{name}_theoretical.pdf")
+    plt.savefig(out_dir / f"theoretical_RV.pdf")
