@@ -59,7 +59,7 @@ def main(ticket, run_laptop=False):
 
 if __name__ == "__main__":
 
-    ticket = "spec_intensity.ini"
+    ticket = "talk_ticket.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)
