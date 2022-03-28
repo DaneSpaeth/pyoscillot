@@ -33,6 +33,7 @@ def main(ticket, run_laptop=False):
         # Run Serval
         if conf_dict["instrument"].upper() == "ALL":
 
+            # global_dict["rvlibpath"] = "/home/dane/mounted_srv/simulations/fake_spectra"
             subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                             name, f"HIP{int(conf_dict['hip'])}",
                             "CARMENES_VIS"])

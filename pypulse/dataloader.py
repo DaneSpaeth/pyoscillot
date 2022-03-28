@@ -209,11 +209,23 @@ def plot_central_order_intensitites():
 
 
 if __name__ == "__main__":
+    (specA, contA, sigA, waveA) = carmenes_template(
+        "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP89008/car-20170704T21h21m45s-sci-refs-vis_A.fits")
+    order = 25
+    plt.plot(waveA[order], specA[order], label="HIP89008 (smallest RV)")
+    (specB, contB, sigB, waveB) = carmenes_template(
+        "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP89008/car-20210202T04h34m20s-sci-gtoc-vis_A.fits")
+    # plt.plot(waveB[order], specB[order] * np.nanmedian(specA[order]
+    #                                                    ) / np.nanmedian(specB[order]), label="HIP89008 (largest RV)")
+    # print(np.median(specA[order]) / np.median(specB[order]))
 
-    wavelength, spec_int, mu, header = phoenix_spec_intensity(4400, 4.5, -4.0)
-
-    print(mu)
-    plt.plot(wavelength, spec_int[0])
+    (specC, contC, sigC, waveC) = carmenes_template(
+        "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP16335/car-20211213T00h11m18s-sci-gtoc-vis_A.fits")
+    plt.plot(waveC[order] - 0.96, specC[order] * np.nanmedian(specA[order]
+                                                              ) / np.nanmedian(specC[order]), label="HIP16335")
+    print(np.median(specA[order]) / np.median(specB[order]))
+    plt.legend()
+    plt.xlabel("Wavelength [A]")
+    plt.ylabel("Flux")
+    plt.tight_layout()
     plt.show()
-
-    # ftp://phoenix.astro.physik.uni-goettingen.de/SpecIntFITS/PHOENIX-ACES-AGSS-COND-SPECINT-2011/Z-0.0/lte06000-4.50-0.0.PHOENIX-ACES-AGSS-COND-SPECINT-2011.fits
