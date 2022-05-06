@@ -1,5 +1,7 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+# mpl.use('TkAgg')  # or can use 'TkAgg', whatever you have/prefer
 from scipy.spatial.transform import Rotation as Rot
 from scipy.special import sph_harm
 import spherical_geometry as geo
@@ -126,7 +128,7 @@ class ThreeDimStar():
         print(
             f"Border Value: {np.sum(self.border_mask)/np.size(self.border_mask)}")
 
-    def add_granulation_new(self, random_points=100):
+    def add_granulation_new(self, random_points=1000):
         centers = np.zeros((random_points, 2))
         quadr_distances = np.zeros(
             (random_points, self.phi.shape[0], self.phi.shape[1]))
@@ -134,16 +136,43 @@ class ThreeDimStar():
             random_phi = random.uniform(0, 2 * np.pi)
             random_theta = random.uniform(0, np.pi)
 
-            diff_phi = np.abs(self.phi[0, :] - random_phi)
-            diff_theta = np.abs(self.theta[:, 0] - random_theta)
+            #random_theta = np.radians(20)
+            #random_phi = 0
 
-            idx_phi = np.argmin(diff_phi)
-            idx_theta = np.argmin(diff_theta)
+            # diff_phi = np.mod(np.abs(self.phi[0, :] - random_phi),
+            # diff_theta = np.abs(self.theta[:, 0] - random_theta)
+            #
+            # idx_phi = np.argmin(diff_phi)
+            # idx_theta = np.argmin(diff_theta)
+            #
+            # # self.temperature[idx_theta, idx_phi] = 1000000
+            # centers[i, :] = random_theta, random_phi
+            # quadr_distances[i, :, :] = (
+            #     self.phi - random_phi)**2 + (self.theta - random_theta)**2
+            distance = self.haversine_distance(random_phi, random_theta)
+            print(i)
 
-            self.temperature[idx_theta, idx_phi] = 1000000
-            centers[i, :] = random_theta, random_phi
-            quadr_distances[i, :, :] = (
-                self.phi - random_phi)**2 + (self.theta - random_theta)**2
+            self.add_local_gaussian_temperature_variation(distance)
+
+    def add_local_gaussian_temperature_variation(self, dist, dT_gran=500, gran_size=5):
+        """ Add a Gaussian temperature variation centered on one point"""
+        sigma = np.radians(gran_size)
+        self.temperature += dT_gran * 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-dist**2/(2*sigma**2))
+
+    def haversine_distance(self, phi_center, theta_center):
+        """ Return the haversine distance from position given by phi and theta"""
+        #distance = 2*np.arcsin(np.sqrt(np.sin((self.phi-phi_center)/2)**2+
+        #                       np.cos(phi_center)*np.cos(self.phi)*np.sin((self.theta-theta_center)/2)**2))
+        # distance[np.isnan(distance)] = np.max(distance)
+
+        latitude = self.theta - np.radians(90)
+        latitude_center = theta_center - np.radians(90)
+
+        distance = np.arccos(np.cos(latitude)*np.cos(latitude_center)*np.cos(np.abs(self.phi-phi_center))+
+                             np.sin(latitude)*np.sin(latitude_center))
+        self.distance = distance
+        return distance
+
 
     def create_rotation(self, v=3000):
         """ Create a 3D rotation map.
@@ -175,7 +204,7 @@ class ThreeDimStar():
         self.displacement_rad += displ
         self.pulsation_rad += pulsation
 
-        # Caution temperature is not reseted
+        # Caution temperature is not reset
         temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         temp_variation = T_var * temp_variation / np.nanmax(temp_variation)
 
@@ -582,14 +611,16 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     star = ThreeDimStar()
-    # star.add_granulation_new()
-    #star.add_pulsation(l=1, m=-1)
-    # star.add_pulsation(l=2, m=0)
-    # star.add_pulsation(l=1, m=0, t=10)
-    # star.add_pulsation(l=1, m=1)
+    star.add_granulation_new()
     # star.add_pulsation(l=1, m=-1)
-    projector = TwoDimProjector(
-        star, line_of_sight=False, limb_darkening=False, N=1000, inclination=30)
-    plt.imshow(projector.mu(),
-               cmap="Reds", vmin=0, vmax=1)
+    # star.add_pulsation(l=2, m=0, T_var=500)
+    # star.add_pulsation(l=1, m=0, t=10)
+    # star.add_pulsation(l=1, m=1, T_var=200)
+    # star.add_pulsation(l=1, m=-1)
+    # projector = TwoDimProjector(
+    #     star, line_of_sight=False, limb_darkening=False, N=1000, inclination=0)
+    fig, ax = plt.subplots(1)
+    plot_3d(star.x, star.y, star.z, star.temperature)
+    # ax.set_box_aspect((1,1,1))
+    # plot_3d()
     plt.show()
