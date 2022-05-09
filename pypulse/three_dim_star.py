@@ -133,8 +133,18 @@ class ThreeDimStar():
         quadr_distances = np.zeros(
             (random_points, self.phi.shape[0], self.phi.shape[1]))
         for i in range(random_points):
-            random_phi = random.uniform(0, 2 * np.pi)
-            random_theta = random.uniform(0, np.pi)
+            #random_phi = random.uniform(0, 2 * np.pi)
+            #random_theta = random.uniform(0, np.pi)
+
+            random_x_y_z = np.random.multivariate_normal(np.array([0,0,0]),
+                                                         np.array([[1,0,0],
+                                                                  [0,1,0],
+                                                                  [0,0,1]]))
+            r = np.sqrt(np.sum(np.square(random_x_y_z)))
+            random_x_y_z /= r
+            print(random_x_y_z)
+            random_phi , random_theta = geo.x_y_z_to_sph(*random_x_y_z)
+
 
             #random_theta = np.radians(20)
             #random_phi = 0
@@ -161,12 +171,12 @@ class ThreeDimStar():
 
     def haversine_distance(self, phi_center, theta_center):
         """ Return the haversine distance from position given by phi and theta"""
-        #distance = 2*np.arcsin(np.sqrt(np.sin((self.phi-phi_center)/2)**2+
-        #                       np.cos(phi_center)*np.cos(self.phi)*np.sin((self.theta-theta_center)/2)**2))
-        # distance[np.isnan(distance)] = np.max(distance)
-
         latitude = self.theta - np.radians(90)
         latitude_center = theta_center - np.radians(90)
+        #sin(np.sqrt(np.sin((latitude-latitude_center)/2)**2+
+        #                       np.cos(latitude_center)*np.cos(latitude)*np.sin((self.theta-theta_center)/2)**2))
+        # distance[np.isnan(distance)] = np.max(distance)
+
 
         distance = np.arccos(np.cos(latitude)*np.cos(latitude_center)*np.cos(np.abs(self.phi-phi_center))+
                              np.sin(latitude)*np.sin(latitude_center))
