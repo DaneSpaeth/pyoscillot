@@ -7,6 +7,13 @@ from scipy.interpolate import griddata
 from scipy.spatial.distance import cdist
 import time
 
+""" Through this document we follow the ISO convention often used in physics as described here:
+    https://en.wikipedia.org/wiki/Spherical_coordinate_system
+    
+    i.e.: 
+    theta: Polar angle or colatitude or inclination, measured from the pole southward : [0,  pi]
+    phi: azimuthal angle: [0, 2pi]
+"""
 
 def sph_to_x_y_z(phi, theta):
     """ Convert spherical coordinates phi, theta to x,y,z."""
@@ -17,10 +24,37 @@ def sph_to_x_y_z(phi, theta):
 
     return x, y, z
 
+def x_y_z_to_sph(x, y, z):
+    """ Convert x, y, z to spherical coordinates phi, theta."""
+    # The Cartesian coordinates of the unit sphere
+    r = np.sqrt(np.square(x)+np.square(y)+np.square(z))
+    assert np.abs(1-r) < 1e-10, "You should be on the Unit sphere!"
+    theta = np.arccos(z/r)
+
+    if x > 0:
+        phi = np.arctan(y/x)
+    elif x < 0 and y >= 0:
+        phi = np.arctan(y/x) + np.pi
+    elif x < 0 and y < 0:
+        phi = np.arctan(y/x) - np.pi
+    elif x == 0 and y > 0:
+        phi = np.pi / 2
+    elif x == 0 and y < 0:
+        phi = -np.pi / 2
+    elif x == 0 and y == 0:
+        if z > 0:
+            # Map to the pole
+            phi = 0
+        elif z < 0:
+            phi = np.pi
+
+    return phi, theta
+
+
 
 def get_spherical_phi_theta_x_y_z(N=250):
     """ Sample x and z for a spherical star."""
-    # Theta: Polar Angle
+    # Theta: Polar Angle, i.e. colatitude or zenith angle
     theta = np.linspace(0, np.pi, N)
 
     # Phi: Azimuthal angle
