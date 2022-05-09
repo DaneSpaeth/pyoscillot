@@ -32,9 +32,9 @@ def x_y_z_to_sph(x, y, z):
     theta = np.arccos(z/r)
 
     if x > 0:
-        phi = np.arctan(y/x)
+        phi = np.arctan2(y, x)
     elif x < 0 and y >= 0:
-        phi = np.arctan(y/x) + np.pi
+        phi = np.arctan(y/ x) + np.pi
     elif x < 0 and y < 0:
         phi = np.arctan(y/x) - np.pi
     elif x == 0 and y > 0:
@@ -47,6 +47,8 @@ def x_y_z_to_sph(x, y, z):
             phi = 0
         elif z < 0:
             phi = np.pi
+
+    phi = np.mod(phi + np.pi, 2*np.pi)
 
     return phi, theta
 
