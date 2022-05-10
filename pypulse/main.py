@@ -13,6 +13,8 @@ def main(ticket, run_laptop=False):
         and plot the result.
     """
     global_dict = parse_global_ini()
+    if laptop:
+        global_dict["datapath"] = "/home/dane/Documents/Phd/pypulse/mounted_data"
     conf_dict = parse_ticket(ticket)
     name = str(conf_dict["name"])
 
@@ -60,7 +62,7 @@ def main(ticket, run_laptop=False):
 
 if __name__ == "__main__":
 
-    ticket = "talk_ticket.ini"
+    ticket = "granulation_ticket.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)

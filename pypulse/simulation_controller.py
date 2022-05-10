@@ -1,4 +1,4 @@
-from datetime import datetime, date, timedelta
+from datetime import datetime,  timedelta
 import numpy as np
 from barycorrpy import utc_tdb
 import random
@@ -37,6 +37,8 @@ class SimulationController():
         #    raise NotImplementedError("Currently only one mode is implemented")
 
         self.conf = config_dict
+
+
         self.simulation_keys = simulation_keys
         self.instrument = config_dict["instrument"]
 
@@ -52,6 +54,8 @@ class SimulationController():
             self.simulate_spot()
         elif mode == "pulsation":
             self.simulate_pulsation()
+        elif mode == "granulation":
+            self.simulate_granulation()
         else:
             print("Select a Mode")
             exit()
@@ -287,9 +291,8 @@ class SimulationController():
 
         return(f"Star {idx+1}/{N} finished")
 
-    def simulate_pulsation(self):
-        """ Simulate the pulsation spectra."""
-        # Get the global parameters
+    def _get_pulsation_hyperparams(self):
+        """ Convenience method to get the hyperparameters and make the code DRY"""
         N = int(self.conf["n"])
         N_local_min = int(self.conf["n_local_min"])
         N_local_max = int(self.conf["n_local_max"])
@@ -311,6 +314,13 @@ class SimulationController():
 
         bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
         bcs = np.zeros(len(bjds))
+
+        return N, N_local_min, N_local_max, rand_day_min, rand_day_max, N_periods, N_processes, P, K_sample, time_sample, bjds, bcs
+
+    def simulate_pulsation(self):
+        """ Simulate the pulsation spectra."""
+        (N, N_local_min, N_local_max, rand_day_min, rand_day_max,
+         N_periods, N_processes, P, K_sample, time_sample, bjds, bcs) = self._get_pulsation_hyperparams()
 
         idx_list = list(range(len(K_sample)))
         if N_processes > 1:
@@ -409,6 +419,84 @@ class SimulationController():
         # self.saver.save_arrays(array_dict, bjd)
         array_dict = None
         del array_dict
+        # Save the flux
+        self.saver.save_flux(bjd, star.flux)
+
+        self._save_to_disk(rest_wavelength, spectrum, time, bc, bjd, v_theo)
+
+        return(f"Star {idx+1}/{N} finished")
+
+    def simulate_granulation(self):
+        """ Simulate the granulation spectra."""
+        # Get the global parameters
+        (N, N_local_min, N_local_max, rand_day_min, rand_day_max,
+         N_periods, N_processes, P, K_sample, time_sample, bjds, bcs) = self._get_pulsation_hyperparams()
+
+        idx_list = list(range(len(K_sample)))
+        if N_processes > 1:
+            with ProcessPoolExecutor(max_workers=N_processes) as executor:
+                for r in executor.map(
+                        self._run_granulation_sim, idx_list,
+                        K_sample, time_sample, bjds, bcs):
+                    print(r)
+        else:
+            for r in map(self._run_pulsation_sim, idx_list,
+                         K_sample, time_sample, bjds, bcs):
+                print(r)
+
+    def _run_granulation_sim(self, idx, v, time, bjd, bc):
+        """ Isolated function to actually run the granulation simulation.
+
+            It is splitted from the simulate_granulation function to allow
+            mulitprocessing which works via pickling.
+
+            :param idx: Idx of current simulation (just for counting)
+            :param v: Current velocity due to barycentric correction in m/s
+                      (Could in principle be used to add another v shift)
+            :param time: Time as datetime.datetime
+            :param bjd: Barycentric Julian Date as float
+            :param bc: Barycentric correction in m/s
+
+            All parameters should be single values
+        """
+        # TODO refactor the parameters of the funcion (I don't need any of these)
+        N = int(self.conf["n"])
+        limb_darkening = bool(int(self.conf["limb_darkening"]))
+        v_rot = self.conf["v_rot"]
+        inclination = self.conf["inclination"]
+        N_star = int(self.conf["n_star"])
+
+        sim = "granulation"
+        dT = self.conf[sim]["dt"]
+        dv = self.conf[sim]["dv"]
+        granule_size = self.conf[sim]["granule_size"]
+
+        print(f"Calculate star {idx+1}/{N} at bjd {bjd}")
+        star = GridSpectrumSimulator(
+            N_star=N_star, N_border=3,
+            Teff=int(self.conf["teff"]),
+            logg=float(self.conf["logg"]),
+            feh=float(self.conf["feh"]),
+            v_rot=v_rot, inclination=inclination,
+            limb_darkening=limb_darkening)
+
+
+        # Todo Implement the automatic number of granules
+        star.add_granulation(dT=dT, dv=dv, granule_size=granule_size)
+
+        # Wavelength in restframe of phoenix spectra but already perturbed by
+        # pulsation
+        if self.conf["mode"] == "spectrum":
+            print(f"Run in FULL SPECTRUM MODE")
+            mode = "phoenix"
+        elif self.conf["mode"] == "spec_intensity":
+            print(f"Run in SPECIFIC INTENSITY MODE")
+            mode = "spec_intensity"
+        rest_wavelength, spectrum, v_theo = star.calc_spectrum(
+            self.conf["min_wave"] - 10,
+            self.conf["max_wave"] + 10,
+            mode=mode)
+
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
 

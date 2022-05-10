@@ -10,7 +10,6 @@ from plapy.constants import SIGMA
 import limb_darkening as limb
 import random
 import copy
-from tqdm.auto import tqdm
 
 
 class ThreeDimStar():
@@ -105,36 +104,15 @@ class ThreeDimStar():
 
         # print(np.max(self.temperature - temperature_before))
 
-    def add_granulation(self, planes=3500):
-        """ First try to add granulation cells to the star.
+    def add_granulation(self, dT=500, dv=1000, granule_size=2, random_points=12500):
+        """ Add granulation to the 3d star.
 
-           :param int cells: Number of cells (not implemented yet)
+            :param float dT: Temperature variation in K
+            :param float dv: Velocity variation in m/s
+            :param float granule_size: Spatial granule size in degree
+            :param int random_points: Number of random points to draw on the surface
         """
-        # Define vectors of all points on sphere
-        vecs = np.array((self.x.flatten(),
-                         self.y.flatten(),
-                         self.z.flatten())).T
-
-        # Define center of sphere
-        center = np.array([0, 0, 0])
-        vecs = vecs - center
-        self.border_mask = np.zeros(self.phi.shape)
-        for n in range(planes):
-            normal = np.array(
-                [random.uniform(-1, 1),
-                 random.uniform(-1, 1),
-                 random.uniform(-1, 1)])
-            normal = normal / np.dot(normal, normal)
-
-            close_plane_mask = np.abs(np.dot(vecs, normal)) <= 0.01
-            close_plane_mask = close_plane_mask.reshape(self.phi.shape)
-
-            self.temperature[close_plane_mask] = self.Teff - 400
-            self.border_mask[close_plane_mask] = 1
-        print(
-            f"Border Value: {np.sum(self.border_mask)/np.size(self.border_mask)}")
-
-    def add_granulation_new(self, random_points=12500):
+        print("Add granulation")
         for i in range(random_points):
 
             random_x_y_z = np.random.multivariate_normal(np.array([0,0,0]),
@@ -145,20 +123,25 @@ class ThreeDimStar():
             random_x_y_z /= r
             random_phi, random_theta = geo.x_y_z_to_sph(*random_x_y_z)
 
-
             distance = self.get_distance(random_phi, random_theta)
-            print(i)
+            # print(i)
 
-            self.add_local_gaussian_temperature_variation(distance)
+            self.add_local_granulation_variations(distance, dT, dv, granule_size)
 
-    def add_local_gaussian_temperature_variation(self, dist, dT_gran=500, gran_size=2):
-        """ Add a Gaussian temperature variation centered on one point"""
-        sigma = np.radians(gran_size)
+    def add_local_granulation_variations(self, dist, dT, dv, granule_size):
+        """ Add a Gaussian temperature variation centered on one point
+
+            :param np.array dist: Array with shape of 3d star containing the great circle distances
+            :param float dT: Temperature variation in K
+            :param float dv: Velocity variation in m/s
+            :param float granule_size: Spatial granule size in degree
+        """
+        sigma = np.radians(granule_size)
         gaussian = 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-dist**2/(2*sigma**2))
         normalized_gaussian = gaussian / np.max(gaussian)
 
         inner_mask = dist < 0.95*sigma
-        border_mask = np.isclose(sigma, dist, rtol=0, atol=np.radians(gran_size)*0.1)
+        border_mask = np.isclose(sigma, dist, rtol=0, atol=np.radians(granule_size)*0.1)
 
         # Only change the values for areas that have not been changed before
         change_mask = np.logical_and(np.logical_not(self.inner_granule_mask),
@@ -170,18 +153,14 @@ class ThreeDimStar():
 
         # print(np.sum(increase_mask))
 
-        self.temperature[increase_mask] += dT_gran * normalized_gaussian[increase_mask]
+        self.temperature[increase_mask] += dT * normalized_gaussian[increase_mask]
         # mask = self.temperature > self.base_Temp + dT_gran
         # self.temperature[mask] = self.base_Temp[mask] + dT_gran
 
-        self.temperature[decrease_mask] -= dT_gran
+        self.temperature[decrease_mask] -= dT
 
-        self.granular_velocity[increase_mask] += normalized_gaussian[increase_mask] * 1000
-        self.granular_velocity[decrease_mask] -= 1000
-
-
-
-
+        self.granular_velocity[increase_mask] = normalized_gaussian[increase_mask] * -dv
+        self.granular_velocity[decrease_mask] = dv
 
         self.inner_granule_mask[inner_mask] = True
         self.granular_lane_mask[border_mask] = True
@@ -445,6 +424,13 @@ class TwoDimProjector():
                                     component="phi")
         return np.rint(rotation_2d).astype(int)
 
+    def granulation_velocity(self):
+        """ Project the granulation velocity onto a 2d plane"""
+        granulation_velocity_2d = self._project(self.star.granular_velocity,
+                                                line_of_sight=self.line_of_sight,
+                                                component="rad")
+        return granulation_velocity_2d
+
     def displacement_rad(self):
         """ Project the radial displacement of the star onto a 2d plane.
 
@@ -640,19 +626,21 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     star = ThreeDimStar(N=500)
-    star.add_granulation_new()
+    star.add_granulation()
     # star.add_pulsation(l=1, m=-1)
     # star.add_pulsation(l=2, m=0, T_var=500)
     # star.add_pulsation(l=1, m=0, t=10)
     # star.add_pulsation(l=1, m=1, T_var=200)
     # star.add_pulsation(l=1, m=-1)
     projector = TwoDimProjector(
-        star, line_of_sight=False, limb_darkening=False, N=5000, inclination=60)
+        star, line_of_sight=True, limb_darkening=False, N=5000, inclination=60)
     fig, ax = plt.subplots(1)
     # plot_3d(star.x, star.y, star.z, star.temperature)
     plt.imshow(projector.temperature(), vmin=4300, vmax=5300, cmap="hot")
-    # plt.savefig()
-    # ax.set_box_aspect((1,1,1))
-    # plot_3d()
     plt.savefig("/home/dspaeth/data/simulations/tmp_plots/tempmap.png")
+    plt.close()
+
+    plt.imshow(projector.granulation_velocity(), vmin=-1000, vmax=1000, cmap="seismic")
+    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/velmap_los.png")
+    plt.close()
     # plt.show()

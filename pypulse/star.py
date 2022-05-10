@@ -49,10 +49,19 @@ class GridSpectrumSimulator():
         az = phase * 360.
         self.three_dim_star.add_spot(radius, phi_pos=az, T_spot=T_spot)
 
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(1)
-        ax.imshow(self.projector.temperature(), origin="lower")
-        plt.show()
+        # import matplotlib.pyplot as plt
+        # fig, ax = plt.subplots(1)
+        # ax.imshow(self.projector.temperature(), origin="lower")
+        # plt.show()
+
+    def add_granulation(self, dT=500, dv=1000, granule_size=2):
+        """ Add a random granulation pattern to the star.
+        
+            :param float dT: Temperature variation in K
+            :param float dv: Velocity variation in m/s
+            :param float granule_size: Spatial granule size in degree
+        """
+        self.three_dim_star.add_granulation(dT=dT, dv=dv, granule_size=granule_size)
 
     def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix"):
         """ Return Spectrum (potentially Doppler broadened) from min to max.
@@ -100,6 +109,7 @@ class GridSpectrumSimulator():
         # Get the projected rotation and pulsation
         self.rotation = self.projector.rotation()
         self.pulsation = self.projector.pulsation()
+        self.granulation = self.projector.granulation_velocity()
         if mode == "spec_intensity":
             # TODO REMOVE ceil
             self.mu = np.ceil(self.projector.mu())
@@ -107,6 +117,7 @@ class GridSpectrumSimulator():
         # Calc v over c
         v_c_rot = self.rotation / C
         v_c_pulse = self.pulsation / C
+        v_c_gran = self.granulation / C
 
         total_spectrum = np.zeros(len(rest_wavelength))
 
@@ -132,7 +143,7 @@ class GridSpectrumSimulator():
                                                                          mu_local=mu_local,
                                                                          ref_mu=ref_mu)
 
-                    if not v_c_rot[row, col] and not v_c_pulse[row, col]:
+                    if not v_c_rot[row, col] and not v_c_pulse[row, col] and not v_c_gran[row, col]:
                         # print(f"Skip Star Element {row, col}")
                         total_spectrum += local_spectrum
 
@@ -143,6 +154,7 @@ class GridSpectrumSimulator():
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
+                            v_c_gran[row, col] * rest_wavelength + \
                             v_c_pulse[row, col] * rest_wavelength
                         # Interpolate the spectrum to the same rest wavelength grid
 

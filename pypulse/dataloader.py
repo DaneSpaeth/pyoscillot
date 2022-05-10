@@ -19,7 +19,7 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
     file = folder / filename
 
     if not file.is_file():
-        print(f"File not found. Begin download!")
+        print(f"{file} not found. Begin download!")
         download_phoenix(file.name, folder, feh)
 
     print(f"Load file {file}")
