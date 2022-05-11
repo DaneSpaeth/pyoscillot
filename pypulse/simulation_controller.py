@@ -415,8 +415,8 @@ class SimulationController():
         # shift_wavelength = rest_wavelength + v / C * rest_wavelength
 
         # Save the arrays
-        # array_dict = star.get_arrays()
-        # self.saver.save_arrays(array_dict, bjd)
+        array_dict = star.get_arrays()
+        self.saver.save_arrays(array_dict, bjd)
         array_dict = None
         del array_dict
         # Save the flux
@@ -499,6 +499,12 @@ class SimulationController():
 
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
+
+        # Save the arrays
+        array_dict = star.get_arrays()
+        self.saver.save_arrays(array_dict, bjd)
+        array_dict = None
+        del array_dict
 
         self._save_to_disk(rest_wavelength, spectrum, time, bc, bjd, v_theo)
 

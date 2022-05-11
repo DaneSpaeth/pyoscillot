@@ -188,7 +188,8 @@ class GridSpectrumSimulator():
             "pulsation": self.projector.pulsation(),
             "temperature": self.projector.temperature(),
             "rotation": self.projector.rotation(),
-            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann()}
+            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann(),
+            "granulation_velocity":self.projector.granulation_velocity()}
 
         return array_dict
 
