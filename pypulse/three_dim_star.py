@@ -115,7 +115,7 @@ class ThreeDimStar():
         print("Add granulation")
         for i in range(random_points):
 
-            random_x_y_z = np.random.multivariate_normal(np.array([0,0,0]),
+            random_x_y_z = np.random.RandomState().multivariate_normal(np.array([0,0,0]),
                                                          np.array([[1,0,0],
                                                                    [0,1,0],
                                                                    [0,0,1]]))
@@ -633,14 +633,14 @@ if __name__ == "__main__":
     # star.add_pulsation(l=1, m=1, T_var=200)
     # star.add_pulsation(l=1, m=-1)
     projector = TwoDimProjector(
-        star, line_of_sight=True, limb_darkening=False, N=5000, inclination=60)
+        star, line_of_sight=True, limb_darkening=False, N=500, inclination=60)
     fig, ax = plt.subplots(1)
     # plot_3d(star.x, star.y, star.z, star.temperature)
     plt.imshow(projector.temperature(), vmin=4300, vmax=5300, cmap="hot")
-    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/tempmap.png")
+    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/tempmap_500.png")
     plt.close()
 
     plt.imshow(projector.granulation_velocity(), vmin=-1000, vmax=1000, cmap="seismic")
-    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/velmap_los.png")
+    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/velmap_los_500.png")
     plt.close()
     # plt.show()
