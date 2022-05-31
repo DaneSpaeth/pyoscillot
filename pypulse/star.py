@@ -3,10 +3,10 @@ from utils import (gaussian, adjust_resolution, interpolate_to_restframe)
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_ref_spectra, get_interpolated_spectrum
-
+from numba import jit
 
 class GridSpectrumSimulator():
-    """ Simulate a the spectrum of a star with a grid."""
+    """ Simulate a spectrum of a star with a grid."""
 
     def __init__(self, N_star=500, N_border=5, Teff=4800, logg=3.0, feh=0.0,
                  v_rot=3000, inclination=90, limb_darkening=True):
@@ -67,7 +67,7 @@ class GridSpectrumSimulator():
         """ Return Spectrum (potentially Doppler broadened) from min to max.
 
             :param float min_wave: Minimum Wavelength (Angstrom)
-            :param flota max_wave: Maximum Wavelength (Angstrom)
+            :param float max_wave: Maximum Wavelength (Angstrom)
 
             :returns: Array of wavelengths, array of flux value
         """
@@ -150,13 +150,16 @@ class GridSpectrumSimulator():
                         local_wavelength = rest_wavelength
 
                     else:
-                        #print(f"Calculate Star Element {row, col}")
+                        print(f"Calculate Star Element {row, col}")
 
                         local_wavelength = rest_wavelength + \
                             v_c_rot[row, col] * rest_wavelength + \
                             v_c_gran[row, col] * rest_wavelength + \
                             v_c_pulse[row, col] * rest_wavelength
                         # Interpolate the spectrum to the same rest wavelength grid
+
+                        rest_wavelength = rest_wavelength.astype("float64")
+                        local_spectrum = local_spectrum.astype("float64")
 
                         interpol_spectrum = interpolate_to_restframe(local_wavelength,
                                                                      local_spectrum, rest_wavelength)
@@ -215,5 +218,15 @@ class GridSpectrumSimulator():
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridSpectrumSimulator(N_star=30, N_border=1, v_rot=3000)
-    star.calc_spectrum()
+    star = GridSpectrumSimulator(N_star=100, N_border=1, v_rot=3000, limb_darkening=False)
+    rest_wavelength, total_spectrum, v_total = star.calc_spectrum()
+    # np.save("spec.npy", total_spectrum)
+    comparison_spec = np.load("spec.npy")
+    # assert (comparison_spec == total_spectrum).all()
+
+    # plt.plot(rest_wavelength, comparison_spec, label="Comparison")
+    # plt.plot(rest_wavelength, total_spectrum, label="New", alpha=0.5)
+    # plt.plot(rest_wavelength, total_spectrum- comparison_spec)
+    # plt.ylim(-5, 5)
+    # plt.xlim(5000, 12000)
+    # plt.show()

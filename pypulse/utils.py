@@ -5,7 +5,7 @@ from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
 from scipy.interpolate import CubicSpline
 from dataloader import phoenix_spectrum
-
+from numba import jit
 
 def create_circular_mask(h, w, center=None, radius=None):
     """ Create a circular mask.
@@ -158,12 +158,10 @@ def cut_to_maxshift(spectrum, wavelength, min_wave, max_wave):
 
     return spectrum, wavelength
 
-
 def interpolate_to_restframe(wavelength, spectrum, rest_wavelength):
     """ Interpolate the wavelength and spectrum to the rest_wavelength."""
-    # CAUTION: At the moment I allow to extrapolate here
-    func = interpolate.interp1d(wavelength, spectrum, fill_value="extrapolate", kind="linear")
-    shift_spec = func(rest_wavelength)
+
+    shift_spec = np.interp(rest_wavelength, wavelength, spectrum)
 
     return shift_spec
 
