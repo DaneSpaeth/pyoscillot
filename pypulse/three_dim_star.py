@@ -7,8 +7,9 @@ from scipy.special import sph_harm
 import spherical_geometry as geo
 from matplotlib import cm
 from plapy.constants import SIGMA
+from plapy.utils.utils import round_digits
 import limb_darkening as limb
-import random
+from astrometric_jitter import calc_photocenter, calc_astrometric_deviation
 import copy
 
 
@@ -124,7 +125,7 @@ class ThreeDimStar():
             random_phi, random_theta = geo.x_y_z_to_sph(*random_x_y_z)
 
             distance = self.get_distance(random_phi, random_theta)
-            # print(i)
+            print(i)
 
             self.add_local_granulation_variations(distance, dT, dv, granule_size)
 
@@ -583,7 +584,19 @@ class TwoDimProjector():
             factor = limb.schwarzschild_law(self.limb_angle_2d)
             intensity_2d = intensity_2d * factor
 
+        self.calc_photocenter(intensity_2d)
         return intensity_2d
+
+    def calc_photocenter(self, intensity_2d):
+        """ Compute the photocenter and its difference from the geometric center.
+        """
+        self.photocenter = calc_photocenter(intensity_2d)
+        self.geom_center = calc_photocenter(self.starmask())
+        self.diff_photocenter = (self.photocenter[0] - self.geom_center[0],
+                                 self.photocenter[1] - self.geom_center[1])
+
+        return self.photocenter
+
 
     def intensity_stefan_boltzmann_global(self):
         """ Get the integrated itensity using the Stefan-Boltzmann law."""
@@ -626,21 +639,36 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 if __name__ == "__main__":
     star = ThreeDimStar(N=500)
-    star.add_granulation()
+    # star.add_granulation(random_points=1000, granule_size=5.5)
     # star.add_pulsation(l=1, m=-1)
     # star.add_pulsation(l=2, m=0, T_var=500)
     # star.add_pulsation(l=1, m=0, t=10)
     # star.add_pulsation(l=1, m=1, T_var=200)
     # star.add_pulsation(l=1, m=-1)
+    star.add_spot(rad=30)
     projector = TwoDimProjector(
         star, line_of_sight=True, limb_darkening=False, N=500, inclination=60)
     fig, ax = plt.subplots(1)
     # plot_3d(star.x, star.y, star.z, star.temperature)
-    plt.imshow(projector.temperature(), vmin=4300, vmax=5300, cmap="hot")
-    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/tempmap_500.png")
-    plt.close()
+    # plt.imshow(projector.temperature(), vmin=4300, vmax=5300, cmap="hot")
+    # plt.savefig("/home/dspaeth/data/simulations/tmp_plots/ludwig12_tempmap_500.png")
+    # plt.close()
+    #
+    # plt.imshow(projector.granulation_velocity(), vmin=-1000, vmax=1000, cmap="seismic")
+    # plt.savefig("/home/dspaeth/data/simulations/tmp_plots/ludwig12_velmap_los_500.png")
+    # plt.close()
 
-    plt.imshow(projector.granulation_velocity(), vmin=-1000, vmax=1000, cmap="seismic")
-    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/velmap_los_500.png")
+
+    plt.imshow(projector.intensity_stefan_boltzmann(), cmap="hot")
+    print(projector.photocenter)
+    astrom_dev = calc_astrometric_deviation(projector.diff_photocenter, 500, R_star=10, distance_pc=10)
+    plt.scatter(projector.photocenter[0], projector.photocenter[1], color="black", marker="x")
+    title = (f"Photocenter Displacement: dX={round_digits(projector.diff_photocenter[0], 3)}px, " +
+             f"dY={round_digits(projector.diff_photocenter[1],3)}px\n" +
+             f"astrometric_deviation={round_digits(astrom_dev, 3)}mas")
+    plt.title(title)
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/test.png")
     plt.close()
     # plt.show()
