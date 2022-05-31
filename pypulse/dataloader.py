@@ -38,6 +38,9 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
         spectrum = spectrum[wavelength_mask]
         wavelength = wavelength[wavelength_mask]
 
+    wavelength = wavelength.astype("float64")
+    spectrum = spectrum.astype("float64")
+
     return wavelength, spectrum, header
 
 
