@@ -63,21 +63,10 @@ class GridSpectrumSimulator():
         """
         self.three_dim_star.add_granulation(dT=dT, dv=dv, granule_size=granule_size)
 
-    def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix"):
-        """ Return Spectrum (potentially Doppler broadened) from min to max.
-
-            :param float min_wave: Minimum Wavelength (Angstrom)
-            :param float max_wave: Maximum Wavelength (Angstrom)
-
-            :returns: Array of wavelengths, array of flux value
+    def _get_ref_spectra_for_mode(self, mode, wavelength_range):
+        """ Get a wavelength grid and dictionarys of the available
+        Phoenix spectra that are close to the temperature
         """
-
-        wavelength_range = (min_wave - 0.25, max_wave + 0.25)
-
-        self.temperature = self.projector.temperature()
-
-        # First get a wavelength grid and dictionarys of the available
-        # Phoenix spectra that are close to the temperature in
         if mode == "phoenix" or mode == "oneline":
             (rest_wavelength,
              ref_spectra,
@@ -86,6 +75,7 @@ class GridSpectrumSimulator():
                                             feh=self.feh,
                                             wavelength_range=wavelength_range,
                                             spec_intensity=False)
+            ref_mu = None
         elif mode == "spec_intensity":
             (rest_wavelength,
              ref_spectra,
@@ -105,77 +95,67 @@ class GridSpectrumSimulator():
             spec = 1 - gaussian(rest_wavelength, center, 0.2)
             ref_spectra = {self.Teff: spec}
             ref_headers = {self.Teff: []}
+            ref_mu = None
 
-        # Get the projected rotation and pulsation
+        return rest_wavelength, ref_spectra, ref_headers, ref_mu
+
+    def _get_fine_refspectra(self, ref_spectra, rest_wavelength, ref_headers, precision=1):
+        """ Return a dictionary containing a fine grid of temperature interpolated spectra"""
+        flat_temp = self.temperature.flatten()
+        temp = flat_temp[~np.isnan(flat_temp)]
+        round_temp = temp.round(decimals=precision)
+        unique_temp = np.unique(round_temp)
+
+        fine_ref_spectra = {}
+        for utemp in unique_temp:
+            _, local_spectrum, _ = get_interpolated_spectrum(utemp,
+                                                       ref_wave=rest_wavelength,
+                                                       ref_spectra=ref_spectra,
+                                                       ref_headers=ref_headers)
+            fine_ref_spectra[utemp] = local_spectrum
+        return fine_ref_spectra
+
+    def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix"):
+        """ Return Spectrum (potentially Doppler broadened) from min to max.
+
+            :param float min_wave: Minimum Wavelength (Angstrom)
+            :param float max_wave: Maximum Wavelength (Angstrom)
+
+            :returns: Array of wavelengths, array of flux value
+        """
+
+        wavelength_range = (min_wave - 0.25, max_wave + 0.25)
+
+        self.temperature = self.projector.temperature()
+
+        rest_wavelength, ref_spectra, ref_headers, ref_mu = self._get_ref_spectra_for_mode(mode, wavelength_range)
+
+        T_precision = 1
+        fine_ref_spectra = self._get_fine_refspectra(ref_spectra, rest_wavelength, ref_headers, precision=T_precision)
+
         self.rotation = self.projector.rotation()
         self.pulsation = self.projector.pulsation()
         self.granulation = self.projector.granulation_velocity()
-        if mode == "spec_intensity":
-            # TODO REMOVE ceil
-            self.mu = np.ceil(self.projector.mu())
 
-        # Calc v over c
-        v_c_rot = self.rotation / C
-        v_c_pulse = self.pulsation / C
-        v_c_gran = self.granulation / C
+        # numba does not like dictionaries
+        fine_ref_temperatures = np.array(list(fine_ref_spectra.keys()))
+        fine_ref_spectra = np.array(list(fine_ref_spectra.values()))
 
-        total_spectrum = np.zeros(len(rest_wavelength))
-
-        v_total = np.nanmean(self.pulsation)
-        for row in range(self.temperature.shape[0]):
-            for col in range(self.temperature.shape[1]):
-                if not np.isnan(self.temperature[row, col]):
-                    T_local = self.temperature[row, col]
-                    if mode == "gaussian":
-                        local_spectrum = ref_spectra[self.three_dim_star.Teff]
-                    elif mode == "phoenix" or mode == "oneline":
-                        _, local_spectrum, _ = get_interpolated_spectrum(T_local,
-                                                                         ref_wave=rest_wavelength,
-                                                                         ref_spectra=ref_spectra,
-                                                                         ref_headers=ref_headers)
-                    elif mode == "spec_intensity":
-                        mu_local = self.mu[row, col]
-                        _, local_spectrum, _ = get_interpolated_spectrum(T_local,
-                                                                         ref_wave=rest_wavelength,
-                                                                         ref_spectra=ref_spectra,
-                                                                         ref_headers=ref_headers,
-                                                                         spec_intensity=True,
-                                                                         mu_local=mu_local,
-                                                                         ref_mu=ref_mu)
-
-                    if not v_c_rot[row, col] and not v_c_pulse[row, col] and not v_c_gran[row, col]:
-                        # print(f"Skip Star Element {row, col}")
-                        total_spectrum += local_spectrum
-
-                        local_wavelength = rest_wavelength
-
-                    else:
-                        print(f"Calculate Star Element {row, col}")
-
-                        local_wavelength = rest_wavelength + \
-                            v_c_rot[row, col] * rest_wavelength + \
-                            v_c_gran[row, col] * rest_wavelength + \
-                            v_c_pulse[row, col] * rest_wavelength
-                        # Interpolate the spectrum to the same rest wavelength grid
-
-                        rest_wavelength = rest_wavelength.astype("float64")
-                        local_spectrum = local_spectrum.astype("float64")
-
-                        interpol_spectrum = interpolate_to_restframe(local_wavelength,
-                                                                     local_spectrum, rest_wavelength)
-                        # interpol_spectrum = local_spectrum
-
-                        total_spectrum += interpol_spectrum
-
-        if mode == "oneline":
-            total_spectrum += np.abs(total_spectrum.min())
-            total_spectrum = total_spectrum / total_spectrum.max()
+        rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
+                                                                     self.rotation,
+                                                                     self.pulsation,
+                                                                     self.granulation,
+                                                                     rest_wavelength,
+                                                                     fine_ref_temperatures,
+                                                                     fine_ref_spectra,
+                                                                     T_precision)
         self.spectrum = total_spectrum
 
         # Also calculate the flux
         self.calc_flux()
 
         return rest_wavelength, total_spectrum, v_total
+
 
     def get_arrays(self):
         """ Get all arrays (e.g. pulsation, temp) of the simulation.
@@ -215,10 +195,53 @@ class GridSpectrumSimulator():
         self.flux = np.sum(self.spectrum)
         return self.flux
 
+# @jit(nopython=True)
+def _compute_spectrum(temperature, rotation, pulsation, granulation,
+                      rest_wavelength, fine_ref_temperatures, fine_ref_spectra, T_precision):
+    """ Compute the spectrum.
+
+        Does all the heavy lifting
+    """
+
+    # Calc v over c
+    v_c_rot = rotation / C
+    v_c_pulse = pulsation / C
+    v_c_gran = granulation / C
+    total_spectrum = np.zeros(len(rest_wavelength))
+
+    v_total = np.nanmean(pulsation)
+    for temp, v_c_r, v_c_p, v_c_g in zip(temperature.flatten(), v_c_rot.flatten(), v_c_pulse.flatten(), v_c_gran.flatten()):
+            if np.isnan(temp):
+                continue
+
+            # Do not interpolate the temperature for all spectra but simply take the closest ref spectrum in
+            # the fine T grid
+            fine_T_idx = np.argmin(np.abs(fine_ref_temperatures-np.array(temp)))
+            local_spectrum = fine_ref_spectra[fine_T_idx, :]
+            if not v_c_r and not v_c_p and not v_c_g:
+                # print(f"Skip Star Element {row, col}")
+                total_spectrum += local_spectrum
+
+
+            else:
+                # print(f"Calculate Star Element {row, col}")
+                local_wavelength = rest_wavelength + \
+                                   v_c_r * rest_wavelength + \
+                                   v_c_g * rest_wavelength + \
+                                   v_c_p * rest_wavelength
+
+                # Interpolate the spectrum to the same rest wavelength grid
+                interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
+
+                total_spectrum += interpol_spectrum
+
+    return rest_wavelength, total_spectrum, v_total
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridSpectrumSimulator(N_star=100, N_border=1, v_rot=3000, limb_darkening=False)
+    star = GridSpectrumSimulator(N_star=250, N_border=1, v_rot=3000, limb_darkening=False)
+    star.add_pulsation(T_var=100)
     rest_wavelength, total_spectrum, v_total = star.calc_spectrum()
     # np.save("spec.npy", total_spectrum)
     comparison_spec = np.load("spec.npy")
@@ -226,7 +249,14 @@ if __name__ == "__main__":
 
     # plt.plot(rest_wavelength, comparison_spec, label="Comparison")
     # plt.plot(rest_wavelength, total_spectrum, label="New", alpha=0.5)
-    # plt.plot(rest_wavelength, total_spectrum- comparison_spec)
+    # import matplotlib as mpl
+    #
+    # mpl.rcParams['agg.path.chunksize'] = 10000000
+
+    # print(rest_wavelength)
+
+    # plt.plot(rest_wavelength, total_spectrum- comparison_spec, "bo")
     # plt.ylim(-5, 5)
     # plt.xlim(5000, 12000)
     # plt.show()
+    print("Exit")
