@@ -55,6 +55,8 @@ def test_velocity_map():
 
 
 
+
+
     print(np.mean(v_gran_rad))
     fig, ax = plt.subplots()
     img = ax.imshow(v_gran_rad, cmap="jet")

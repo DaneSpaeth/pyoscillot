@@ -43,20 +43,7 @@ class ThreeDimStar():
 
         self.default_maps()
 
-        ### TEST OUT TO DRAW A MAP ON TOP ###
-        size = 160
-        N_cells = int(N / size)
-
-        granulation_spectral_radiance = load.granulation_map()
-        granulation_temperature = spectral_radiance_to_temperature(granulation_spectral_radiance)
-        timestemp = 0
-        for i in range(N_cells):
-            for j in range(N_cells):
-                # timestemp = random.randint(0, intensity.shape[0])
-                temperature_local = granulation_temperature[timestemp, :, :]
-                idx_phi = 0 + i*int(N/N_cells)
-                idx_theta = 0 + j*int(N/N_cells)
-                self.temperature[idx_theta:idx_theta+size, idx_phi:idx_phi+size] = temperature_local
+        self.N = N
 
     def default_maps(self):
         """ Create default maps."""
@@ -73,6 +60,11 @@ class ThreeDimStar():
         self.pulsation_rad = np.zeros(self.phi.shape, dtype="complex128")
         self.pulsation_phi = np.zeros(self.phi.shape, dtype="complex128")
         self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
+
+        self.granulation_rad = np.zeros(self.phi.shape, dtype="float64")
+        self.granulation_phi = np.zeros(self.phi.shape, dtype="float64")
+        self.granulation_theta = np.zeros(self.phi.shape, dtype="float64")
+        self.granulation_temp = np.zeros(self.phi.shape, dtype="float64")
 
         self.temperature = self.Teff * np.ones(self.phi.shape)
         self.base_Temp = copy.deepcopy(self.temperature)
@@ -123,66 +115,62 @@ class ThreeDimStar():
 
         # print(np.max(self.temperature - temperature_before))
 
-    def add_granulation(self, dT=500, dv=1000, granule_size=2, random_points=12500):
-        """ Add granulation to the 3d star.
-
-            :param float dT: Temperature variation in K
-            :param float dv: Velocity variation in m/s
-            :param float granule_size: Spatial granule size in degree
-            :param int random_points: Number of random points to draw on the surface
-        """
-        print("Add granulation")
-        for i in range(random_points):
-
-            random_x_y_z = np.random.RandomState().multivariate_normal(np.array([0,0,0]),
-                                                         np.array([[1,0,0],
-                                                                   [0,1,0],
-                                                                   [0,0,1]]))
-            r = np.sqrt(np.sum(np.square(random_x_y_z)))
-            random_x_y_z /= r
-            random_phi, random_theta = geo.x_y_z_to_sph(*random_x_y_z)
-
-            distance = self.get_distance(random_phi, random_theta)
-            print(i)
-
-            self.add_local_granulation_variations(distance, dT, dv, granule_size)
-
-    def add_local_granulation_variations(self, dist, dT, dv, granule_size):
-        """ Add a Gaussian temperature variation centered on one point
-
-            :param np.array dist: Array with shape of 3d star containing the great circle distances
-            :param float dT: Temperature variation in K
-            :param float dv: Velocity variation in m/s
-            :param float granule_size: Spatial granule size in degree
-        """
-        sigma = np.radians(granule_size)
-        gaussian = 1/np.sqrt(2*np.pi*sigma**2)*np.exp(-dist**2/(2*sigma**2))
-        normalized_gaussian = gaussian / np.max(gaussian)
-
-        inner_mask = dist < 0.95*sigma
-        border_mask = np.isclose(sigma, dist, rtol=0, atol=np.radians(granule_size)*0.1)
-
-        # Only change the values for areas that have not been changed before
-        change_mask = np.logical_and(np.logical_not(self.inner_granule_mask),
-                                          np.logical_not(self.granular_lane_mask))
+    def add_granulation(self):
+        """ Add granulation to the star starting from Hans models"""
+        size = 160
+        assert self.N % size == 0, "For granulation we can only create stars with multiples of the cell size (160)"
+        N_cells = int(self.N / size)
 
 
-        increase_mask = np.logical_and(inner_mask, change_mask)
-        decrease_mask = np.logical_and(border_mask, change_mask)
+        granulation_spectral_radiance = load.granulation_map()
+        granulation_temperature = spectral_radiance_to_temperature(granulation_spectral_radiance)
+        timestemp = 0
+        granulation_temp_local = granulation_temperature[timestemp, :, :]
+        granulation_rad_local = np.zeros_like(granulation_temp_local)
 
-        # print(np.sum(increase_mask))
+        # determine the velocity values
+        # First the radial velocity component
+        # Crude way to find the granular lanes and the granules
+        dividing_temp = 5100
+        granule_mask = granulation_temp_local >= dividing_temp
+        granular_lane_mask = granulation_temp_local < dividing_temp
+        v_lane = 4500
+        v_granule = -1500
+        granulation_rad_local[granular_lane_mask] = v_lane * (dividing_temp - granulation_temp_local[granular_lane_mask]) / (
+                dividing_temp - np.min(granulation_temp_local))
+        granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / (
+                    dividing_temp - np.max(granulation_temp_local))
+        i = 0
+        while np.abs(np.mean(granulation_rad_local)) > 0.001:
+            i += 1
+            print(i, np.abs(np.mean(granulation_rad_local)), v_lane, v_granule)
+            if i > 1e6:
+                break
+            dv = 0.01
+            if np.mean(granulation_rad_local) > 0:
+                v_lane -= dv
+                v_granule -= dv
+            else:
+                v_lane += dv
+                v_granule += dv
+            granulation_rad_local[granular_lane_mask] = v_lane * (dividing_temp - granulation_temp_local[granular_lane_mask]) / \
+                                                        (dividing_temp - np.min(granulation_temp_local))
+            granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / \
+                                                  (dividing_temp - np.max(granulation_temp_local))
 
-        self.temperature[increase_mask] += dT * normalized_gaussian[increase_mask]
-        # mask = self.temperature > self.base_Temp + dT_gran
-        # self.temperature[mask] = self.base_Temp[mask] + dT_gran
 
-        self.temperature[decrease_mask] -= dT
+        for i in range(N_cells):
+            for j in range(N_cells):
+                # timestemp = random.randint(0, intensity.shape[0])
+                idx_phi = 0 + i * int(self.N / N_cells)
+                idx_theta = 0 + j * int(self.N / N_cells)
+                self.temperature[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_temp_local
 
-        self.granular_velocity[increase_mask] = normalized_gaussian[increase_mask] * -dv
-        self.granular_velocity[decrease_mask] = dv
+                self.granulation_rad[idx_theta:idx_theta + size, idx_phi:idx_phi + size]  = granulation_rad_local
 
-        self.inner_granule_mask[inner_mask] = True
-        self.granular_lane_mask[border_mask] = True
+
+
+
 
     def get_distance(self, phi_center, theta_center):
         """ Return the great circle distance from position given by phi and theta.
@@ -443,12 +431,12 @@ class TwoDimProjector():
                                     component="phi")
         return np.rint(rotation_2d).astype(int)
 
-    def granulation_velocity(self):
-        """ Project the granulation velocity onto a 2d plane"""
-        granulation_velocity_2d = self._project(self.star.granular_velocity,
+    def granulation_rad(self):
+        """ Project the radial part of the granulation velocity onto a 2d plane"""
+        granulation_rad_2d = self._project(self.star.granulation_rad,
                                                 line_of_sight=self.line_of_sight,
                                                 component="rad")
-        return granulation_velocity_2d
+        return granulation_rad_2d
 
     def displacement_rad(self):
         """ Project the radial displacement of the star onto a 2d plane.
@@ -669,10 +657,20 @@ if __name__ == "__main__":
     N_cells = 8
     inclination = 90
     star = ThreeDimStar(N=160*N_cells)
+    star.add_granulation()
     projector = TwoDimProjector(N=1000, star=star, limb_darkening=False, inclination=inclination)
     fig, ax = plt.subplots(1)
     img = ax.imshow(projector.temperature(), cmap="hot")
     fig.colorbar(img, ax=ax, label="Temperature [K]")
     plt.tight_layout()
     plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}.png", dpi=300)
+    plt.show()
+
+    fig, ax = plt.subplots(1)
+    img = ax.imshow(projector.granulation_rad(), cmap="jet")
+    fig.colorbar(img, ax=ax, label="Granulation Velocity Rad [m/s]")
+    plt.tight_layout()
+    plt.savefig(
+        f"/home/dspaeth/data/simulations/tmp_plots/granulation_rad_velocity_{N_cells ** 2}cells_inclination{inclination}.png",
+        dpi=300)
     plt.show()
