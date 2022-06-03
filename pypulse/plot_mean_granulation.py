@@ -31,27 +31,9 @@ def test_velocity_map():
     dividing_temp = 5100
     granule_mask = temp >= dividing_temp
     granular_lane_mask = temp < dividing_temp
-    v_lane = 4500
-    v_granule = -1500
-    v_gran_rad[granular_lane_mask] = v_lane * (dividing_temp - temp[granular_lane_mask]) / (dividing_temp - np.min(temp))
-    v_gran_rad[granule_mask] = v_granule * (dividing_temp - temp[granule_mask]) / (dividing_temp - np.max(temp))
-    i = 0
-    while np.abs(np.mean(v_gran_rad)) > 0.001:
-        i += 1
-        print(i, np.abs(np.mean(v_gran_rad)), v_lane, v_granule)
-        if i > 1e6:
-            break
-        dv = 0.1
-        if np.mean(v_gran_rad) > 0:
-            v_lane -= dv
-            v_granule -= dv
-        else:
-            v_lane += dv
-            v_granule += dv
-        v_gran_rad[granular_lane_mask] = v_lane * (dividing_temp - temp[granular_lane_mask]) / (
-                dividing_temp - np.min(temp))
-        v_gran_rad[granule_mask] = v_granule * (dividing_temp - temp[granule_mask]) / (
-                dividing_temp - np.max(temp))
+
+
+
 
 
 
