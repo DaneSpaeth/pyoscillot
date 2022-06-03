@@ -11,6 +11,9 @@ from plapy.utils.utils import round_digits
 import limb_darkening as limb
 from astrometric_jitter import calc_photocenter, calc_astrometric_deviation
 import copy
+import dataloader as load
+from physics import spectral_radiance_to_temperature
+import random
 
 
 class ThreeDimStar():
@@ -39,6 +42,21 @@ class ThreeDimStar():
         self.create_rotation(v_rot)
 
         self.default_maps()
+
+        ### TEST OUT TO DRAW A MAP ON TOP ###
+        size = 160
+        N_cells = int(N / size)
+
+        granulation_spectral_radiance = load.granulation_map()
+        granulation_temperature = spectral_radiance_to_temperature(granulation_spectral_radiance)
+        timestemp = 0
+        for i in range(N_cells):
+            for j in range(N_cells):
+                # timestemp = random.randint(0, intensity.shape[0])
+                temperature_local = granulation_temperature[timestemp, :, :]
+                idx_phi = 0 + i*int(N/N_cells)
+                idx_theta = 0 + j*int(N/N_cells)
+                self.temperature[idx_theta:idx_theta+size, idx_phi:idx_phi+size] = temperature_local
 
     def default_maps(self):
         """ Create default maps."""
@@ -638,37 +656,23 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar(N=500)
-    # star.add_granulation(random_points=1000, granule_size=5.5)
-    # star.add_pulsation(l=1, m=-1)
-    # star.add_pulsation(l=2, m=0, T_var=500)
-    # star.add_pulsation(l=1, m=0, t=10)
-    # star.add_pulsation(l=1, m=1, T_var=200)
-    # star.add_pulsation(l=1, m=-1)
-    star.add_spot(rad=30)
-    projector = TwoDimProjector(
-        star, line_of_sight=True, limb_darkening=False, N=500, inclination=60)
-    fig, ax = plt.subplots(1)
-    # plot_3d(star.x, star.y, star.z, star.temperature)
-    # plt.imshow(projector.temperature(), vmin=4300, vmax=5300, cmap="hot")
-    # plt.savefig("/home/dspaeth/data/simulations/tmp_plots/ludwig12_tempmap_500.png")
-    # plt.close()
+    # import dataloader as load
+    # intensity = load.granulation_map()
     #
-    # plt.imshow(projector.granulation_velocity(), vmin=-1000, vmax=1000, cmap="seismic")
-    # plt.savefig("/home/dspaeth/data/simulations/tmp_plots/ludwig12_velmap_los_500.png")
-    # plt.close()
-
-
-    plt.imshow(projector.intensity_stefan_boltzmann(), cmap="hot")
-    print(projector.photocenter)
-    astrom_dev = calc_astrometric_deviation(projector.diff_photocenter, 500, R_star=10, distance_pc=10)
-    plt.scatter(projector.photocenter[0], projector.photocenter[1], color="black", marker="x")
-    title = (f"Photocenter Displacement: dX={round_digits(projector.diff_photocenter[0], 3)}px, " +
-             f"dY={round_digits(projector.diff_photocenter[1],3)}px\n" +
-             f"astrometric_deviation={round_digits(astrom_dev, 3)}mas")
-    plt.title(title)
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.savefig("/home/dspaeth/data/simulations/tmp_plots/test.png")
-    plt.close()
+    # timestep = 0
+    # stacked_array = np.hstack((intensity[timestep, :, :], intensity[timestep, :, :]))
+    # stacked_array = np.vstack((stacked_array, stacked_array))
+    # print(stacked_array.shape)
+    # plt.imshow(stacked_array)
     # plt.show()
+
+    N_cells = 8
+    inclination = 90
+    star = ThreeDimStar(N=160*N_cells)
+    projector = TwoDimProjector(N=1000, star=star, limb_darkening=False, inclination=inclination)
+    fig, ax = plt.subplots(1)
+    img = ax.imshow(projector.temperature(), cmap="hot")
+    fig.colorbar(img, ax=ax, label="Temperature [K]")
+    plt.tight_layout()
+    plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}.png", dpi=300)
+    plt.show()

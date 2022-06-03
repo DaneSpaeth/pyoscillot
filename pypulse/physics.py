@@ -172,6 +172,24 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
             # All waves are the same, also all mu should be the same
             # So just return the last one
         return wave, ref_spectra, ref_headers, mu
+    
+def spectral_radiance_to_temperature(spectral_radiance):
+    """ Convert an array of spectral radiance to temperature.
+    
+    Following the formula from:
+    https://en.wikipedia.org/wiki/Stefan%E2%80%93Boltzmann_law#Integration_of_intensity_derivation
+    , i.e.: radiance = sigma / pi * T^4
+    The factor pi in the end stems from the integration over the hemisphere onto which the energy is emitted
+    but decreased by the integral over the cos(z) as the emission is Lambertian
+    See: https://en.wikipedia.org/wiki/Radiance  under Description
+    Not sure yet how to deal with the spectral part of it
+
+    :param array_like or float spectral_radiance: Spectral radiance in erg/cm^2/s/Angstrom/sr
+    """
+    # stefan-boltzmann constant in erg/cm^2/s/K^4
+    sigma = 5.670374e-5
+    temperature = np.power(spectral_radiance / sigma * np.pi, 1 / 4)
+    return temperature
 
 
 if __name__ == "__main__":

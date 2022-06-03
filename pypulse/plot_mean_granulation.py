@@ -10,14 +10,14 @@ def plot_mean_granulation():
     granulation = granulation_map()
     mean_granulation = np.mean(granulation, axis=0)
     fig, ax = plt.subplots()
-    pos = ax.imshow(mean_granulation)
-    fig.colorbar(pos, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
+    img = ax.imshow(mean_granulation)
+    fig.colorbar(img, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
     plt.savefig(tmppath / "mean_intensity.png")
     plt.close()
 
     fig, ax = plt.subplots()
-    pos = ax.imshow(granulation[343])
-    fig.colorbar(pos, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
+    img = ax.imshow(granulation[343])
+    fig.colorbar(img, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
     plt.savefig(tmppath / "random_intensity.png")
     plt.close()
 

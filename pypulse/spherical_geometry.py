@@ -6,6 +6,7 @@ from scipy.spatial.transform import Rotation as Rot
 from scipy.interpolate import griddata
 from scipy.spatial.distance import cdist
 import time
+from numba import jit
 
 """ Through this document we follow the ISO convention often used in physics as described here:
     https://en.wikipedia.org/wiki/Spherical_coordinate_system
@@ -60,7 +61,8 @@ def get_spherical_phi_theta_x_y_z(N=250):
     theta = np.linspace(0, np.pi, N)
 
     # Phi: Azimuthal angle
-    phi = np.linspace(0, 2 * np.pi, 2 * N)
+    # previously I had 2 N here
+    phi = np.linspace(0, 2 * np.pi, N)
     # phi = np.linspace(0, np.pi)
     phi, theta = np.meshgrid(phi, theta)
 
@@ -80,6 +82,7 @@ def project_line_of_sight(phi, theta, values, component, inclination):
 
     scalar_prods = []
     for p, t in zip(phi, theta):
+        print(p, t)
         if component == "rad":
             # Unit vector of r
             r_unit = np.array((np.sin(t) * np.cos(p),
@@ -104,7 +107,7 @@ def project_line_of_sight(phi, theta, values, component, inclination):
 
     return values
 
-
+# @jit(nopython=True)
 def project_2d(x, y, z, phi, theta, values, N,
                border=10, component=None, inclination=90,
                azimuth=0, line_of_sight=False):
@@ -126,6 +129,7 @@ def project_2d(x, y, z, phi, theta, values, N,
     z_rot = np.zeros(z.shape)
     for row in range(x.shape[0]):
         for col in range(x.shape[1]):
+            print(row, col)
             vec = (x[row, col], y[row, col], z[row, col])
             vec_rot = rot.apply(vec)
             x_rot[row, col] = vec_rot[0]
@@ -170,3 +174,8 @@ def project_2d(x, y, z, phi, theta, values, N,
     grid = griddata(coords, values, (xx, zz),
                     method=method, fill_value=np.nan)
     return grid
+
+
+
+
+
