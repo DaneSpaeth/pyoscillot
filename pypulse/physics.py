@@ -173,8 +173,8 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
             # So just return the last one
         return wave, ref_spectra, ref_headers, mu
     
-def spectral_radiance_to_temperature(spectral_radiance):
-    """ Convert an array of spectral radiance to temperature.
+def radiance_to_temperature(radiance):
+    """ Convert an array of radiance to temperature.
     
     Following the formula from:
     https://en.wikipedia.org/wiki/Stefan%E2%80%93Boltzmann_law#Integration_of_intensity_derivation
@@ -182,14 +182,53 @@ def spectral_radiance_to_temperature(spectral_radiance):
     The factor pi in the end stems from the integration over the hemisphere onto which the energy is emitted
     but decreased by the integral over the cos(z) as the emission is Lambertian
     See: https://en.wikipedia.org/wiki/Radiance  under Description
-    Not sure yet how to deal with the spectral part of it
 
-    :param array_like or float spectral_radiance: Spectral radiance in erg/cm^2/s/Angstrom/sr
+    :param array_like or float spectral_radiance: Spectral radiance in erg/cm^2/s/sr
     """
     # stefan-boltzmann constant in erg/cm^2/s/K^4
     sigma = 5.670374e-5
-    temperature = np.power(spectral_radiance / sigma * np.pi, 1 / 4)
+    temperature = np.power(radiance / sigma * np.pi, 1 / 4)
     return temperature
+
+
+def calc_granulation_velocity_rad(granulation_temp_local):
+    """ Calculate the radial velocity of the granulation for ony map.
+
+        :param np.array granulation_temp_local: Temperature map in K
+    """
+    granulation_rad_local = np.zeros_like(granulation_temp_local)
+    # determine the velocity values
+    # First the radial velocity component
+    # Crude way to find the granular lanes and the granules
+    dividing_temp = 5100
+    granule_mask = granulation_temp_local >= dividing_temp
+    granular_lane_mask = granulation_temp_local < dividing_temp
+    v_lane = 4500
+    v_granule = -1500
+    granulation_rad_local[granular_lane_mask] = v_lane * (
+                dividing_temp - granulation_temp_local[granular_lane_mask]) / (
+                                                        dividing_temp - np.min(granulation_temp_local))
+    granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / (
+            dividing_temp - np.max(granulation_temp_local))
+    i = 0
+    while np.abs(np.mean(granulation_rad_local)) > 0.001:
+        i += 1
+        print(i, np.abs(np.mean(granulation_rad_local)), v_lane, v_granule)
+        if i > 1e6:
+            break
+        dv = 0.01
+        if np.mean(granulation_rad_local) > 0:
+            v_lane -= dv
+            v_granule -= dv
+        else:
+            v_lane += dv
+            v_granule += dv
+        granulation_rad_local[granular_lane_mask] = v_lane * (
+                    dividing_temp - granulation_temp_local[granular_lane_mask]) / \
+                                                    (dividing_temp - np.min(granulation_temp_local))
+        granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / \
+                                              (dividing_temp - np.max(granulation_temp_local))
+    return granulation_rad_local
 
 
 if __name__ == "__main__":

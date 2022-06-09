@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wget
 from parse_ini import parse_global_ini
+import idlsave
 
 global_dict = parse_global_ini()
 DATAROOT = global_dict["datapath"]
@@ -173,6 +174,15 @@ def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
         blaze = np.array(hdu.data)
 
     return (spec, wave, blaze)
+
+
+def granulation_map():
+    """ Laod a granulation map from Hans. At the moment always the same"""
+    file = DATAROOT / "granulation_Hans" / "d3t50g25mm00n01.q-z.idlsave"
+    s = idlsave.read(file)
+    intensity = s.intens
+
+    return intensity
 
 
 def plot_central_order_intensitites():

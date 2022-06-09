@@ -12,7 +12,7 @@ import limb_darkening as limb
 from astrometric_jitter import calc_photocenter, calc_astrometric_deviation
 import copy
 import dataloader as load
-from physics import spectral_radiance_to_temperature
+from physics import radiance_to_temperature, calc_granulation_velocity_rad
 import random
 
 
@@ -123,41 +123,10 @@ class ThreeDimStar():
 
 
         granulation_spectral_radiance = load.granulation_map()
-        granulation_temperature = spectral_radiance_to_temperature(granulation_spectral_radiance)
+        granulation_temperature = radiance_to_temperature(granulation_spectral_radiance)
         timestemp = 0
         granulation_temp_local = granulation_temperature[timestemp, :, :]
-        granulation_rad_local = np.zeros_like(granulation_temp_local)
-
-        # determine the velocity values
-        # First the radial velocity component
-        # Crude way to find the granular lanes and the granules
-        dividing_temp = 5100
-        granule_mask = granulation_temp_local >= dividing_temp
-        granular_lane_mask = granulation_temp_local < dividing_temp
-        v_lane = 4500
-        v_granule = -1500
-        granulation_rad_local[granular_lane_mask] = v_lane * (dividing_temp - granulation_temp_local[granular_lane_mask]) / (
-                dividing_temp - np.min(granulation_temp_local))
-        granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / (
-                    dividing_temp - np.max(granulation_temp_local))
-        i = 0
-        while np.abs(np.mean(granulation_rad_local)) > 0.001:
-            i += 1
-            print(i, np.abs(np.mean(granulation_rad_local)), v_lane, v_granule)
-            if i > 1e6:
-                break
-            dv = 0.01
-            if np.mean(granulation_rad_local) > 0:
-                v_lane -= dv
-                v_granule -= dv
-            else:
-                v_lane += dv
-                v_granule += dv
-            granulation_rad_local[granular_lane_mask] = v_lane * (dividing_temp - granulation_temp_local[granular_lane_mask]) / \
-                                                        (dividing_temp - np.min(granulation_temp_local))
-            granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / \
-                                                  (dividing_temp - np.max(granulation_temp_local))
-
+        granulation_rad_local = calc_granulation_velocity_rad(granulation_temp_local)
 
         for i in range(N_cells):
             for j in range(N_cells):
@@ -167,10 +136,6 @@ class ThreeDimStar():
                 self.temperature[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_temp_local
 
                 self.granulation_rad[idx_theta:idx_theta + size, idx_phi:idx_phi + size]  = granulation_rad_local
-
-
-
-
 
     def get_distance(self, phi_center, theta_center):
         """ Return the great circle distance from position given by phi and theta.
@@ -663,7 +628,7 @@ if __name__ == "__main__":
     img = ax.imshow(projector.temperature(), cmap="hot")
     fig.colorbar(img, ax=ax, label="Temperature [K]")
     plt.tight_layout()
-    plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}.png", dpi=300)
+    plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}_test2.png", dpi=300)
     plt.show()
 
     fig, ax = plt.subplots(1)
@@ -671,6 +636,6 @@ if __name__ == "__main__":
     fig.colorbar(img, ax=ax, label="Granulation Velocity Rad [m/s]")
     plt.tight_layout()
     plt.savefig(
-        f"/home/dspaeth/data/simulations/tmp_plots/granulation_rad_velocity_{N_cells ** 2}cells_inclination{inclination}.png",
+        f"/home/dspaeth/data/simulations/tmp_plots/granulation_rad_velocity_{N_cells ** 2}cells_inclination{inclination}_test2.png",
         dpi=300)
     plt.show()
