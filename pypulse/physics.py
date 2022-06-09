@@ -3,6 +3,7 @@ import plapy.constants as const
 from dataloader import phoenix_spectrum, phoenix_spec_intensity
 import matplotlib.pyplot as plt
 
+DIVIDING_TEMP = 5100
 
 def planck(wav, T):
     """ Return planck's law at wavelength and Temperature.
@@ -200,16 +201,15 @@ def calc_granulation_velocity_rad(granulation_temp_local):
     # determine the velocity values
     # First the radial velocity component
     # Crude way to find the granular lanes and the granules
-    dividing_temp = 5100
-    granule_mask = granulation_temp_local >= dividing_temp
-    granular_lane_mask = granulation_temp_local < dividing_temp
+    granule_mask = granulation_temp_local >= DIVIDING_TEMP
+    granular_lane_mask = granulation_temp_local < DIVIDING_TEMP
     v_lane = 4500
     v_granule = -1500
     granulation_rad_local[granular_lane_mask] = v_lane * (
-                dividing_temp - granulation_temp_local[granular_lane_mask]) / (
-                                                        dividing_temp - np.min(granulation_temp_local))
-    granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / (
-            dividing_temp - np.max(granulation_temp_local))
+                DIVIDING_TEMP - granulation_temp_local[granular_lane_mask]) / (
+                                                        DIVIDING_TEMP - np.min(granulation_temp_local))
+    granulation_rad_local[granule_mask] = v_granule * (DIVIDING_TEMP - granulation_temp_local[granule_mask]) / (
+            DIVIDING_TEMP - np.max(granulation_temp_local))
     i = 0
     while np.abs(np.mean(granulation_rad_local)) > 0.001:
         i += 1
@@ -224,12 +224,70 @@ def calc_granulation_velocity_rad(granulation_temp_local):
             v_lane += dv
             v_granule += dv
         granulation_rad_local[granular_lane_mask] = v_lane * (
-                    dividing_temp - granulation_temp_local[granular_lane_mask]) / \
-                                                    (dividing_temp - np.min(granulation_temp_local))
-        granulation_rad_local[granule_mask] = v_granule * (dividing_temp - granulation_temp_local[granule_mask]) / \
-                                              (dividing_temp - np.max(granulation_temp_local))
+                    DIVIDING_TEMP - granulation_temp_local[granular_lane_mask]) / \
+                                                    (DIVIDING_TEMP - np.min(granulation_temp_local))
+        granulation_rad_local[granule_mask] = v_granule * (DIVIDING_TEMP - granulation_temp_local[granule_mask]) / \
+                                              (DIVIDING_TEMP - np.max(granulation_temp_local))
     return granulation_rad_local
 
+def calc_granulation_velocity_phi_theta(granulation_temp_local):
+    """ Calculate the phi and theta components of the granulation."""
+    # Define the areas which are granules
+    granule_mask = granulation_temp_local >= DIVIDING_TEMP
+    vel_rad = calc_granulation_velocity_rad(granulation_temp_local)
+
+    # Determine the size of a cell (will be useful)
+    size = granule_mask.shape[0]
+
+    # To fix border effects we want to compute all that several cells and only use the values for the center cell
+    # Start out with a 3x3 cell grid
+    vel_rad3x3 = np.zeros((size * 3, size * 3))
+    granule_mask3x3 = np.zeros((size * 3, size * 3), dtype=bool)
+    for i in range(3):
+        for j in range(3):
+            vel_rad3x3[i * size:(i + 1) * size, j * size:(j + 1) * size] = vel_rad
+            granule_mask3x3[i * size:(i + 1) * size, j * size:(j + 1) * size] = granule_mask
+
+    # To reduce computation time we now only take the 2x2 cells centered on the main cell
+    # i.e. we cut the outer cells in half or into quarter
+    vel_rad2x2 = vel_rad3x3[int(0.5 * size):int(2.5 * size), int(0.5 * size):int(2.5 * size)]
+    granule_mask2x2 = granule_mask3x3[int(0.5 * size):int(2.5 * size), int(0.5 * size):int(2.5 * size)]
+
+    # Define an array that will contain the vectors
+    vec_field = np.zeros((size * 2, size * 2, 2))
+    for row in range(int(0.5 * size), int(1.5 * size)):
+        for col in range(int(0.5 * size), int(1.5 * size)):
+            if not granule_mask2x2[row, col]:
+                # For the moment assume now horizontal velocity within the inter granular lanes
+                vec = np.array([0, 0])
+            else:
+                coord = np.array((row, col))
+                # Calculate the distance of the complete map from the current pixel
+                # HERE we could still optimize, since that can clearly be computed more efficiently
+                dist = distance_from_px(granule_mask2x2, coord[0], coord[1])
+                # Set the distance of all stuff in a granule to infinite
+                dist[granule_mask2x2] = np.inf
+                # Get the closest non infinite distance
+                min_dist_coords = np.array(np.unravel_index(dist.argmin(), dist.shape))
+                # Compute in vector form and normalize using the radial velocity
+                vec = min_dist_coords - coord
+                normalization = vel_rad2x2[row, col] / np.linalg.norm(vec)
+                vec = vec * normalization
+            vec_field[row, col] = vec
+
+    vel_phi = vec_field[:, :, 1][int(0.5 * size):int(1.5 * size), int(0.5 * size):int(1.5 * size)]
+    vel_theta = vec_field[:, :, 0][int(0.5 * size):int(1.5 * size), int(0.5 * size):int(1.5 * size)]
+    vec_field = vec_field[int(0.5 * size):int(1.5 * size),int(0.5 * size):int(1.5 * size), :]
+    granule_mask2x2 = granule_mask2x2[int(0.5 * size):int(1.5 * size), int(0.5 * size):int(1.5 * size)]
+    return vel_phi, vel_theta, vec_field, granule_mask2x2
+
+def distance_from_px(img, row, col):
+    """ Compute the distance from a pixel"""
+    coords = np.linspace(0, img.shape[0], img.shape[0], dtype=int)
+    cols, rows = np.meshgrid(coords, coords)
+    dist = np.sqrt(np.square(rows - row) +
+                   np.square(cols - col))
+    return dist
 
 if __name__ == "__main__":
     T_grid = np.ones((100, 100)) * 3100
