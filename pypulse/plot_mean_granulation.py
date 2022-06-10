@@ -11,19 +11,35 @@ def plot_mean_granulation():
     """ Plot the mean granulation map"""
     tmppath = parse_global_ini()["datapath"] / "tmp_plots"
     granulation = granulation_map()
+
+    print(granulation.shape)
+    exit()
     mean_granulation = np.mean(granulation, axis=0)
+    random_intensity = granulation[1592]
+    vmin = random_intensity.min()
+    vmax = random_intensity.max()
     fig, ax = plt.subplots()
-    img = ax.imshow(mean_granulation)
+    img = ax.imshow(granulation[1592], vmin=vmin, vmax=vmax)
     fig.colorbar(img, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
-    plt.savefig(tmppath / "mean_intensity.png")
+    plt.tight_layout()
+    plt.savefig(tmppath / "random_intensity.png")
     plt.close()
 
     fig, ax = plt.subplots()
-    img = ax.imshow(granulation[343])
+    img = ax.imshow(mean_granulation,  vmin=vmin, vmax=vmax)
     fig.colorbar(img, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
-    plt.savefig(tmppath / "random_intensity.png")
+    plt.savefig(tmppath / "mean_intensity_full.png")
+    plt.tight_layout()
     plt.close()
-    
+
+    fig, ax = plt.subplots()
+    img = ax.imshow(mean_granulation)
+    fig.colorbar(img, ax=ax, label="Intensity [erg/cm^2/s/A/srad]")
+    plt.savefig(tmppath / "mean_intensity_full_noscale.png")
+    plt.tight_layout()
+    plt.close()
+
+
 def test_velocity_map():
     granulation_radiance = granulation_map()
     temperature = radiance_to_temperature(granulation_radiance)
@@ -58,6 +74,23 @@ def test_velocity_map():
     plt.close()
 
 
+def plot_slice():
+    granulation_radiance = granulation_map()
+    temperature = radiance_to_temperature(granulation_radiance)
+    temp = temperature[1000]
+
+    slice = temp[70, :]
+
+    plt.plot(slice)
+    plt.show()
+
+def plot_overlaps():
+    intensity = granulation_map()
+
+    plt.imshow(intensity[991+1292-20, :, : ])
+    plt.show()
+
+
 
     # fig, ax = plt.subplots()
     # img = ax.imshow(dist, cmap="jet")
@@ -67,4 +100,4 @@ def test_velocity_map():
 
 
 if __name__ == "__main__":
-    test_velocity_map()
+    plot_mean_granulation()
