@@ -178,9 +178,17 @@ def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
 
 def granulation_map():
     """ Laod a granulation map from Hans. At the moment always the same"""
-    file = DATAROOT / "granulation_Hans" / "d3t50g25mm00n01.q-z.idlsave"
-    s = idlsave.read(file)
-    intensity = s.intens
+    filenames = ["d3t50g25mm00n01.3-c.idlsave", "d3t50g25mm00n01.d-p.idlsave", "d3t50g25mm00n01.q-z.idlsave",]
+    intensity = None
+    for filename in filenames:
+        file = DATAROOT / "granulation_Hans" / filename
+        s = idlsave.read(file)
+        print(len(s.intens))
+        if intensity is None:
+            intensity = s.intens
+        else:
+            intensity = np.concatenate((intensity, s.intens))
+        # break
 
     return intensity
 
