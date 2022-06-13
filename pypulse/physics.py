@@ -230,11 +230,12 @@ def calc_granulation_velocity_rad(granulation_temp_local):
                                               (DIVIDING_TEMP - np.max(granulation_temp_local))
     return granulation_rad_local
 
-def calc_granulation_velocity_phi_theta(granulation_temp_local):
+def calc_granulation_velocity_phi_theta(granulation_temp_local, vel_rad=None):
     """ Calculate the phi and theta components of the granulation."""
     # Define the areas which are granules
     granule_mask = granulation_temp_local >= DIVIDING_TEMP
-    vel_rad = calc_granulation_velocity_rad(granulation_temp_local)
+    if vel_rad is None:
+        vel_rad = calc_granulation_velocity_rad(granulation_temp_local)
 
     # Determine the size of a cell (will be useful)
     size = granule_mask.shape[0]
@@ -261,17 +262,20 @@ def calc_granulation_velocity_phi_theta(granulation_temp_local):
                 # For the moment assume now horizontal velocity within the inter granular lanes
                 vec = np.array([0, 0])
             else:
-                coord = np.array((row, col))
+                # if row != size or col != size:
+                #     vec = np.array([0, 0])
+                # else:
+                current_pos = np.array((row, col))
                 # Calculate the distance of the complete map from the current pixel
                 # HERE we could still optimize, since that can clearly be computed more efficiently
-                dist = distance_from_px(granule_mask2x2, coord[0], coord[1])
+                dist = distance_from_px(granule_mask2x2, current_pos[0], current_pos[1])
                 # Set the distance of all stuff in a granule to infinite
                 dist[granule_mask2x2] = np.inf
                 # Get the closest non infinite distance
                 min_dist_coords = np.array(np.unravel_index(dist.argmin(), dist.shape))
                 # Compute in vector form and normalize using the radial velocity
-                vec = min_dist_coords - coord
-                normalization = vel_rad2x2[row, col] / np.linalg.norm(vec)
+                vec = min_dist_coords - current_pos
+                normalization = np.abs(vel_rad2x2[row, col]) / np.linalg.norm(vec)
                 vec = vec * normalization
             vec_field[row, col] = vec
 
