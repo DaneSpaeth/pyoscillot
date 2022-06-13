@@ -82,7 +82,7 @@ def project_line_of_sight(phi, theta, values, component, inclination):
 
     scalar_prods = []
     for p, t in zip(phi, theta):
-        print(p, t)
+        # print(p, t)
         if component == "rad":
             # Unit vector of r
             r_unit = np.array((np.sin(t) * np.cos(p),

@@ -62,16 +62,14 @@ def test_velocity_map():
     # It makes sense to plot the image with the theta axis going up down, and phi going left, right
     # Since quive thinks in x and y that mean that vel_theta should be plotted with a minus
     # but vel_phi not
-    qu = ax.quiver(cols, rows, vel_phi, -vel_theta, np.linalg.norm(vec_field, axis=2), scale=1e5)
+    # But, to get the signs correctly we add an additional - in the velocities, so here you need to flip the signs
+    qu = ax.quiver(cols, rows, -vel_phi, vel_theta, np.linalg.norm(vec_field, axis=2), scale=1e5)
     ax.set_ylabel("Theta (polar angle) (arb. units)")
     ax.set_xlabel("Phi (azimuthal angle) (arb. units)")
     fig.colorbar(qu, ax=ax, label="Horizontal Velocity [m/s]")
     out_dir = Path("/home/dspaeth/data/simulations/tmp_plots/")
     plt.savefig(out_dir / "vec_field_phi_theta.png", dpi=300)
-    # plt.close()
-    plt.show()
-
-    exit()
+    plt.close()
 
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
     img = ax[0].imshow(vel_theta, cmap="jet", vmin=-1500, vmax=1500)

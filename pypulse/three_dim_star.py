@@ -12,7 +12,7 @@ import limb_darkening as limb
 from astrometric_jitter import calc_photocenter, calc_astrometric_deviation
 import copy
 import dataloader as load
-from physics import radiance_to_temperature, calc_granulation_velocity_rad
+from physics import radiance_to_temperature, calc_granulation_velocity_rad, calc_granulation_velocity_phi_theta
 import random
 
 
@@ -61,6 +61,7 @@ class ThreeDimStar():
         self.pulsation_phi = np.zeros(self.phi.shape, dtype="complex128")
         self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
 
+        # Save the granulation velocity components and the temperature
         self.granulation_rad = np.zeros(self.phi.shape, dtype="float64")
         self.granulation_phi = np.zeros(self.phi.shape, dtype="float64")
         self.granulation_theta = np.zeros(self.phi.shape, dtype="float64")
@@ -70,7 +71,6 @@ class ThreeDimStar():
         self.base_Temp = copy.deepcopy(self.temperature)
         self.inner_granule_mask = np.zeros(self.phi.shape, dtype="bool")
         self.granular_lane_mask = np.zeros(self.phi.shape, dtype="bool")
-        self.granular_velocity = np.zeros(self.phi.shape, dtype="float64")
 
     def add_spot(self, rad, theta_pos=90, phi_pos=90, T_spot=4000):
         """ Add a spot to the 3D star.
@@ -124,9 +124,13 @@ class ThreeDimStar():
 
         granulation_spectral_radiance = load.granulation_map()
         granulation_temperature = radiance_to_temperature(granulation_spectral_radiance)
-        timestemp = 0
+        timestemp = 992 + 1292
         granulation_temp_local = granulation_temperature[timestemp, :, :]
         granulation_rad_local = calc_granulation_velocity_rad(granulation_temp_local)
+        (granulation_phi_local,
+         granulation_theta_local,
+         _,
+         _) = calc_granulation_velocity_phi_theta(granulation_temp_local, granulation_rad_local)
 
         for i in range(N_cells):
             for j in range(N_cells):
@@ -136,6 +140,8 @@ class ThreeDimStar():
                 self.temperature[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_temp_local
 
                 self.granulation_rad[idx_theta:idx_theta + size, idx_phi:idx_phi + size]  = granulation_rad_local
+                self.granulation_phi[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_phi_local
+                self.granulation_theta[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_theta_local
 
     def get_distance(self, phi_center, theta_center):
         """ Return the great circle distance from position given by phi and theta.
@@ -399,9 +405,23 @@ class TwoDimProjector():
     def granulation_rad(self):
         """ Project the radial part of the granulation velocity onto a 2d plane"""
         granulation_rad_2d = self._project(self.star.granulation_rad,
-                                                line_of_sight=self.line_of_sight,
-                                                component="rad")
+                                           line_of_sight=self.line_of_sight,
+                                           component="rad")
         return granulation_rad_2d
+
+    def granulation_phi(self):
+        """ Project the phi part of the granulation velocity onto a 2d plane"""
+        granulation_phi_2d = self._project(self.star.granulation_phi,
+                                           line_of_sight=self.line_of_sight,
+                                           component="phi")
+        return granulation_phi_2d
+
+    def granulation_theta(self):
+        """ Project the theta part of the granulation velocity onto a 2d plane"""
+        granulation_theta_2d = self._project(self.star.granulation_theta,
+                                             line_of_sight=self.line_of_sight,
+                                            component="theta")
+        return granulation_theta_2d
 
     def displacement_rad(self):
         """ Project the radial displacement of the star onto a 2d plane.
@@ -628,14 +648,32 @@ if __name__ == "__main__":
     img = ax.imshow(projector.temperature(), cmap="hot")
     fig.colorbar(img, ax=ax, label="Temperature [K]")
     plt.tight_layout()
-    plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}_test2.png", dpi=300)
+    plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}_test3.png", dpi=300)
     plt.show()
 
     fig, ax = plt.subplots(1)
     img = ax.imshow(projector.granulation_rad(), cmap="jet")
-    fig.colorbar(img, ax=ax, label="Granulation Velocity Rad [m/s]")
+    fig.colorbar(img, ax=ax, label="Granulation Velocity Rad [m/s] (projected)")
     plt.tight_layout()
     plt.savefig(
-        f"/home/dspaeth/data/simulations/tmp_plots/granulation_rad_velocity_{N_cells ** 2}cells_inclination{inclination}_test2.png",
+        f"/home/dspaeth/data/simulations/tmp_plots/granulation_rad_velocity_{N_cells ** 2}cells_inclination{inclination}_test3.png",
+        dpi=300)
+    plt.show()
+
+    fig, ax = plt.subplots(1)
+    img = ax.imshow(projector.granulation_phi(), cmap="jet")
+    fig.colorbar(img, ax=ax, label="Granulation Velocity Phi [m/s] (projected)")
+    plt.tight_layout()
+    plt.savefig(
+        f"/home/dspaeth/data/simulations/tmp_plots/granulation_phi_velocity_{N_cells ** 2}cells_inclination{inclination}_test3.png",
+        dpi=300)
+    plt.show()
+
+    fig, ax = plt.subplots(1)
+    img = ax.imshow(projector.granulation_theta(), cmap="jet")
+    fig.colorbar(img, ax=ax, label="Granulation Velocity Theta [m/s] (projected)")
+    plt.tight_layout()
+    plt.savefig(
+        f"/home/dspaeth/data/simulations/tmp_plots/granulation_theta_velocity_{N_cells ** 2}cells_inclination{inclination}_test3.png",
         dpi=300)
     plt.show()

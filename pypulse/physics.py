@@ -276,7 +276,8 @@ def calc_granulation_velocity_phi_theta(granulation_temp_local, vel_rad=None):
                 # Compute in vector form and normalize using the radial velocity
                 vec = min_dist_coords - current_pos
                 normalization = np.abs(vel_rad2x2[row, col]) / np.linalg.norm(vec)
-                vec = vec * normalization
+                # The minus sign gets the direction right in ThreeDimStar
+                vec = - vec * normalization
             vec_field[row, col] = vec
 
     vel_phi = vec_field[:, :, 1][int(0.5 * size):int(1.5 * size), int(0.5 * size):int(1.5 * size)]
