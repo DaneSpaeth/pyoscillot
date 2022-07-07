@@ -38,6 +38,7 @@ def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, c
         Return array num_incoming_nodes and num_outoing_nodes
     """
     overlap_areas = np.zeros((3, 3))
+    # TODO Allow shifts over the border
     shifted_row = shifted_row[row, col]
     shifted_col = shifted_col[row, col]
     if row == 0:
@@ -410,54 +411,20 @@ if __name__ == "__main__":
 
     simulation_cell_size = 7
     cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
-    row = 3
-    col = 3
+    row = 6
+    col = 6
     row_shape = rr.shape[0]
     col_shape = rr.shape[1]
-    # Solve the upper and lower boundaries (except the two corner pixels)
-    if (row == 0 or row == row_shape - 1) and col != 0 and col != col_shape-1:
-        # upper boundary
-        if row == 0:
-            # slice that was originally at the bottom (remember row=0 is at the top)
-            slice_bottom = np.s_[-1:, col-1: col+2]
-            # slice that was originally at the top of the image (remember row=0 is at the top)
-            slice_top = np.s_[:2, col-1: col+2]
-        # lower boundary
-        elif row == row_shape - 1:
-            # slice that was originally at the top of the image (remember row=0 is at the top)
-            slice_bottom = np.s_[-2:, col - 1: col + 2]
-            # slice that was originally at the bottom (remember row=0 is at the top)
-            slice_top = np.s_[:1, col - 1: col + 2]
-        local_rr_bottompart = rr[slice_bottom]
-        local_rr_toppart = rr[slice_top]
-        local_cc_bottompart = cc[slice_bottom]
-        local_cc_toppart = cc[slice_top]
-        # Always stack the bottom on top of the former top
-        local_rr = np.vstack((local_rr_bottompart, local_rr_toppart))
-        local_cc = np.vstack((local_cc_bottompart, local_cc_toppart))
-    # Solve the left  and right boundary (except the two corner pixels)
-    elif (col == 0 or col == col_shape - 1) and row != 0 and row != row_shape-1:
-        # left boundary
-        if col == 0:
-            # slice that was originally on the left
-            slice_left = np.s_[row - 1: row + 2, 0:2]
-            # slice that was originally on the right
-            slice_right = np.s_[row - 1: row + 2, -1:]
-        elif col == col_shape -1:
-            # slice that was originally on the left
-            slice_left = np.s_[row - 1: row + 2, :1]
-            # slice that was originally on the right
-            slice_right = np.s_[row - 1: row + 2, -2:]
-        local_rr_left = rr[slice_left]
-        local_rr_right = rr[slice_right]
-        local_cc_left = cc[slice_left]
-        local_cc_right = cc[slice_right]
-        # Always stack the former right part on the left side of the former left
-        local_rr = np.hstack((local_rr_right, local_rr_left))
-        local_cc = np.hstack((local_cc_right, local_cc_left))
-    else:
-        local_rr = rr[row - 1: row + 2, col - 1: col + 2]
-        local_cc = cc[row - 1: row + 2, col - 1: col + 2]
+
+    # To solve the bordering cases create add simulation cells at all borders
+    # Then select the local_rr and local_cc 3x3 array from that fat array
+    fat_rr = np.vstack((np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr))))
+    fat_cc = np.vstack((np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc))))
+    # You have to add one shape of your simulation cells on top
+    fat_row = row_shape + row
+    fat_col = col_shape + col
+    local_rr = fat_rr[fat_row-1: fat_row+2, fat_col-1: fat_col+2]
+    local_cc = fat_cc[fat_row-1: fat_row+2, fat_col-1: fat_col+2]
 
     fig, ax = plt.subplots(1, 2, figsize=(16,9))
     img = ax[0].imshow(local_rr, vmin=0, vmax=6)
