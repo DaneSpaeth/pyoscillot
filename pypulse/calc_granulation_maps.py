@@ -29,7 +29,7 @@ def calc_overlap_area(square1_row, square1_col, square2_row, square2_col, half_s
 
     return area_overlap
 
-def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, col, shifted_row, shifted_col, rr, cc):
+def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, col, shifted_row, shifted_col, rr, cc, fat_rr, fat_cc):
     """ Calculate the raw or naive number of nodes (outgoing for the local cell, incoming for the neighbors)
         and the flux array for the local cell.
 
@@ -41,15 +41,13 @@ def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, c
     # TODO Allow shifts over the border
     shifted_row = shifted_row[row, col]
     shifted_col = shifted_col[row, col]
-    if row == 0:
-        local_rr_leftpart = rr[len(row)-2:, col-1: col+2]
-        local_rr_rightpart = rr[row: row + 2, col - 1: col + 2]
-        local_rr = np.append()
-    elif row != len(row)-1:
-        pass
-    else:
-        local_rr = rr[row - 1: row + 2, col - 1: col + 2]
-    local_cc = cc[row - 1: row + 2, col - 1: col + 2]
+    # To solve the bordering cases create add simulation cells at all borders
+    # Then select the local_rr and local_cc 3x3 array from that fat array
+    # You have to add one shape of your simulation cells on top
+    fat_row = rr.shape[0] + row
+    fat_col = rr.shape[1] + col
+    local_rr = fat_rr[fat_row - 1: fat_row + 2, fat_col - 1: fat_col + 2]
+    local_cc = fat_cc[fat_row - 1: fat_row + 2, fat_col - 1: fat_col + 2]
     for local_row in range(3):
         for local_col in range(3):
             if local_row == 1 and local_col == 1:
@@ -137,6 +135,11 @@ def test_case():
     # These are 2d arrays containing for each cell the row or column respectively
     cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
 
+    # Create cc and rr but 3x3 simulation cells added together
+    # We need these later for determining the flux for different cells
+    fat_rr = np.vstack((np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr))))
+    fat_cc = np.vstack((np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc))))
+
     shifted_rr = rr + grad_row_norm
     shifted_cc = cc + grad_col_norm
 
@@ -157,8 +160,8 @@ def test_case():
     flux_percentages = np.zeros((rr.shape[0], rr.shape[1], 3, 3))
 
     # First calculate the raw flux percentages
-    for row in range(0, simulation_cell_size-1):
-        for col in range(0, simulation_cell_size-1):
+    for row in range(0, simulation_cell_size):
+        for col in range(0, simulation_cell_size):
 
             (num_incoming_nodes,
              num_outgoing_nodes,
@@ -169,7 +172,9 @@ def test_case():
                                                                                    shifted_rr,
                                                                                    shifted_cc,
                                                                                    rr,
-                                                                                   cc)
+                                                                                   cc,
+                                                                                   fat_rr,
+                                                                                   fat_cc)
 
     flux_percentages = raw_flux_percentages.copy()
 
@@ -397,7 +402,8 @@ def create_test_data():
 
 
 if __name__ == "__main__":
-    # test_case()
+    test_case()
+    exit()
     # img = np.array([[0, 0, 0, 0, 0],
     #                 [0, 0, 0, 0, 0],
     #                 [0, 0, 0, 0, 0],
