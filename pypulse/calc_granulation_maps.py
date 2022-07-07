@@ -29,36 +29,43 @@ def calc_overlap_area(square1_row, square1_col, square2_row, square2_col, half_s
 
     return area_overlap
 
-def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, col, shifted_row, shifted_col, rr, cc, fat_rr, fat_cc):
+def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes,
+                                  row, col, shifted_row, shifted_col, rr, cc,
+                                  rr3, cc3):
     """ Calculate the raw or naive number of nodes (outgoing for the local cell, incoming for the neighbors)
         and the flux array for the local cell.
 
         Naive in the sense that cells pointing at each other are not yet resolved.
 
-        Return array num_incoming_nodes and num_outoing_nodes
+        Return array num_incoming_nodes and num_outgoing_nodes
     """
     overlap_areas = np.zeros((3, 3))
     # TODO Allow shifts over the border
-    shifted_row = shifted_row[row, col]
-    shifted_col = shifted_col[row, col]
+    cell_size_row = rr.shape[0]
+    cell_size_col = rr.shape[1]
+    shifted_row3 = shifted_row[row, col] + cell_size_row
+    shifted_col3 = shifted_col[row, col] + cell_size_col
+
+    num_incoming_nodes3 = np.zeros(rr3.shape, dtype=int)
+
     # To solve the bordering cases create add simulation cells at all borders
     # Then select the local_rr and local_cc 3x3 array from that fat array
     # You have to add one shape of your simulation cells on top
-    fat_row = rr.shape[0] + row
-    fat_col = rr.shape[1] + col
-    local_rr = fat_rr[fat_row - 1: fat_row + 2, fat_col - 1: fat_col + 2]
-    local_cc = fat_cc[fat_row - 1: fat_row + 2, fat_col - 1: fat_col + 2]
+    fat_row = cell_size_row + row
+    fat_col = cell_size_col + col
+    local_rr = rr3[fat_row - 1: fat_row + 2, fat_col - 1: fat_col + 2]
+    local_cc = cc3[fat_row - 1: fat_row + 2, fat_col - 1: fat_col + 2]
     for local_row in range(3):
         for local_col in range(3):
             if local_row == 1 and local_col == 1:
                 continue
-            overlap_area = calc_overlap_area(shifted_row,
-                                             shifted_col,
+            overlap_area = calc_overlap_area(shifted_row3,
+                                             shifted_col3,
                                              local_rr[local_row, local_col],
                                              local_cc[local_row, local_col])
             overlap_areas[local_row, local_col] = overlap_area
             if overlap_area:
-                num_incoming_nodes[row - 1 + local_row, col - 1 + local_col] += 1
+                num_incoming_nodes3[fat_row - 1 + local_row, fat_col - 1 + local_col] += 1
                 num_outgoing_nodes[row, col] += 1
 
     # To avoid dividing by zero
@@ -67,7 +74,21 @@ def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, c
     else:
         flux_percentage = overlap_areas
 
+    num_incoming_nodes += fold3x3_to_central_cell(num_incoming_nodes3)
+
     return num_incoming_nodes, num_outgoing_nodes, flux_percentage
+
+def fold3x3_to_central_cell(array3):
+    """ Fold a 3x3 array back to the central cell"""
+    cell_size_row = int(array3.shape[0]/3)
+    cell_size_col = int(array3.shape[1]/3)
+    central_array = np.zeros((cell_size_row, cell_size_col), dtype=array3.dtype)
+    # Now fold the 3x3 arrays back onto the central cell
+    for i in range(3):
+        for j in range(3):
+            central_array += array3[i * cell_size_row:(i + 1) * cell_size_row,
+                                    j * cell_size_col:(j + 1) * cell_size_col]
+    return central_array
 
 def calc_flux_percentages(row, col, shifted_rr, shifted_cc, rr, cc):
     """ Calculate the number of nodes (outgoing for the local cell, incoming for the neighbors).
@@ -93,7 +114,7 @@ def calc_flux_percentages(row, col, shifted_rr, shifted_cc, rr, cc):
 
 
 def test_case():
-    test = 2
+    test = 3
     # Define some test arrays
     if test == 1:
         grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical = create_test_data()
@@ -101,11 +122,13 @@ def test_case():
         simulation_cell_size = 7
         cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
         temp = 5000 - 500*cc
-        v_vertical = temp*2000/5000
+        v_vertical = np.ones_like(temp)*1000#temp*2000/5000
         grad_row, grad_col = np.gradient(temp)
 
         test_idx_row_list = [3]
         test_idx_col_list = [2]
+    elif test == 3:
+        grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical = create_test_data_over_border()
     else:
         granulation_radiance = granulation_map()
         temperature = radiance_to_temperature(granulation_radiance)
@@ -135,6 +158,9 @@ def test_case():
     # These are 2d arrays containing for each cell the row or column respectively
     cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
 
+    # Define meshgrids with 3x3 the size but continuously in coordinates (not repetitive)
+    cc3, rr3 = np.meshgrid(range(rr.shape[0] * 3), range(rr.shape[1] * 3))
+
     # Create cc and rr but 3x3 simulation cells added together
     # We need these later for determining the flux for different cells
     fat_rr = np.vstack((np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr))))
@@ -145,6 +171,7 @@ def test_case():
 
     # We will need some helper arrays
     num_incoming_nodes = np.zeros(rr.shape, dtype=int)
+    # num_incoming_nodes3 = np.zeros(rr3.shape, dtype=int)
     # Sum up the incoming horizontal velocity for each cell
     incoming_v_hor = np.zeros(rr.shape, dtype=float)
     num_outgoing_nodes = np.zeros(rr.shape, dtype=int)
@@ -173,8 +200,8 @@ def test_case():
                                                                                    shifted_cc,
                                                                                    rr,
                                                                                    cc,
-                                                                                   fat_rr,
-                                                                                   fat_cc)
+                                                                                   rr3,
+                                                                                   cc3)
 
     flux_percentages = raw_flux_percentages.copy()
 
@@ -243,15 +270,15 @@ def test_case():
         (row, col) = np.unravel_index(flattened_idx, (simulation_cell_size, simulation_cell_size))
 
         # Don't calc on the borders
-        if (not row or
-                row == simulation_cell_size-1 or
-            not col or
-                col == simulation_cell_size-1):
-            finished_nodes[row, col] = True
-            if finished_nodes.all():
-                done = True
-                break
-            continue
+        # if (not row or
+        #         row == simulation_cell_size-1 or
+        #     not col or
+        #         col == simulation_cell_size-1):
+        #     finished_nodes[row, col] = True
+        #     if finished_nodes.all():
+        #         done = True
+        #         break
+        #     continue
         # Get the number of remaining nodes (it should be 0)
         num_remaining = num_remaining_incoming_nodes[row, col]
         #assert num_remaining == 0, f"{num_remaining} incoming flux vectors remaining"
@@ -261,8 +288,15 @@ def test_case():
         # Calculate the flux that is transported to the different cells
         local_flux_percentages = flux_percentages[row, col, :, :]
 
-        global_flux_percentage = np.zeros(rr.shape)
-        global_flux_percentage[row-1: row+2, col-1: col+2] = local_flux_percentages
+        global_flux_percentage3 = np.zeros(rr3.shape)
+        global_flux_percentage3[row+simulation_cell_size-1: row+simulation_cell_size+2,
+                                col+simulation_cell_size-1: col+simulation_cell_size+2] = local_flux_percentages
+
+        global_flux_percentage = fold3x3_to_central_cell(global_flux_percentage3)
+
+        # global_flux_percentage = np.zeros(rr.shape)
+        # global_flux_percentage[row-1:row+2, col-1:col+2] = local_flux_percentages
+
 
         # Calculate the incoming flux for the local cell = vertical + incoming horizontal
         incoming_flux_local_cell = (v_vertical[row, col] +
@@ -305,9 +339,9 @@ def test_case():
     # flux_image[test_idx_row_list[test_idx] - 1:test_idx_row_list[test_idx] + 2,
     # test_idx_col_list[test_idx] - 1:test_idx_col_list[test_idx] + 2] = flux_percentages[
     #     test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    img = ax[0, 1].imshow(flux_image, origin=plot_origin)
-    # ax[0, 1].set_title(f"Flux percentage - Cell {test_idx_row_list[test_idx], test_idx_col_list[test_idx]}")
-    fig.colorbar(img, label=f"Flux percentage", ax=ax[0, 1])
+    img = ax[0, 1].imshow(v_vertical, origin=plot_origin)
+    ax[0, 1].set_title(f"Vertical Velocity")
+    fig.colorbar(img, label=f"Vertical Velocity", ax=ax[0, 1])
 
     img = ax[1, 0].imshow(num_incoming_nodes, origin=plot_origin)
     ax[1, 0].set_title("Nr of incoming nodes")
@@ -343,17 +377,19 @@ def test_case():
             elem_rr = shifted_rr[test_idx_row, test_idx_col]
             elem_cc = shifted_cc[test_idx_row, test_idx_col]
 
+            print(elem_rr, elem_cc)
+
             a.vlines(elem_cc - half_cell, elem_rr - half_cell, elem_rr + half_cell)
             a.vlines(elem_cc + half_cell, elem_rr - half_cell, elem_rr + half_cell)
             a.hlines(elem_rr - half_cell, elem_cc - half_cell, elem_cc + half_cell)
             a.hlines(elem_rr + half_cell, elem_cc - half_cell, elem_cc + half_cell)
         a.set_ylabel("Row")
         a.set_xlabel("Col")
-    plt.tight_layout()
+    fig.set_tight_layout(True)
 
     from pathlib import Path
-    # out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/12.07.2022")
-    # plt.savefig(out_dir / "corrected_flux_physical.png", dpi=300)
+    out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
+    plt.savefig(out_dir / "border_case_side.png", dpi=300)
     plt.show()
 
 
@@ -364,8 +400,8 @@ def create_test_data():
     v_vertical = np.zeros((7, 7))
 
     # Throw in some test temps and gradients
-    test_idx_row_list = [1, 3, 3, 3]#, 5]
-    test_idx_col_list = [2, 2, 4, 5]#, 0]
+    test_idx_row_list = [1, 3, 3, 3, 3]#, 5]
+    test_idx_col_list = [2, 2, 4, 5, 6]#, 0]
     test_idx_row = 1
     test_idx_col = 2
     temp[test_idx_row, test_idx_col] = 5000
@@ -392,12 +428,30 @@ def create_test_data():
     grad_col[test_idx_row, test_idx_col] = 1
     v_vertical[test_idx_row, test_idx_col] = 1000.
 
-    # test_idx_row = 5
-    # test_idx_col = 0
-    # temp[test_idx_row, test_idx_col] = 5000
-    # grad_row[test_idx_row, test_idx_col] = 0
-    # grad_col[test_idx_row, test_idx_col] = 1
-    # v_vertical[test_idx_row, test_idx_col] = 1000.
+    # Throw in some test temps and gradients
+    test_idx_row = 3
+    test_idx_col = 6
+    temp[test_idx_row, test_idx_col] = 5000
+    grad_row[test_idx_row, test_idx_col] = -1
+    grad_col[test_idx_row, test_idx_col] = -1
+    v_vertical[test_idx_row, test_idx_col] = 1000.
+    return grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical
+
+def create_test_data_over_border():
+    temp = np.zeros((7, 7))
+    grad_row = np.zeros((7, 7))
+    grad_col = np.zeros((7, 7))
+    v_vertical = np.zeros((7, 7))
+
+    # Throw in some test temps and gradients
+    test_idx_row_list = [3]
+    test_idx_col_list = [0]
+    test_idx_row = 3
+    test_idx_col = 0
+    temp[test_idx_row, test_idx_col] = 5000
+    grad_row[test_idx_row, test_idx_col] = 1
+    grad_col[test_idx_row, test_idx_col] = 1
+    v_vertical[test_idx_row, test_idx_col] = 1000.
     return grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical
 
 
