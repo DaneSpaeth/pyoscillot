@@ -29,7 +29,7 @@ def calc_overlap_area(square1_row, square1_col, square2_row, square2_col, half_s
 
     return area_overlap
 
-def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, col, shifted_rr, shifted_cc, rr, cc):
+def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, col, shifted_row, shifted_col, rr, cc):
     """ Calculate the raw or naive number of nodes (outgoing for the local cell, incoming for the neighbors)
         and the flux array for the local cell.
 
@@ -38,18 +38,25 @@ def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes, row, c
         Return array num_incoming_nodes and num_outoing_nodes
     """
     overlap_areas = np.zeros((3, 3))
-    shifted_x = shifted_rr[row, col]
-    shifted_y = shifted_cc[row, col]
-    local_xx = rr[row - 1: row + 2, col - 1: col + 2]
-    local_yy = cc[row - 1: row + 2, col - 1: col + 2]
+    shifted_row = shifted_row[row, col]
+    shifted_col = shifted_col[row, col]
+    if row == 0:
+        local_rr_leftpart = rr[len(row)-2:, col-1: col+2]
+        local_rr_rightpart = rr[row: row + 2, col - 1: col + 2]
+        local_rr = np.append()
+    elif row != len(row)-1:
+        pass
+    else:
+        local_rr = rr[row - 1: row + 2, col - 1: col + 2]
+    local_cc = cc[row - 1: row + 2, col - 1: col + 2]
     for local_row in range(3):
         for local_col in range(3):
             if local_row == 1 and local_col == 1:
                 continue
-            overlap_area = calc_overlap_area(shifted_x,
-                                             shifted_y,
-                                             local_xx[local_row, local_col],
-                                             local_yy[local_row, local_col])
+            overlap_area = calc_overlap_area(shifted_row,
+                                             shifted_col,
+                                             local_rr[local_row, local_col],
+                                             local_cc[local_row, local_col])
             overlap_areas[local_row, local_col] = overlap_area
             if overlap_area:
                 num_incoming_nodes[row - 1 + local_row, col - 1 + local_col] += 1
@@ -87,10 +94,19 @@ def calc_flux_percentages(row, col, shifted_rr, shifted_cc, rr, cc):
 
 
 def test_case():
-    test = True
+    test = 2
     # Define some test arrays
-    if test:
+    if test == 1:
         grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical = create_test_data()
+    elif test == 2:
+        simulation_cell_size = 7
+        cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
+        temp = 5000 - 500*cc
+        v_vertical = temp*2000/5000
+        grad_row, grad_col = np.gradient(temp)
+
+        test_idx_row_list = [3]
+        test_idx_col_list = [2]
     else:
         granulation_radiance = granulation_map()
         temperature = radiance_to_temperature(granulation_radiance)
@@ -140,19 +156,19 @@ def test_case():
     flux_percentages = np.zeros((rr.shape[0], rr.shape[1], 3, 3))
 
     # First calculate the raw flux percentages
-    for row in range(1, simulation_cell_size-1):
-        for col in range(1, simulation_cell_size-1):
+    for row in range(0, simulation_cell_size-1):
+        for col in range(0, simulation_cell_size-1):
 
             (num_incoming_nodes,
              num_outgoing_nodes,
              raw_flux_percentages[row, col, :, :]) = calc_raw_num_nodes_and_fluxes(num_incoming_nodes,
-                                                                                       num_outgoing_nodes,
-                                                                                       row,
-                                                                                       col,
-                                                                                       shifted_rr,
-                                                                                       shifted_cc,
-                                                                                       rr,
-                                                                                       cc)
+                                                                                   num_outgoing_nodes,
+                                                                                   row,
+                                                                                   col,
+                                                                                   shifted_rr,
+                                                                                   shifted_cc,
+                                                                                   rr,
+                                                                                   cc)
 
     flux_percentages = raw_flux_percentages.copy()
 
@@ -279,12 +295,12 @@ def test_case():
 
 
     flux_image = np.zeros(rr.shape)
-    test_idx = 0
-    flux_image[test_idx_row_list[test_idx] - 1:test_idx_row_list[test_idx] + 2,
-    test_idx_col_list[test_idx] - 1:test_idx_col_list[test_idx] + 2] = flux_percentages[
-        test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
+    # test_idx = 0
+    # flux_image[test_idx_row_list[test_idx] - 1:test_idx_row_list[test_idx] + 2,
+    # test_idx_col_list[test_idx] - 1:test_idx_col_list[test_idx] + 2] = flux_percentages[
+    #     test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
     img = ax[0, 1].imshow(flux_image, origin=plot_origin)
-    ax[0, 1].set_title(f"Flux percentage - Cell {test_idx_row_list[test_idx], test_idx_col_list[test_idx]}")
+    # ax[0, 1].set_title(f"Flux percentage - Cell {test_idx_row_list[test_idx], test_idx_col_list[test_idx]}")
     fig.colorbar(img, label=f"Flux percentage", ax=ax[0, 1])
 
     img = ax[1, 0].imshow(num_incoming_nodes, origin=plot_origin)
@@ -342,8 +358,8 @@ def create_test_data():
     v_vertical = np.zeros((7, 7))
 
     # Throw in some test temps and gradients
-    test_idx_row_list = [1, 3, 3, 3]
-    test_idx_col_list = [2, 2, 4, 5]
+    test_idx_row_list = [1, 3, 3, 3]#, 5]
+    test_idx_col_list = [2, 2, 4, 5]#, 0]
     test_idx_row = 1
     test_idx_col = 2
     temp[test_idx_row, test_idx_col] = 5000
@@ -369,11 +385,18 @@ def create_test_data():
     grad_row[test_idx_row, test_idx_col] = -1
     grad_col[test_idx_row, test_idx_col] = 1
     v_vertical[test_idx_row, test_idx_col] = 1000.
+
+    # test_idx_row = 5
+    # test_idx_col = 0
+    # temp[test_idx_row, test_idx_col] = 5000
+    # grad_row[test_idx_row, test_idx_col] = 0
+    # grad_col[test_idx_row, test_idx_col] = 1
+    # v_vertical[test_idx_row, test_idx_col] = 1000.
     return grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical
 
 
 if __name__ == "__main__":
-    test_case()
+    # test_case()
     # img = np.array([[0, 0, 0, 0, 0],
     #                 [0, 0, 0, 0, 0],
     #                 [0, 0, 0, 0, 0],
@@ -385,7 +408,66 @@ if __name__ == "__main__":
     # plt.imshow(img)
     # plt.show()
 
-    # simulation_cell_size = 7
-    # cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
-    # plt.imshow(rr)
-    # plt.show()
+    simulation_cell_size = 7
+    cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
+    row = 3
+    col = 3
+    row_shape = rr.shape[0]
+    col_shape = rr.shape[1]
+    # Solve the upper and lower boundaries (except the two corner pixels)
+    if (row == 0 or row == row_shape - 1) and col != 0 and col != col_shape-1:
+        # upper boundary
+        if row == 0:
+            # slice that was originally at the bottom (remember row=0 is at the top)
+            slice_bottom = np.s_[-1:, col-1: col+2]
+            # slice that was originally at the top of the image (remember row=0 is at the top)
+            slice_top = np.s_[:2, col-1: col+2]
+        # lower boundary
+        elif row == row_shape - 1:
+            # slice that was originally at the top of the image (remember row=0 is at the top)
+            slice_bottom = np.s_[-2:, col - 1: col + 2]
+            # slice that was originally at the bottom (remember row=0 is at the top)
+            slice_top = np.s_[:1, col - 1: col + 2]
+        local_rr_bottompart = rr[slice_bottom]
+        local_rr_toppart = rr[slice_top]
+        local_cc_bottompart = cc[slice_bottom]
+        local_cc_toppart = cc[slice_top]
+        # Always stack the bottom on top of the former top
+        local_rr = np.vstack((local_rr_bottompart, local_rr_toppart))
+        local_cc = np.vstack((local_cc_bottompart, local_cc_toppart))
+    # Solve the left  and right boundary (except the two corner pixels)
+    elif (col == 0 or col == col_shape - 1) and row != 0 and row != row_shape-1:
+        # left boundary
+        if col == 0:
+            # slice that was originally on the left
+            slice_left = np.s_[row - 1: row + 2, 0:2]
+            # slice that was originally on the right
+            slice_right = np.s_[row - 1: row + 2, -1:]
+        elif col == col_shape -1:
+            # slice that was originally on the left
+            slice_left = np.s_[row - 1: row + 2, :1]
+            # slice that was originally on the right
+            slice_right = np.s_[row - 1: row + 2, -2:]
+        local_rr_left = rr[slice_left]
+        local_rr_right = rr[slice_right]
+        local_cc_left = cc[slice_left]
+        local_cc_right = cc[slice_right]
+        # Always stack the former right part on the left side of the former left
+        local_rr = np.hstack((local_rr_right, local_rr_left))
+        local_cc = np.hstack((local_cc_right, local_cc_left))
+    else:
+        local_rr = rr[row - 1: row + 2, col - 1: col + 2]
+        local_cc = cc[row - 1: row + 2, col - 1: col + 2]
+
+    fig, ax = plt.subplots(1, 2, figsize=(16,9))
+    img = ax[0].imshow(local_rr, vmin=0, vmax=6)
+    fig.colorbar(img, label="Row", ax=ax[0])
+
+    img = ax[1].imshow(local_cc, vmin=0, vmax=6)
+    fig.colorbar(img, label="Col", ax=ax[1])
+    fig.set_tight_layout(True)
+    fig.suptitle(f"Selected Cell {row, col}")
+    for a in ax:
+        a.set_ylabel("Row")
+        a.set_xlabel("Column")
+    plt.show()
