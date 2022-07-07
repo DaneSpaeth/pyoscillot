@@ -105,6 +105,9 @@ def test_case():
         test_idx_row_list = []
         test_idx_col_list = []
 
+    # The gradient e.g. grad_row is intended to be the component of the gradient along the rows
+    # i.e. if you have grad_row = 1 and grad_col = 0 then your vector should point along the row but not along the col
+
     # Calculate the normalization
     normalization = np.sqrt(np.square(grad_row) + np.square(grad_col))
     normalization[normalization == 0] = 1
@@ -115,10 +118,10 @@ def test_case():
     simulation_cell_size = temp.shape[0]
     # rr and cc are short for rowrow and columncolumn
     # These are 2d arrays containing for each cell the row or column respectively
-    rr, cc = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
+    cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
 
-    shifted_rr = rr + grad_col_norm
-    shifted_cc = cc + grad_row_norm
+    shifted_rr = rr + grad_row_norm
+    shifted_cc = cc + grad_col_norm
 
     # We will need some helper arrays
     num_incoming_nodes = np.zeros(rr.shape, dtype=int)
@@ -264,8 +267,9 @@ def test_case():
         #     break
 
 
+    plot_origin = "upper"
     fig, ax = plt.subplots(2, 2, figsize=(16, 16))
-    img = ax[0, 0].imshow(temp, origin="lower", cmap="hot")
+    img = ax[0, 0].imshow(temp, origin=plot_origin, cmap="hot")
     fig.colorbar(img, label="Temp", ax=ax[0, 0])
     ax[0, 0].set_title("Temperature")
 
@@ -273,25 +277,30 @@ def test_case():
     # fig.colorbar(img, label="Temp", ax=ax[0, 1])
     # ax[0, 1].set_title("Trouble Cells")
 
+
     flux_image = np.zeros(rr.shape)
-    test_idx = 3
+    test_idx = 0
     flux_image[test_idx_row_list[test_idx] - 1:test_idx_row_list[test_idx] + 2,
     test_idx_col_list[test_idx] - 1:test_idx_col_list[test_idx] + 2] = flux_percentages[
         test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    img = ax[0, 1].imshow(flux_image, origin="lower")
+    img = ax[0, 1].imshow(flux_image, origin=plot_origin)
     ax[0, 1].set_title(f"Flux percentage - Cell {test_idx_row_list[test_idx], test_idx_col_list[test_idx]}")
     fig.colorbar(img, label=f"Flux percentage", ax=ax[0, 1])
 
-    img = ax[1, 0].imshow(num_incoming_nodes, origin="lower")
+    img = ax[1, 0].imshow(num_incoming_nodes, origin=plot_origin)
     ax[1, 0].set_title("Nr of incoming nodes")
     fig.colorbar(img, label="# incoming nodes", ax=ax[1, 0])
+
+    # img = ax[1, 0].imshow(rr, origin=plot_origin)
+    # ax[1, 0].set_title("RowRow")
+    # fig.colorbar(img, label="Row", ax=ax[1, 0])
 
     #flux_image = np.zeros(rr.shape)
     #test_idx = 2
     #flux_image[test_idx_row_list[test_idx]-1:test_idx_row_list[test_idx]+2,
     #test_idx_col_list[test_idx]-1:test_idx_col_list[test_idx]+2] = flux_percentages[
     #    test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    img = ax[1,1].imshow(incoming_v_hor, origin="lower")
+    img = ax[1,1].imshow(incoming_v_hor, origin=plot_origin)
     ax[1, 1].set_title(f"Incoming flux")
     fig.colorbar(img, label="Incoming Flux [m/s]", ax=ax[1, 1])
 
@@ -299,17 +308,23 @@ def test_case():
     half_cell = 0.5
 
     for a in ax.flatten():
-        a.scatter(shifted_rr, shifted_cc)
-        a.quiver(rr, cc, grad_col_norm, grad_row_norm, scale=10)
+        # Remember: scatter, quiver, vlines and hlines think in x and y but imshow in rows and cols
+        # So the col coordinate is corresponding to x, and rows to y
+        a.scatter(shifted_cc, shifted_rr)
+        if plot_origin == "lower":
+            a.quiver(cc, rr, grad_col_norm, grad_row_norm, scale=10)
+        else:
+            a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=10)
         # test_idx_row_list = [2, 2]
         # test_idx_col_list = [8, 8 ]
-        for test_idx_x, test_idx_y in zip(test_idx_row_list, test_idx_col_list):
-            elem_xx = shifted_rr[test_idx_x, test_idx_y]
-            elem_yy = shifted_cc[test_idx_x, test_idx_y]
-            a.vlines(elem_xx - half_cell, elem_yy - half_cell, elem_yy + half_cell)
-            a.vlines(elem_xx + half_cell, elem_yy - half_cell, elem_yy + half_cell)
-            a.hlines(elem_yy - half_cell, elem_xx - half_cell, elem_xx + half_cell)
-            a.hlines(elem_yy + half_cell, elem_xx - half_cell, elem_xx + half_cell)
+        for test_idx_row, test_idx_col in zip(test_idx_row_list, test_idx_col_list):
+            elem_rr = shifted_rr[test_idx_row, test_idx_col]
+            elem_cc = shifted_cc[test_idx_row, test_idx_col]
+
+            a.vlines(elem_cc - half_cell, elem_rr - half_cell, elem_rr + half_cell)
+            a.vlines(elem_cc + half_cell, elem_rr - half_cell, elem_rr + half_cell)
+            a.hlines(elem_rr - half_cell, elem_cc - half_cell, elem_cc + half_cell)
+            a.hlines(elem_rr + half_cell, elem_cc - half_cell, elem_cc + half_cell)
         a.set_ylabel("Row")
         a.set_xlabel("Col")
     plt.tight_layout()
@@ -368,4 +383,9 @@ if __name__ == "__main__":
     # col = 1
     # img[row, col] = 1
     # plt.imshow(img)
+    # plt.show()
+
+    # simulation_cell_size = 7
+    # cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
+    # plt.imshow(rr)
     # plt.show()
