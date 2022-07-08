@@ -150,8 +150,6 @@ def test_case():
         v_vertical = -2000 + 3000 * ((temp - np.min(temp)) / (np.max(temp) - np.min(temp)))
         v_vertical -= np.mean(v_vertical)
 
-        exit()
-
         test_idx_row_list = []
         test_idx_col_list = []
 
@@ -218,6 +216,7 @@ def test_case():
     flux_percentages = raw_flux_percentages.copy()
 
     # Now correct the flux for cells that influence each other
+    trouble_counter = 0
     for row in range(0, simulation_cell_size):
         for col in range(0, simulation_cell_size):
             local_raw_flux = flux_percentages[row, col, :, :]
@@ -261,9 +260,31 @@ def test_case():
                     if not flux_to_source_cell:
                         continue
 
+                    nr_neighbors_cell = np.sum(local_raw_flux > 0)
+                    nr_neighbors_target = np.sum(target_raw_flux > 0)
+
+                    influx_remaining = None
+                    if nr_neighbors_cell > 1 and nr_neighbors_target == 1:
+                        influx_remaining = True
+                    elif nr_neighbors_target > 1 and nr_neighbors_cell == 1:
+                        influx_remaining = False
+                    elif nr_neighbors_target > 1 and nr_neighbors_cell > 1:
+                        # In the case that there is a stronger flux flowing into the cell than it is giving back to the
+                        # same cell
+                        if flux_to_source_cell >= local_raw_flux[local_row, local_col]:
+                            influx_remaining = True
+                        else:
+                            influx_remaining = False
+                    elif nr_neighbors_target == 1 and nr_neighbors_cell == 1:
+                        # TODO solve that case
+                        # raise NotImplementedError
+                        trouble_counter += 1
+                        influx_remaining = False
+
                     # In the case that there is a stronger flux flowing into the cell than it is giving back to the
                     # same cell
-                    if flux_to_source_cell >= local_raw_flux[local_row, local_col]:
+                    # TODO make sure that cells which only have one neighbor are not reduced (in this case you will get NANs)
+                    if influx_remaining:
                         # Set the flux into the target cell to 0
                         local_raw_flux[local_row, local_col] = 0
                         # And renormalize, i.e. the flux will be distributed to the other cells
@@ -275,12 +296,16 @@ def test_case():
                     else:
                         target_raw_flux[relative_row, relative_col] = 0
                         target_flux = target_raw_flux / np.sum(target_raw_flux)
+                        # TODO fix that otherwise
+                        if np.isnan(target_flux).all():
+                            target_flux = np.zeros(target_flux.shape)
                         flux_percentages[target_row, target_col, :, :] = target_flux
                         num_incoming_nodes[row, col] -= 1
                         num_outgoing_nodes[target_row, target_col] -= 1
 
 
-
+    print(trouble_counter)
+    # exit()
 
 
     num_remaining_incoming_nodes = num_incoming_nodes.copy()
@@ -288,28 +313,16 @@ def test_case():
     # Now we want to calc the incoming flux for all cells
     # Loop over all cells starting with the ones that have ideally no incoming nodes
     done = False
-    counter = 0
     while not done:
-        counter += 1
         tmp_remaining_nodes = num_remaining_incoming_nodes.copy()
         tmp_remaining_nodes[finished_nodes] = 1e5
         flattened_idx = np.argsort(tmp_remaining_nodes.flatten())[0]
         # Retrieve the original 2D index
         (row, col) = np.unravel_index(flattened_idx, (simulation_cell_size, simulation_cell_size))
 
-        # Don't calc on the borders
-        # if (not row or
-        #         row == simulation_cell_size-1 or
-        #     not col or
-        #         col == simulation_cell_size-1):
-        #     finished_nodes[row, col] = True
-        #     if finished_nodes.all():
-        #         done = True
-        #         break
-        #     continue
         # Get the number of remaining nodes (it should be 0)
         num_remaining = num_remaining_incoming_nodes[row, col]
-        #assert num_remaining == 0, f"{num_remaining} incoming flux vectors remaining"
+        # assert num_remaining == 0, f"{num_remaining} incoming flux vectors remaining"
         if num_remaining != 0:
             troubling_cells[row, col] = True
 
@@ -340,7 +353,6 @@ def test_case():
         finished_nodes[row, col] = True
 
         print(f"{np.sum(finished_nodes)}/{np.size(finished_nodes)}")
-        print(counter)
 
         if finished_nodes.all():
             done = True
@@ -357,21 +369,20 @@ def test_case():
     fig.colorbar(img, label="Temp", ax=ax[0, 0])
     ax[0, 0].set_title("Temperature")
 
-    # img = ax[0, 1].imshow(troubling_cells, origin="lower")
-    # fig.colorbar(img, label="Temp", ax=ax[0, 1])
-    # ax[0, 1].set_title("Trouble Cells")
+    img = ax[0, 1].imshow(num_remaining_incoming_nodes, origin="lower")
+    fig.colorbar(img, label="Num Remaining Nodes", ax=ax[0, 1])
+    ax[0, 1].set_title("Num Remaining Nodes")
 
 
-    flux_image = np.zeros(rr.shape)
     # test_idx = 0
     # flux_image[test_idx_row_list[test_idx] - 1:test_idx_row_list[test_idx] + 2,
     # test_idx_col_list[test_idx] - 1:test_idx_col_list[test_idx] + 2] = flux_percentages[
     #     test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    img = ax[0, 1].imshow(v_vertical, origin=plot_origin)
-    ax[0, 1].set_title(f"Vertical Velocity")
-    fig.colorbar(img, label=f"Vertical Velocity", ax=ax[0, 1])
+    # img = ax[0, 1].imshow(v_vertical, origin=plot_origin)
+    # ax[0, 1].set_title(f"Vertical Velocity")
+    # fig.colorbar(img, label=f"Vertical Velocity", ax=ax[0, 1])
 
-    img = ax[1, 0].imshow(num_incoming_nodes, origin=plot_origin)
+    img = ax[1, 0].imshow(troubling_cells, origin=plot_origin)
     ax[1, 0].set_title("Nr of incoming nodes")
     fig.colorbar(img, label="# incoming nodes", ax=ax[1, 0])
 
@@ -384,7 +395,7 @@ def test_case():
     #flux_image[test_idx_row_list[test_idx]-1:test_idx_row_list[test_idx]+2,
     #test_idx_col_list[test_idx]-1:test_idx_col_list[test_idx]+2] = flux_percentages[
     #    test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    img = ax[1,1].imshow(incoming_v_hor, origin=plot_origin)
+    img = ax[1, 1].imshow(incoming_v_hor, origin=plot_origin)
     ax[1, 1].set_title(f"Incoming flux")
     fig.colorbar(img, label="Incoming Flux [m/s]", ax=ax[1, 1])
 
@@ -394,6 +405,7 @@ def test_case():
     for a in ax.flatten():
         # Remember: scatter, quiver, vlines and hlines think in x and y but imshow in rows and cols
         # So the col coordinate is corresponding to x, and rows to y
+        continue
         if test:
             a.scatter(shifted_cc, shifted_rr)
             if plot_origin == "lower":
@@ -424,7 +436,7 @@ def test_case():
 
     from pathlib import Path
     out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
-    plt.savefig(out_dir / "global.png", dpi=300)
+    # plt.savefig(out_dir / "global.png", dpi=300)
     plt.show()
 
 
