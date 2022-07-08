@@ -3,6 +3,7 @@ import numpy as np
 from dataloader import granulation_map
 from physics import radiance_to_temperature
 
+
 def calc_overlap_area(square1_row, square1_col, square2_row, square2_col, half_size=0.5):
     """ Calculate the overlap of two squares with same size.
 
@@ -28,6 +29,7 @@ def calc_overlap_area(square1_row, square1_col, square2_row, square2_col, half_s
     area_overlap = width_overlap * height_overlap
 
     return area_overlap
+
 
 def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes,
                                   row, col, shifted_row, shifted_col, rr, cc,
@@ -113,7 +115,7 @@ def calc_flux_percentages(row, col, shifted_rr, shifted_cc, rr, cc):
 
 
 def test_case():
-    test = 3
+    test = 0
     # Define some test arrays
     if test == 1:
         grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical = create_test_data()
@@ -121,7 +123,7 @@ def test_case():
         simulation_cell_size = 7
         cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
         temp = 5000 - 500*cc
-        v_vertical = np.ones_like(temp)*1000#temp*2000/5000
+        v_vertical = np.ones_like(temp)*1000
         grad_row, grad_col = np.gradient(temp)
 
         test_idx_row_list = [3]
@@ -132,18 +134,31 @@ def test_case():
         granulation_radiance = granulation_map()
         temperature = radiance_to_temperature(granulation_radiance)
         temp = temperature[992 + 1292]
+        simulation_cell_size = temp.shape[0]
 
-        temp = temp[40:60, 40:60]
+        # TODO add bordering cells, calc gradient, cut back to original cell
+        temp3 = np.vstack((np.hstack((temp, temp, temp)),
+                           np.hstack((temp, temp, temp)),
+                           np.hstack((temp, temp, temp))))
 
-        grad_row, grad_col = np.gradient(temp)
+        # temp = temp[40:60, 40:60]
+
+        grad3_row, grad3_col = np.gradient(temp3)
+        grad_row = grad3_row[simulation_cell_size:2 * simulation_cell_size,
+                             simulation_cell_size:2 * simulation_cell_size]
+        grad_col = grad3_col[simulation_cell_size:2 * simulation_cell_size,
+                             simulation_cell_size:2 * simulation_cell_size]
         v_vertical = -2000 + 3000 * ((temp - np.min(temp)) / (np.max(temp) - np.min(temp)))
         v_vertical -= np.mean(v_vertical)
+
+        exit()
 
         test_idx_row_list = []
         test_idx_col_list = []
 
     # The gradient e.g. grad_row is intended to be the component of the gradient across the rows
-    # i.e. if you have grad_row = 1 and grad_col = 0 then your vector should point across the rows but not across the cols
+    # i.e. if you have grad_row = 1 and grad_col = 0
+    # then your vector should point across the rows but not across the cols
 
     # Calculate the normalization
     normalization = np.sqrt(np.square(grad_row) + np.square(grad_col))
@@ -152,7 +167,6 @@ def test_case():
     grad_row_norm = -grad_row / normalization
     grad_col_norm = -grad_col / normalization
 
-    simulation_cell_size = temp.shape[0]
     # rr and cc are short for rowrow and columncolumn
     # These are 2d arrays containing for each cell the row or column respectively
     cc, rr = np.meshgrid(range(simulation_cell_size), range(simulation_cell_size))
@@ -381,30 +395,37 @@ def test_case():
     for a in ax.flatten():
         # Remember: scatter, quiver, vlines and hlines think in x and y but imshow in rows and cols
         # So the col coordinate is corresponding to x, and rows to y
-        a.scatter(shifted_cc, shifted_rr)
-        if plot_origin == "lower":
-            a.quiver(cc, rr, grad_col_norm, grad_row_norm, scale=10)
+        if test:
+            a.scatter(shifted_cc, shifted_rr)
+            if plot_origin == "lower":
+                a.quiver(cc, rr, grad_col_norm, grad_row_norm, scale=10)
+            else:
+                a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=10)
+
+            # test_idx_row_list = [2, 2]
+            # test_idx_col_list = [8, 8 ]
+            for test_idx_row, test_idx_col in zip(test_idx_row_list, test_idx_col_list):
+                elem_rr = shifted_rr[test_idx_row, test_idx_col]
+                elem_cc = shifted_cc[test_idx_row, test_idx_col]
+
+                print(elem_rr, elem_cc)
+
+                a.vlines(elem_cc - half_cell, elem_rr - half_cell, elem_rr + half_cell)
+                a.vlines(elem_cc + half_cell, elem_rr - half_cell, elem_rr + half_cell)
+                a.hlines(elem_rr - half_cell, elem_cc - half_cell, elem_cc + half_cell)
+                a.hlines(elem_rr + half_cell, elem_cc - half_cell, elem_cc + half_cell)
         else:
-            a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=10)
-        # test_idx_row_list = [2, 2]
-        # test_idx_col_list = [8, 8 ]
-        for test_idx_row, test_idx_col in zip(test_idx_row_list, test_idx_col_list):
-            elem_rr = shifted_rr[test_idx_row, test_idx_col]
-            elem_cc = shifted_cc[test_idx_row, test_idx_col]
-
-            print(elem_rr, elem_cc)
-
-            a.vlines(elem_cc - half_cell, elem_rr - half_cell, elem_rr + half_cell)
-            a.vlines(elem_cc + half_cell, elem_rr - half_cell, elem_rr + half_cell)
-            a.hlines(elem_rr - half_cell, elem_cc - half_cell, elem_cc + half_cell)
-            a.hlines(elem_rr + half_cell, elem_cc - half_cell, elem_cc + half_cell)
+            if plot_origin == "lower":
+                a.quiver(cc, rr, grad_col_norm, grad_row_norm, scale=150)
+            else:
+                a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=150)
         a.set_ylabel("Row")
         a.set_xlabel("Col")
     fig.set_tight_layout(True)
 
     from pathlib import Path
     out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
-    plt.savefig(out_dir / "conflicting_case_center.png", dpi=300)
+    plt.savefig(out_dir / "global.png", dpi=300)
     plt.show()
 
 
