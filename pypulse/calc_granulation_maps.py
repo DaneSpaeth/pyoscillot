@@ -40,7 +40,6 @@ def calc_raw_num_nodes_and_fluxes(num_incoming_nodes, num_outgoing_nodes,
         Return array num_incoming_nodes and num_outgoing_nodes
     """
     overlap_areas = np.zeros((3, 3))
-    # TODO Allow shifts over the border
     cell_size_row = rr.shape[0]
     cell_size_col = rr.shape[1]
     shifted_row3 = shifted_row[row, col] + cell_size_row
@@ -134,7 +133,7 @@ def test_case():
         temperature = radiance_to_temperature(granulation_radiance)
         temp = temperature[992 + 1292]
 
-        temp = temp[20:80, 20:80]
+        temp = temp[40:60, 40:60]
 
         grad_row, grad_col = np.gradient(temp)
         v_vertical = -2000 + 3000 * ((temp - np.min(temp)) / (np.max(temp) - np.min(temp)))
@@ -143,8 +142,8 @@ def test_case():
         test_idx_row_list = []
         test_idx_col_list = []
 
-    # The gradient e.g. grad_row is intended to be the component of the gradient along the rows
-    # i.e. if you have grad_row = 1 and grad_col = 0 then your vector should point along the row but not along the col
+    # The gradient e.g. grad_row is intended to be the component of the gradient across the rows
+    # i.e. if you have grad_row = 1 and grad_col = 0 then your vector should point across the rows but not across the cols
 
     # Calculate the normalization
     normalization = np.sqrt(np.square(grad_row) + np.square(grad_col))
@@ -163,8 +162,8 @@ def test_case():
 
     # Create cc and rr but 3x3 simulation cells added together
     # We need these later for determining the flux for different cells
-    fat_rr = np.vstack((np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr))))
-    fat_cc = np.vstack((np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc))))
+    # fat_rr = np.vstack((np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr)), np.hstack((rr, rr, rr))))
+    # fat_cc = np.vstack((np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc)), np.hstack((cc, cc, cc))))
 
     shifted_rr = rr + grad_row_norm
     shifted_cc = cc + grad_col_norm
@@ -206,9 +205,12 @@ def test_case():
     flux_percentages = raw_flux_percentages.copy()
 
     # Now correct the flux for cells that influence each other
-    for row in range(1, simulation_cell_size-1):
-        for col in range(1, simulation_cell_size-1):
-            local_raw_flux = raw_flux_percentages[row, col, :, :]
+    for row in range(0, simulation_cell_size):
+        for col in range(0, simulation_cell_size):
+            local_raw_flux = flux_percentages[row, col, :, :]
+            # If the cells does not give any flux away at all continue
+            if not local_raw_flux.any():
+                continue
             # Check all the neighboring cells
             for drow in range(-1, 2):
                 for dcol in range(-1, 2):
@@ -221,7 +223,20 @@ def test_case():
                     local_col = dcol + 1
                     if not local_raw_flux[local_row, local_col]:
                         continue
-                    target_raw_flux = raw_flux_percentages[row + drow, col + dcol, : ,: ]
+                    if row + drow < 0:
+                        target_row = simulation_cell_size - 1
+                    elif row + drow >= simulation_cell_size:
+                        target_row = 0
+                    else:
+                        target_row = row + drow
+                    if col + dcol < 0:
+                        target_col = simulation_cell_size - 1
+                    elif col + dcol >= simulation_cell_size:
+                        target_col = 0
+                    else:
+                        target_col = col + dcol
+
+                    target_raw_flux = flux_percentages[target_row, target_col, :, :]
                     # Dictionary to find the source cell in the 3x3 flux array of the target cell
                     map_to_relative = {1: 1,
                                        0: 2,
@@ -242,14 +257,14 @@ def test_case():
                         local_flux = local_raw_flux / np.sum(local_raw_flux)
                         flux_percentages[row, col, :, :] = local_flux
                         # Reduce the number of incoming nodes
-                        num_incoming_nodes[row + drow, col + dcol] -= 1
+                        num_incoming_nodes[target_row, target_col] -= 1
                         num_outgoing_nodes[row, col] -= 1
                     else:
-                        target_raw_flux[map_to_relative[local_row], map_to_relative[local_row]] = 0
+                        target_raw_flux[relative_row, relative_col] = 0
                         target_flux = target_raw_flux / np.sum(target_raw_flux)
-                        flux_percentages[row + drow, col + dcol, :, :] = target_flux
+                        flux_percentages[target_row, target_col, :, :] = target_flux
                         num_incoming_nodes[row, col] -= 1
-                        num_outgoing_nodes[row + drow, col + dcol] -= 1
+                        num_outgoing_nodes[target_row, target_col] -= 1
 
 
 
@@ -389,7 +404,7 @@ def test_case():
 
     from pathlib import Path
     out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
-    plt.savefig(out_dir / "border_case_side.png", dpi=300)
+    plt.savefig(out_dir / "conflicting_case_center.png", dpi=300)
     plt.show()
 
 
@@ -444,14 +459,27 @@ def create_test_data_over_border():
     v_vertical = np.zeros((7, 7))
 
     # Throw in some test temps and gradients
-    test_idx_row_list = [3]
-    test_idx_col_list = [0]
+    test_idx_row_list = []
+    test_idx_col_list = []
     test_idx_row = 3
-    test_idx_col = 0
+    test_idx_col = 3
     temp[test_idx_row, test_idx_col] = 5000
-    grad_row[test_idx_row, test_idx_col] = 1
+    grad_row[test_idx_row, test_idx_col] = -1
     grad_col[test_idx_row, test_idx_col] = 1
     v_vertical[test_idx_row, test_idx_col] = 1000.
+
+    test_idx_row_list.append(test_idx_row)
+    test_idx_col_list.append(test_idx_col)
+
+    test_idx_row = 4
+    test_idx_col = 2
+    temp[test_idx_row, test_idx_col] = 5000
+    grad_row[test_idx_row, test_idx_col] = 1
+    grad_col[test_idx_row, test_idx_col] = -0.5
+    v_vertical[test_idx_row, test_idx_col] = 1000.
+
+    test_idx_row_list.append(test_idx_row)
+    test_idx_col_list.append(test_idx_col)
     return grad_row, grad_col, temp, test_idx_row_list, test_idx_col_list, v_vertical
 
 
