@@ -136,7 +136,6 @@ def test_case():
         temp = temperature[992 + 1292]
         simulation_cell_size = temp.shape[0]
 
-        # TODO add bordering cells, calc gradient, cut back to original cell
         temp3 = np.vstack((np.hstack((temp, temp, temp)),
                            np.hstack((temp, temp, temp)),
                            np.hstack((temp, temp, temp))))
