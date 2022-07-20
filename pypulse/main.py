@@ -5,7 +5,10 @@ from datasaver import DataSaver
 import socket
 from datetime import datetime
 from theoretical_rvs import theoretical_main
-from check_time_series import check_time_series
+try:
+    from check_time_series import check_time_series
+except ModuleNotFoundError:
+    pass
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
 import sys
