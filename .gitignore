@@ -154,3 +154,6 @@ test.py
 global.ini
 theoretical_data/
 
+/etc/
+.idea/
+*.png
