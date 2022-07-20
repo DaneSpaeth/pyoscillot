@@ -8,6 +8,13 @@ from theoretical_rvs import theoretical_main
 from check_time_series import check_time_series
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
+import sys
+try:
+    sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
+    from correct_nzps import create_correction, read_in_nzps
+except:
+    pass
+
 
 def main(ticket, run_laptop=False):
     """ Run a simulation specified in ticket. Run serval. Copy all files
@@ -70,6 +77,10 @@ def main(ticket, run_laptop=False):
                             name, f"HIP{int(conf_dict['hip'])}",
                             conf_dict["instrument"].upper()])
 
+            outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
+            nzps = read_in_nzps("vis")
+            create_correction(outfile, nzps, raccoon=True)
+
         # Copy the flux and the ticket to the new folders
         saver = DataSaver(name)
         saver.copy_ticket_servalfolder(ticket)
@@ -79,7 +90,8 @@ def main(ticket, run_laptop=False):
             print("Flux could not be copied!")
             pass
 
-        check_time_series(name)
+        check_time_series(name, reduction="serval")
+        check_time_series(name, reduction="raccoon")
 
 
 

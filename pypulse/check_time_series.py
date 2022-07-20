@@ -16,6 +16,7 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
     # Read in RV, CRX and DLW
     fig, ax = plt.subplots(4, 2, figsize=(20, 10))
     rv_dict = load.rv(name)
+    print(list(rv_dict.keys()))
     if reduction == "serval":
         instrument = "CARMENES_VIS"
         activity1_dict = load.crx(name)
@@ -100,15 +101,5 @@ if __name__ == "__main__":
     # plt.plot(bjd, band_photometry / np.median(band_photometry))
     # plt.show()
 
-    name = "GRANULATION_HIGHRES"
-    check_time_series(name)
-    plt.savefig(f"/home/dane/Documents/PhD/Sabine_overviews/18.05.2022/{name}_serval.pdf")
-    plt.close()
-    check_time_series(name, reduction="raccoon", downscale_raccoon_errors=False)
-    plt.savefig(f"/home/dane/Documents/PhD/Sabine_overviews/18.05.2022/{name}_raccoon.pdf")
-
-    check_time_series(name, reduction="raccoon", downscale_raccoon_errors=True)
-    plt.savefig(f"/home/dane/Documents/PhD/Sabine_overviews/18.05.2022/{name}_raccoon_errors_downscaled.pdf")
-    plt.close()
-    # check_time_series(
-    #     "talk_ngc2423_0_dt50_k100_vrot3000_oldtemplate_snronlyheader", instrument="CARMENES_VIS")
+    name = "SPOT_TEST"
+    check_time_series(name, reduction="raccoon")
