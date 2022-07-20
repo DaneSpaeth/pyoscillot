@@ -46,18 +46,29 @@ def main(ticket, run_laptop=False):
         # Run Serval
         if conf_dict["instrument"].upper() == "ALL":
 
-            global_dict["rvlibpath"] = "/home/dane/mounted_srv/simulations/fake_spectra"
-            subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+            subprocess.run(["bash", "run_serval.sh",
+                            str(global_dict["datapath_laptop"]),
+                            str(global_dict["rvlibpath"] / "serval" / "SIMULATION"),
                             name, f"HIP{int(conf_dict['hip'])}",
                             "CARMENES_VIS"])
 
-            subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+            subprocess.run(["bash", "run_serval.sh",
+                            str(global_dict["datapath_laptop"]),
+                            str(global_dict["rvlibpath"] / "raccoon" / "SIMULATION"),
                             name, f"HIP{int(conf_dict['hip'])}",
                             "HARPS"])
         else:
-            subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
+            subprocess.run(["bash", "run_serval.sh",
+                            str(global_dict["datapath_laptop"]),
+                            str(global_dict["rvlibpath"] / "serval" / "SIMULATION"),
                             name, f"HIP{int(conf_dict['hip'])}",
                             conf_dict["instrument"].upper()])
+
+            # subprocess.run(["bash", "run_raccoon.sh",
+            #                 str(global_dict["datapath_laptop"]),
+            #                 str(global_dict["rvlibpath"] / "raccoon" / "SIMULATION"),
+            #                 name, f"HIP{int(conf_dict['hip'])}",
+            #                 conf_dict["instrument"].upper()])
 
         # Copy the flux and the ticket to the new folders
         saver = DataSaver(name)

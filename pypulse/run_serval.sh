@@ -1,12 +1,9 @@
 #!/bin/bash
-root=/home/dspaeth/Documents/pypulse/data
-root=/home/dane/mounted_srv/simulations
-# root=/home/dane/Documents/PhD/pypulse/mounted_data
-
-RVLIBPATH=$1
-SIMNAME=$2
-STAR=$3
-INST=$4
+DATAPATH=$1
+RVLIBPATH=$2
+SIMNAME=$3
+STAR=$4
+INST=$5
 
 SERVALHOME=~/Documents/PhD/serval
 SERVAL=$SERVALHOME/serval/
@@ -24,6 +21,6 @@ else
     SERVALINST=$INST
 fi
 
-$SERVAL/src/serval.py $SIMNAME ${root}/fake_spectra/$SIMNAME/$INST -inst $SERVALINST -targrv 0 -pspline -targ $STAR -atmmask "" -brvref DRS -safemode 2
+$SERVAL/src/serval.py $SIMNAME $DATAPATH/fake_spectra/$SIMNAME/$INST -inst $SERVALINST -targrv 0 -pspline -targ $STAR -atmmask "" -brvref DRS -safemode 2
 mv $SIMNAME/* $OUTPATH
 rmdir $SIMNAME
