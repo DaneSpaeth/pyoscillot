@@ -48,27 +48,27 @@ def main(ticket, run_laptop=False):
 
             subprocess.run(["bash", "run_serval.sh",
                             str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"] / "serval" / "SIMULATION"),
+                            str(global_dict["rvlibpath"]),
                             name, f"HIP{int(conf_dict['hip'])}",
                             "CARMENES_VIS"])
 
             subprocess.run(["bash", "run_serval.sh",
                             str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"] / "raccoon" / "SIMULATION"),
+                            str(global_dict["rvlibpath"]),
                             name, f"HIP{int(conf_dict['hip'])}",
                             "HARPS"])
         else:
             subprocess.run(["bash", "run_serval.sh",
                             str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"] / "serval" / "SIMULATION"),
+                            str(global_dict["rvlibpath"]),
                             name, f"HIP{int(conf_dict['hip'])}",
                             conf_dict["instrument"].upper()])
 
-            # subprocess.run(["bash", "run_raccoon.sh",
-            #                 str(global_dict["datapath_laptop"]),
-            #                 str(global_dict["rvlibpath"] / "raccoon" / "SIMULATION"),
-            #                 name, f"HIP{int(conf_dict['hip'])}",
-            #                 conf_dict["instrument"].upper()])
+            subprocess.run(["bash", "run_raccoon.sh",
+                            str(global_dict["datapath_laptop"]),
+                            str(global_dict["rvlibpath"]),
+                            name, f"HIP{int(conf_dict['hip'])}",
+                            conf_dict["instrument"].upper()])
 
         # Copy the flux and the ticket to the new folders
         saver = DataSaver(name)

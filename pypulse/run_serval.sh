@@ -9,7 +9,7 @@ SERVALHOME=~/Documents/PhD/serval
 SERVAL=$SERVALHOME/serval/
 # source ${SERVALHOME}/venv/bin/activate
 
-OUTPATH=$RVLIBPATH/$SIMNAME/$INST
+OUTPATH=$RVLIBPATH/serval/SIMULATION/$SIMNAME/$INST
 mkdir -p $OUTPATH
 cd $OUTPATH
 

@@ -176,7 +176,7 @@ class DataSaver():
             exit()
 
         # Now copy the ticket to the serval folder
-        serval_ticket = self.global_dict["rvlibpath"] / \
+        serval_ticket = self.global_dict["rvlibpath"] / "serval" / "SIMULATION" /\
             self.simulation_name / (str(self.simulation_name) + ".ini")
 
         if serval_ticket.parent.is_dir():
