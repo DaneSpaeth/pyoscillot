@@ -135,7 +135,8 @@ class GridSpectrumSimulator():
 
         self.rotation = self.projector.rotation()
         self.pulsation = self.projector.pulsation()
-        self.granulation = self.projector.granulation_velocity()
+        # self.granulation = self.projector.granulation_velocity()
+        self.granulation = np.zeros(self.pulsation.shape)
 
         # numba does not like dictionaries
         fine_ref_temperatures = np.array(list(fine_ref_spectra.keys()))
@@ -171,8 +172,8 @@ class GridSpectrumSimulator():
             "pulsation": self.projector.pulsation(),
             "temperature": self.projector.temperature(),
             "rotation": self.projector.rotation(),
-            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann(),
-            "granulation_velocity":self.projector.granulation_velocity()}
+            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann()}
+            #"granulation_velocity":self.projector.granulation_velocity()}
 
         return array_dict
 

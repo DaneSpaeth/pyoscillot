@@ -4,6 +4,8 @@ from shutil import copy2
 import tarfile
 import numpy as np
 from parse_ini import parse_global_ini
+import socket
+laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
 
 class DataSaver():
@@ -15,7 +17,10 @@ class DataSaver():
             :param str simulation_name: Name of simulation to use for folders
         """
         self.global_dict = parse_global_ini()
-        self.dataroot = self.global_dict["datapath"]
+        if not laptop:
+            self.dataroot = self.global_dict["datapath"]
+        else:
+            self.dataroot = self.global_dict["datapath_laptop"]
         self.simulation_name = simulation_name
 
     def save_spectrum(self, spectrum, new_header, name,
@@ -131,7 +136,6 @@ class DataSaver():
             self.simulation_name
         if instrument is not None:
             folder = folder / instrument
-
         try:
             if not folder.is_dir():
                 folder.mkdir(parents=True)

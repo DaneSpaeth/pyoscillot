@@ -3,6 +3,7 @@ from simulation_controller import SimulationController
 from parse_ini import parse_global_ini, parse_ticket
 from datasaver import DataSaver
 import socket
+from datetime import datetime
 from theoretical_rvs import theoretical_main
 from check_time_series import check_time_series
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
@@ -12,6 +13,8 @@ def main(ticket, run_laptop=False):
     """ Run a simulation specified in ticket. Run serval. Copy all files
         and plot the result.
     """
+    start = datetime.now()
+
     global_dict = parse_global_ini()
     if laptop:
         global_dict["datapath"] = "/home/dane/Documents/Phd/pypulse/mounted_data"
@@ -26,7 +29,15 @@ def main(ticket, run_laptop=False):
         saver.copy_ticket_spectrafolder(ticket)
 
         # Now also calculate the theoretical results
-        theoretical_main(name)
+        # theoretical_main(name)
+        stop = datetime.now()
+        timedelta = stop - start
+        minutes = timedelta.total_seconds() / 60
+        seconds = (minutes - int(minutes))*60
+        minutes = int(minutes)
+        seconds = round(seconds)
+        print(f"Program Took {minutes}:{seconds}")
+
     else:
         if run_laptop:
             # Run the Simulation even if on laptop
@@ -35,7 +46,7 @@ def main(ticket, run_laptop=False):
         # Run Serval
         if conf_dict["instrument"].upper() == "ALL":
 
-            # global_dict["rvlibpath"] = "/home/dane/mounted_srv/simulations/fake_spectra"
+            global_dict["rvlibpath"] = "/home/dane/mounted_srv/simulations/fake_spectra"
             subprocess.run(["bash", "run_serval.sh", str(global_dict["rvlibpath"]),
                             name, f"HIP{int(conf_dict['hip'])}",
                             "CARMENES_VIS"])
@@ -60,9 +71,11 @@ def main(ticket, run_laptop=False):
         check_time_series(name)
 
 
+
+
 if __name__ == "__main__":
 
-    ticket = "granulation_ticket.ini"
+    ticket = "example_spot.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)

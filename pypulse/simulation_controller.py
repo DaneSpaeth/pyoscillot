@@ -285,7 +285,7 @@ class SimulationController():
         self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd, v_theo)
         # Save the arrays
         array_dict = star.get_arrays()
-        # self.saver.save_arrays(array_dict, bjd)
+        self.saver.save_arrays(array_dict, bjd)
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
 

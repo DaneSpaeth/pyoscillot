@@ -129,7 +129,6 @@ def project_2d(x, y, z, phi, theta, values, N,
     z_rot = np.zeros(z.shape)
     for row in range(x.shape[0]):
         for col in range(x.shape[1]):
-            print(row, col)
             vec = (x[row, col], y[row, col], z[row, col])
             vec_rot = rot.apply(vec)
             x_rot[row, col] = vec_rot[0]
