@@ -101,7 +101,7 @@ def main(ticket, run_laptop=False):
 
 if __name__ == "__main__":
 
-    ticket = "example_spot.ini"
+    ticket = "sepideh_spot.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)

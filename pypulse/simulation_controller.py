@@ -218,8 +218,9 @@ class SimulationController():
         N = int(self.conf["n"])
         P = self.conf[sim]["period"]
         N_processes = int(self.conf["n_processes"])
+        N_periods = int(self.conf["n_periods"])
 
-        phase_sample, time_sample = self.sample_phase(P, N)
+        phase_sample, time_sample = self.sample_phase(P, N, N_periods=N_periods)
 
         # At the moment assume that there is no planetary signal present
         # But still create K_sample for barycentric correction
