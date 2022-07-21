@@ -54,30 +54,34 @@ def main(ticket, run_laptop=False):
             SimulationController(ticket)
             exit()
         # Run Serval
+        try:
+            star = f"HIP{int(conf_dict['hip'])}"
+        except ValueError:
+            star = conf_dict['hip']
         if conf_dict["instrument"].upper() == "ALL":
 
             subprocess.run(["bash", "run_serval.sh",
                             str(global_dict["datapath_laptop"]),
                             str(global_dict["rvlibpath"]),
-                            name, f"HIP{int(conf_dict['hip'])}",
+                            name, star,
                             "CARMENES_VIS"])
 
             subprocess.run(["bash", "run_serval.sh",
                             str(global_dict["datapath_laptop"]),
                             str(global_dict["rvlibpath"]),
-                            name, f"HIP{int(conf_dict['hip'])}",
+                            name, star,
                             "HARPS"])
         else:
             subprocess.run(["bash", "run_serval.sh",
                             str(global_dict["datapath_laptop"]),
                             str(global_dict["rvlibpath"]),
-                            name, f"HIP{int(conf_dict['hip'])}",
+                            name, star,
                             conf_dict["instrument"].upper()])
 
             subprocess.run(["bash", "run_raccoon.sh",
                             str(global_dict["datapath_laptop"]),
                             str(global_dict["rvlibpath"]),
-                            name, f"HIP{int(conf_dict['hip'])}",
+                            name, star,
                             conf_dict["instrument"].upper()])
 
             outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
@@ -101,7 +105,7 @@ def main(ticket, run_laptop=False):
 
 if __name__ == "__main__":
 
-    ticket = "sepideh_spot.ini"
+    ticket = "two_spots.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)

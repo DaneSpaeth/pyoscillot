@@ -36,7 +36,7 @@ class GridSpectrumSimulator():
         self.spectrum = None
         self.flux = None
 
-    def add_spot(self, phase=0.25, altitude=90, radius=25, T_spot=4300):
+    def add_spot(self, phase=0.25, theta_pos=90, radius=25, T_spot=4300):
         """ Add a circular starspot at position x,y.
 
             :param phase: Phase ranging from 0 to 1 (0 being left edge,
@@ -47,7 +47,7 @@ class GridSpectrumSimulator():
             :param bool reset: If True, reset the temp before adding another spot
         """
         az = phase * 360.
-        self.three_dim_star.add_spot(radius, phi_pos=az, T_spot=T_spot)
+        self.three_dim_star.add_spot(radius, phi_pos=az, theta_pos=theta_pos, T_spot=T_spot)
 
         # import matplotlib.pyplot as plt
         # fig, ax = plt.subplots(1)
@@ -241,23 +241,17 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    star = GridSpectrumSimulator(N_star=250, N_border=1, v_rot=3000, limb_darkening=False)
-    star.add_pulsation(T_var=100)
-    rest_wavelength, total_spectrum, v_total = star.calc_spectrum()
-    # np.save("spec.npy", total_spectrum)
-    comparison_spec = np.load("spec.npy")
-    # assert (comparison_spec == total_spectrum).all()
+    star = GridSpectrumSimulator(N_star=300, N_border=1, v_rot=3000, limb_darkening=False, inclination=60)
+    star.add_spot(radius=5, theta_pos=180)
+    star.add_spot(radius=5, theta_pos=150)
+    star.add_spot(radius=5, theta_pos=120)
+    star.add_spot(radius=5, theta_pos=90)
+    star.add_spot(radius=5, theta_pos=60)
+    star.add_spot(radius=5, theta_pos=30)
+    star.add_spot(radius=5, theta_pos=0)
 
-    # plt.plot(rest_wavelength, comparison_spec, label="Comparison")
-    # plt.plot(rest_wavelength, total_spectrum, label="New", alpha=0.5)
-    # import matplotlib as mpl
-    #
-    # mpl.rcParams['agg.path.chunksize'] = 10000000
 
-    # print(rest_wavelength)
+    fig, ax = plt.subplots(1)
+    ax.imshow(star.projector.temperature(), origin="lower")
+    plt.show()
 
-    # plt.plot(rest_wavelength, total_spectrum- comparison_spec, "bo")
-    # plt.ylim(-5, 5)
-    # plt.xlim(5000, 12000)
-    # plt.show()
-    print("Exit")

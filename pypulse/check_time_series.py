@@ -102,4 +102,5 @@ if __name__ == "__main__":
     # plt.show()
 
     name = "SPOT_TEST"
+    check_time_series(name, reduction="serval")
     check_time_series(name, reduction="raccoon")

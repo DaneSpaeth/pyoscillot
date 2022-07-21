@@ -67,19 +67,24 @@ class SimulationController():
             # Determine the template and SNR file from the star name
             # NOTE: AT THE MOMENT ONLY THE NAME IS CHECKED AND NOT THE
             # TEMPERATURE OR SO
-            hip = int(self.conf["hip"])
-            star = f"HIP{hip}"
+            try:
+                hip = int(self.conf["hip"])
+                star = f"HIP{hip}"
+            except ValueError:
+                star = self.conf["hip"]
 
             global_dict = parse_global_ini()
-            # TODO CHANGE BACK
-            # template_directory = Path(
-            #     global_dict["datapath"]) / "CARMENES_templates"
-            # fits_template = template_directory / \
-            #     f"CARMENES_template_{star}.fits"
-            # if not fits_template.is_file():
-            #     fits_template = None
+            template_directory = Path(
+                global_dict["datapath"]) / "CARMENES_templates"
+            fits_template = template_directory / \
+                f"CARMENES_template_{star}.fits"
+            if not fits_template.is_file():
+                fits_template = None
+
+
+
             # TODO REMOVE
-            fits_template = global_dict["datapath"] / "CARMENES_template.fits"
+            # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
 
             global_dict = parse_global_ini()
             snr_directory = Path(
@@ -214,33 +219,52 @@ class SimulationController():
     def simulate_spot(self):
         """ Simulate the spot spectra."""
         # TODO allow multiple spots
-        sim = self.simulation_keys[0]
+        phase_samples = []
+        time_samples = []
+        # For the moment assume that you have only spots
+        N_spots = len(self.simulation_keys)
         N = int(self.conf["n"])
-        P = self.conf[sim]["period"]
+        phase_samples = np.zeros((N, N_spots))
+        theta_samples = np.zeros_like(phase_samples)
         N_processes = int(self.conf["n_processes"])
         N_periods = int(self.conf["n_periods"])
-
+        # start out with the first spot sim
+        sim = self.simulation_keys[0]
+        P = self.conf[sim]["period"]
         phase_sample, time_sample = self.sample_phase(P, N, N_periods=N_periods)
+
+        # Now you have a global and raw phase and time_sample
+        # The time_sample is the same for all spots
+        # The phase sample is adjusted wrt to the starting phi angle
+        # This allows us later to adjust e.g. the rotation speed or so
+        for idx, sim in enumerate(self.simulation_keys):
+            # Add the phi_angle but divided by the full circle to the phase and fold it back to [0,1]
+            phase_samples[:, idx] = np.mod((phase_sample + self.conf[sim]["phi_start"]/360), 1)
+
+            # Also save the theta angle
+            # theta_samples[:, idx] = np.ones(len(time_sample)) * self.conf[sim]["theta"]
 
         # At the moment assume that there is no planetary signal present
         # But still create K_sample for barycentric correction
         K_sample = np.zeros(len(time_sample))
-        bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
+        bjds = self.get_bjd(time_sample, self.conf["hip"])
         bcs = np.zeros(len(bjds))
+
 
         idx_list = list(range(len(K_sample)))
         if N_processes > 1:
             with ProcessPoolExecutor(max_workers=N_processes) as executor:
                 for r in executor.map(
-                        self._run_spot_sim, idx_list, K_sample, phase_sample,
+                        self._run_spot_sim, idx_list, K_sample, phase_samples,
                         time_sample, bjds, bcs):
                     print(r)
         else:
+            raise NotImplementedError
             for r in map(self._run_spot_sim, idx_list,
                          K_sample, time_sample, bjds, bcs):
                 print(r)
 
-    def _run_spot_sim(self, idx, v, phase, time, bjd, bc):
+    def _run_spot_sim(self, idx, v, phases, time, bjd, bc):
         """ Isolated function to actually run the spot simulation.
 
             It is splitted from the simulate_pulsation function to allow
@@ -255,7 +279,6 @@ class SimulationController():
 
             All parameters should be single values
         """
-        sim = self.simulation_keys[0]
         N = int(self.conf["n"])
         N_star = int(self.conf["n_star"])
         limb_darkening = bool(int(self.conf["limb_darkening"]))
@@ -271,9 +294,13 @@ class SimulationController():
             v_rot=v_rot,
             inclination=inclination,
             limb_darkening=limb_darkening)
-        star.add_spot(phase=phase,
-                      radius=self.conf[sim]["radius"],
-                      T_spot=self.conf[sim]["t_spot"])
+
+        # Assume that you only have spots
+        for sim, phase in zip(self.simulation_keys, phases):
+            star.add_spot(phase=phase,
+                          radius=self.conf[sim]["radius"],
+                          T_spot=self.conf[sim]["t_spot"],
+                          theta_pos=self.conf[sim]["theta"])
 
         # Wavelength in restframe of phoenix spectra but already perturbed
         # by spot
@@ -536,7 +563,11 @@ class SimulationController():
 
         bjds = []
         for jdutc in jdutc_times:
-            bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, hip_id=star,
+            try:
+                star = f"HIP{int(star)}"
+            except ValueError:
+                star = star
+            bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, starname=star,
                                                  lat=lat, longi=lon,
                                                  alt=alt, ephemeris='de430')
             bjds.append(float(bjd_result[0]))
