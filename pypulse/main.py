@@ -100,18 +100,18 @@ def reduce_CARMENES_VIS(global_dict, name, star):
                     name, star,
                     "CARMENES_VIS"])
 
-    subprocess.run(["bash", "run_raccoon.sh",
-                    str(global_dict["datapath_laptop"]),
-                    str(global_dict["rvlibpath"]),
-                    name, star,
-                    "CARMENES_VIS"])
-
-    # For raccoon also create the csv file
-    # A bit ugly but take the existing nzp correction code
-    # TODO: Refactor at some point
-    outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
-    nzps = read_in_nzps("vis")
-    create_correction(outfile, nzps, raccoon=True)
+    # subprocess.run(["bash", "run_raccoon.sh",
+    #                 str(global_dict["datapath_laptop"]),
+    #                 str(global_dict["rvlibpath"]),
+    #                 name, star,
+    #                 "CARMENES_VIS"])
+    #
+    # # For raccoon also create the csv file
+    # # A bit ugly but take the existing nzp correction code
+    # # TODO: Refactor at some point
+    # outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
+    # nzps = read_in_nzps("vis")
+    # create_correction(outfile, nzps, raccoon=True)
 
 def reduce_CARMENES_NIR(global_dict, name, star):
     """ Convenience function to reduce CARMENES_NIR spectra"""
@@ -134,7 +134,7 @@ def reduce_HARPS(global_dict, name, star):
 
 if __name__ == "__main__":
 
-    ticket = "NIR_spot.ini"
+    ticket = "presampled_spot.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)
