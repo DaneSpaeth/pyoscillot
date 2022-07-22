@@ -63,7 +63,7 @@ class SimulationController():
     def _save_to_disk(self, shift_wavelength, spectrum, time, bc, bjd, v_theo):
         """ Helper function to save the spectrum to disk."""
         # Interpolate onto the CARMENES template
-        if self.instrument in ["CARMENES_VIS", "ALL"]:
+        if self.instrument in ["CARMENES_VIS", "CARMENES", "ALL"]:
             # Determine the template and SNR file from the star name
             # NOTE: AT THE MOMENT ONLY THE NAME IS CHECKED AND NOT THE
             # TEMPERATURE OR SO
@@ -75,7 +75,7 @@ class SimulationController():
 
             global_dict = parse_global_ini()
             template_directory = Path(
-                global_dict["datapath"]) / "CARMENES_templates"
+                global_dict["datapath"]) / "CARMENES_VIS_templates"
             fits_template = template_directory / \
                 f"CARMENES_template_{star}.fits"
             if not fits_template.is_file():
@@ -88,7 +88,7 @@ class SimulationController():
 
             global_dict = parse_global_ini()
             snr_directory = Path(
-                global_dict["datapath"]) / "CARMENES_SNR_profiles"
+                global_dict["datapath"]) / "CARMENES_VIS_SNR_profiles"
             snr_file = snr_directory / f"{star}.npy"
             try:
                 snr_profile = np.load(snr_file)
@@ -116,6 +116,59 @@ class SimulationController():
                                      filename,
                                      CARMENES_template=fits_template,
                                      instrument="CARMENES_VIS")
+        if self.instrument in ["CARMENES_NIR", "CARMENES", "ALL"]:
+            # Determine the template and SNR file from the star name
+            # NOTE: AT THE MOMENT ONLY THE NAME IS CHECKED AND NOT THE
+            # TEMPERATURE OR SO
+            try:
+                hip = int(self.conf["hip"])
+                star = f"HIP{hip}"
+            except ValueError:
+                star = self.conf["hip"]
+
+            global_dict = parse_global_ini()
+            template_directory = Path(
+                global_dict["datapath"]) / "CARMENES_NIR_templates"
+            fits_template = template_directory / \
+                f"CARMENES_template_{star}.fits"
+            if not fits_template.is_file():
+                fits_template = Path(global_dict["datapath"] / "CARMENES_NIR_template.fits")
+
+
+
+            # TODO REMOVE
+            # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
+
+            # global_dict = parse_global_ini()
+            # snr_directory = Path(
+            #     global_dict["datapath"]) / "CARMENES_NIR_SNR_profiles"
+            # snr_file = snr_directory / f"{star}.npy"
+            # try:
+            #     snr_profile = np.load(snr_file)
+            # except FileNotFoundError:
+            #     snr_profile = None
+
+            # TODO REMOVE
+            snr_profile = None
+
+            shifted_spec, wave = carmenes.interpolate(
+                spectrum, shift_wavelength,
+                template_file=fits_template,
+                snr_profile=snr_profile,
+                target_max_snr=float(self.conf["snr"]),
+                adjust_snr=False)
+
+            new_header = carmenes.get_new_header(time, bc, bjd,
+                                                 snr_profile=snr_profile,
+                                                 target_max_snr=float(self.conf["snr"]))
+            timestr = time.strftime("%Y%m%dT%Hh%Mm%Ss")
+            filename = f"car-{timestr}-sci-fake-nir_A.fits"
+
+            self.saver.save_spectrum(shifted_spec,
+                                     new_header,
+                                     filename,
+                                     CARMENES_template=fits_template,
+                                     instrument="CARMENES_NIR")
         if self.instrument in ["HARPS", "ALL"]:
             shifted_spec, wave = harps.interpolate(spectrum, shift_wavelength)
             new_header, new_comments = harps.get_new_header(time, bc, bjd)

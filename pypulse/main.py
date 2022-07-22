@@ -58,35 +58,27 @@ def main(ticket, run_laptop=False):
             star = f"HIP{int(conf_dict['hip'])}"
         except ValueError:
             star = conf_dict['hip']
-        if conf_dict["instrument"].upper() == "ALL":
+        instruments = conf_dict["instrument"].upper()
+        if instruments == "ALL":
 
-            subprocess.run(["bash", "run_serval.sh",
-                            str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"]),
-                            name, star,
-                            "CARMENES_VIS"])
+            reduce_CARMENES_VIS(global_dict, name, star)
 
-            subprocess.run(["bash", "run_serval.sh",
-                            str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"]),
-                            name, star,
-                            "HARPS"])
-        else:
-            subprocess.run(["bash", "run_serval.sh",
-                            str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"]),
-                            name, star,
-                            conf_dict["instrument"].upper()])
+            reduce_CARMENES_NIR(global_dict, name, star)
 
-            subprocess.run(["bash", "run_raccoon.sh",
-                            str(global_dict["datapath_laptop"]),
-                            str(global_dict["rvlibpath"]),
-                            name, star,
-                            conf_dict["instrument"].upper()])
+            reduce_HARPS(global_dict, name, star)
+        elif instruments == "CARMENES":
+            reduce_CARMENES_VIS(global_dict, name, star)
 
-            outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
-            nzps = read_in_nzps("vis")
-            create_correction(outfile, nzps, raccoon=True)
+            reduce_CARMENES_NIR(global_dict, name, star)
+
+        elif instruments == "CARMENES_VIS":
+            reduce_CARMENES_VIS(global_dict, name, star)
+
+        elif instruments == "CARMENES_NIR":
+            reduce_CARMENES_NIR(global_dict, name, star)
+
+        elif instruments == "HARPS":
+            reduce_HARPS(global_dict, name, star)
 
         # Copy the flux and the ticket to the new folders
         saver = DataSaver(name)
@@ -100,12 +92,49 @@ def main(ticket, run_laptop=False):
         check_time_series(name, reduction="serval")
         check_time_series(name, reduction="raccoon")
 
+def reduce_CARMENES_VIS(global_dict, name, star):
+    """ Convenience function to reduce CARMENES_VIS spectra"""
+    subprocess.run(["bash", "run_serval.sh",
+                    str(global_dict["datapath_laptop"]),
+                    str(global_dict["rvlibpath"]),
+                    name, star,
+                    "CARMENES_VIS"])
+
+    subprocess.run(["bash", "run_raccoon.sh",
+                    str(global_dict["datapath_laptop"]),
+                    str(global_dict["rvlibpath"]),
+                    name, star,
+                    "CARMENES_VIS"])
+
+    # For raccoon also create the csv file
+    # A bit ugly but take the existing nzp correction code
+    # TODO: Refactor at some point
+    outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
+    nzps = read_in_nzps("vis")
+    create_correction(outfile, nzps, raccoon=True)
+
+def reduce_CARMENES_NIR(global_dict, name, star):
+    """ Convenience function to reduce CARMENES_NIR spectra"""
+    subprocess.run(["bash", "run_serval.sh",
+                    str(global_dict["datapath_laptop"]),
+                    str(global_dict["rvlibpath"]),
+                    name, star,
+                    "CARMENES_NIR"])
+    # TODO add raccoon NIR
+
+def reduce_HARPS(global_dict, name, star):
+    """ Convenience function to reduce HARPS spectra"""
+    subprocess.run(["bash", "run_serval.sh",
+                    str(global_dict["datapath_laptop"]),
+                    str(global_dict["rvlibpath"]),
+                    name, star,
+                    "HARPS"])
 
 
 
 if __name__ == "__main__":
 
-    ticket = "two_spots.ini"
+    ticket = "NIR_spot.ini"
     main(ticket, run_laptop=False)
     # ticket2 = "talk_ticket2.ini"
     # main(ticket2, run_laptop=False)

@@ -19,8 +19,8 @@ raccoonccf \
     --filtell /home/dane/Documents/PhD/raccoon/raccoon/data/tellurics/CARM_VIS/telluric_mask_carm_short.dat \
     --rvshift none \
     --fcorrorders obshighsnr \
-    --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME \
-    --dirserval $RVLIBPATH/serval/SIMULATION/$SIMNAME \
+    --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME/CARMENES_VIS_CCF \
+    --dirserval $RVLIBPATH/serval/SIMULATION/$SIMNAME/$INST \
     --plot_sv \
     --bervmax 100 \
     --verbose

@@ -137,7 +137,7 @@ def download_phoenix(filename, out_dir, feh, spec_intensity=False):
     print(f"Saved to {str(out_dir / filename)}")
 
 
-def carmenes_template(filename="CARMENES_template.fits"):
+def carmenes_template(filename="CARMENES_VIS_template.fits"):
     """ Return spec, sig, cont and wave of Carmenes template."""
     if Path(filename).is_absolute():
         template = filename
@@ -231,7 +231,7 @@ def plot_central_order_intensitites():
 
 if __name__ == "__main__":
     (spec, cont, sig, wave) = carmenes_template("CARMENES_NIR_template.fits")
-    order = 27
+    order = 0
     plt.plot(wave[order], spec[order], label="HIP73620")
     plt.legend()
     plt.xlabel("Wavelength [A]")

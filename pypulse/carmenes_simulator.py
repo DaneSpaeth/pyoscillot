@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 def interpolate(spectrum, wavelength, template_file=None,
                 target_max_snr=300, adjust_snr=True, add_noise=True,
                 snr_profile=None):
-    """ Interpolate to the Carmenes spectrum."""
+    """ Interpolate to the Carmenes spectrum. Should work for both VIS and NIR"""
     if template_file is not None:
         (spec_templ, cont_templ, sig_templ,
          wave_templ) = carmenes_template(template_file)

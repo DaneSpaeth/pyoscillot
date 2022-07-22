@@ -17,6 +17,9 @@ cd $OUTPATH
 if [ $INST = "CARMENES_VIS" ]
 then
     SERVALINST="CARM_VIS"
+elif [ $INST = "CARMENES_NIR" ]
+then
+    SERVALINST="CARM_NIR"
 else
     SERVALINST=$INST
 fi

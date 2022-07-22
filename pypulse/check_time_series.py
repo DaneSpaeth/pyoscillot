@@ -18,12 +18,12 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
     rv_dict = load.rv(name)
     print(list(rv_dict.keys()))
     if reduction == "serval":
-        instrument = "CARMENES_VIS"
-        activity1_dict = load.crx(name)
-        activity2_dict = load.dlw(name)
-        activity3_dict = load.halpha(name)
+        # instrument = "CARMENES_VIS"
+        activity1_dict = load.crx(name, NIR=True)
+        activity2_dict = load.dlw(name, NIR=True)
+        activity3_dict = load.halpha(name, NIR=True)
     else:
-        instrument = "CARMENES_VIS_CCF"
+        # instrument = "CARMENES_VIS_CCF"
         activity1_dict = load.fwhm(name)
         activity2_dict = load.bis(name)
         activity3_dict = load.contrast(name)
@@ -33,13 +33,13 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
             if downscale_raccoon_errors:
                 act_dict[instrument][error_key] = act_dict[instrument][error_key] * 0.1
 
-    plot_rv(rv_dict, ax=ax[0, 0], instrument=instrument)
-    plot_activity(activity1_dict, ax=ax[1, 0], instrument=instrument)
-    plot_activity(activity2_dict, ax=ax[2, 0], instrument=instrument)
-    plot_activity(activity3_dict, ax=ax[3, 0], instrument=instrument)
-    plot_activity_rv(rv_dict, activity1_dict, ax=ax[1, 1], instrument=instrument)
-    plot_activity_rv(rv_dict, activity2_dict, ax=ax[2, 1], instrument=instrument)
-    plot_activity_rv(rv_dict, activity3_dict, ax=ax[3, 1], instrument=instrument)
+    plot_rv(rv_dict, ax=ax[0, 0])
+    plot_activity(activity1_dict, ax=ax[1, 0])
+    plot_activity(activity2_dict, ax=ax[2, 0])
+    plot_activity(activity3_dict, ax=ax[3, 0])
+    plot_activity_rv(rv_dict, activity1_dict, ax=ax[1, 1], fit=None)
+    plot_activity_rv(rv_dict, activity2_dict, ax=ax[2, 1], fit=None)
+    plot_activity_rv(rv_dict, activity3_dict, ax=ax[3, 1], fit=None)
     fig.set_tight_layout(True)
     plt.show()
 
@@ -58,6 +58,24 @@ def plot_temperature(name):
 
     array = np.load(array_paths[0])
     plt.imshow(array, origin="lower", cmap="seismic")
+    plt.show()
+
+def plot_temperatures(name):
+    """ Plot all temperature arrays."""
+    global_dict = parse_global_ini()
+    datapath = global_dict["datapath_laptop"]
+
+    temperature_folder = datapath / "fake_spectra" / name / "arrays" / "temperature"
+    array_paths = sorted(list(temperature_folder.glob("*.npy")))
+
+    if len(array_paths) == 20:
+        fig, ax = plt.subplots(4, 5, figsize=(16,9))
+    elif len(array_paths) == 100:
+        fig, ax = plt.subplots(5, 20, figsize=(16,9))
+
+    for a, p in zip(ax.flatten(), array_paths):
+        array = np.load(p)
+        a.imshow(array, origin="lower", cmap="seismic")
     plt.show()
 
 
@@ -101,6 +119,7 @@ if __name__ == "__main__":
     # plt.plot(bjd, band_photometry / np.median(band_photometry))
     # plt.show()
 
-    name = "SPOT_TEST"
+    name = "NIR_SPOT"
     check_time_series(name, reduction="serval")
-    check_time_series(name, reduction="raccoon")
+    # check_time_series(name, reduction="raccoon")
+    # plot_temperatures(name)

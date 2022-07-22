@@ -30,7 +30,14 @@ class DataSaver():
         """ Save a Carmenes spectrum from spectrum."""
         if instrument == "CARMENES_VIS":
             if CARMENES_template is None:
-                template = self.dataroot / "CARMENES_template.fits"
+                template = self.dataroot / "CARMENES_VIS_template.fits"
+            else:
+                template = CARMENES_template
+            if not name.endswith("fits"):
+                name += ".fits"
+        elif instrument == "CARMENES_NIR":
+            if CARMENES_template is None:
+                template = self.dataroot / "CARMENES_NIR_template.fits"
             else:
                 template = CARMENES_template
             if not name.endswith("fits"):
@@ -51,7 +58,7 @@ class DataSaver():
         print(f"Copy template {template} to {outfile}")
         copy2(template, outfile)
 
-        if instrument == "CARMENES_VIS":
+        if instrument == "CARMENES_VIS" or instrument == "CARMENES_NIR":
             with fits.open(outfile, mode="update") as hdul:
                 # First fix the index error
                 for i in range(0, len(hdul)):
