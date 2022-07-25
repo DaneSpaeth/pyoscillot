@@ -10,7 +10,7 @@ from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from pathlib import Path
 from parse_ini import parse_ticket, parse_global_ini
-from time_sampling import sample_phase
+from time_sampling import sample_phase, load_presampled_spot_phase
 import carmenes_simulator as carmenes
 import harps_simulator as harps
 from theoretical_rvs import calc_theoretical_results
@@ -190,6 +190,9 @@ class SimulationController():
         N = int(self.conf["n"])
         K = self.conf[sim]["k"]
 
+        if not self.conf["timesampling"] == "auto":
+            # TODO allow to sample also with presampling here
+            raise NotImplementedError
         phase_sample, time_sample = sample_phase(P, N)
 
         K_sample = K * np.sin(2 * np.pi * phase_sample)
@@ -233,20 +236,28 @@ class SimulationController():
         time_samples = []
         # For the moment assume that you have only spots
         N_spots = len(self.simulation_keys)
-        N = int(self.conf["n"])
-        phase_samples = np.zeros((N, N_spots))
-        theta_samples = np.zeros_like(phase_samples)
         N_processes = int(self.conf["n_processes"])
-        N_periods = int(self.conf["n_periods"])
         # start out with the first spot sim
-        sim = self.simulation_keys[0]
-        P = self.conf[sim]["period"]
-        phase_sample, time_sample = sample_phase(P, N, N_periods=N_periods)
+        if self.conf["timesampling"] == "auto":
+            N = int(self.conf["n"])
+            sim = self.simulation_keys[0]
+            P = self.conf[sim]["period"]
+            N_periods = int(self.conf["n_periods"])
+            phase_sample, time_sample = sample_phase(P, N, N_periods=N_periods)
+        else:
+            # In this mode the infos N, N_periods and P are not used
+            filename = self.conf["timesampling"]
+            phase_sample, time_sample = load_presampled_spot_phase(filename)
+            print(time_sample)
+            # Overwrite N
+            N = len(phase_sample)
+            self.conf["n"] = N
 
         # Now you have a global and raw phase and time_sample
         # The time_sample is the same for all spots
         # The phase sample is adjusted wrt to the starting phi angle
         # This allows us later to adjust e.g. the rotation speed or so
+        phase_samples = np.zeros((N, N_spots))
         for idx, sim in enumerate(self.simulation_keys):
             # Add the phi_angle but divided by the full circle to the phase and fold it back to [0,1]
             phase_samples[:, idx] = np.mod((phase_sample + self.conf[sim]["phi_start"]/360), 1)
@@ -343,6 +354,9 @@ class SimulationController():
         # Determine the time sample
         # At the moment take the first mode as sampling period
         P = self.conf[self.simulation_keys[0]]["period"]
+        if not self.conf["timesampling"] == "auto":
+            # TODO allow to sample also with presampling here
+            raise NotImplementedError
         _, time_sample = sample_phase(
             P, N_periods=N_periods, N_global=N,
             N_local=(N_local_min, N_local_max),
