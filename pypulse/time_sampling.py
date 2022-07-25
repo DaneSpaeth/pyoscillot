@@ -86,7 +86,7 @@ def presample_spot_phase(N_global, N_periods, period, savename):
             line = f"{p:.15f}    {t.isoformat()}\n"
             f.write(line)
 
-def load_presample_spot_phase(savename):
+def load_presampled_spot_phase(savename):
     """ Load a presampled spot phase."""
     global_dict = parse_global_ini()
     load_directory = global_dict["datapath"]
@@ -107,7 +107,4 @@ def load_presample_spot_phase(savename):
 
 
 if __name__ == "__main__":
-    presample_spot_phase(60, 40, 3.238, "N60_Np40_p3c238")
-    phase_sample, time_sample = load_presample_spot_phase("N60_Np40_p3c238")
-
-    print(phase_sample, time_sample)
+    presample_spot_phase(20, 10, 3.238, "N20_Np10_p3c238")
