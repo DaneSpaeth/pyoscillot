@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import plapy.rv.dataloader as load
 from parse_ini import parse_global_ini
 from plapy.rv.plotter import plot_rv, plot_activity, plot_activity_rv
+from pathlib import Path
 
 
 def check_time_series(name, instrument=None, reduction="serval", downscale_raccoon_errors=False):
@@ -113,13 +114,79 @@ def calc_photometry(name, band="V"):
     band_photometry = np.array(band_photometry)
     return bjd, band_photometry
 
+def plot_vsini_series():
+    """ Plot the vsini timeseries"""
+    vsini = range(20, 70, 5)
+    fig, ax = plt.subplots(3, 2, figsize=(20, 10))
+    colors = ["red", "blue", "green", "yellow", "pink", "purple", "black", "gray", "navy"]
+    for v, c in zip(vsini, colors):
+        name = f"YZ_CMi_TWO_SPOTS_vsini{v}"
+        rv_dict = load.rv(name)
+        crx_dict = load.crx(name, NIR=True)
+        dlw_dict = load.dlw(name, NIR=True)
+
+        label = f"vsin(i)={v/10}km/s"
+
+        plot_rv(rv_dict, ax=ax[0, 0], instrument="CARMENES_VIS", label=label, color=c)
+        plot_activity(crx_dict, ax=ax[1, 0], instrument="CARMENES_VIS", label=label, color=c)
+        plot_activity(dlw_dict, ax=ax[2, 0], instrument="CARMENES_VIS", label=label, color=c)
+
+        plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], fit=None, label=label, color=c)
+        plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], fit=None, label=label, color=c)
+
+
+    ax[1, 0].legend().remove()
+    ax[1, 1].legend().remove()
+    ax[2, 0].legend().remove()
+    ax[2, 1].legend().remove()
+
+    fig.set_tight_layout(True)
+
+    out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/26.07.2022")
+    plt.savefig(out_dir / "vsini_grid.png", dpi=300)
+    # plt.show()
+
+def plot_dT_series():
+    """ Plot the dT timeseries"""
+    dTs = range(100, 600, 100)
+    fig, ax = plt.subplots(3, 2, figsize=(20, 10))
+    colors = ["red", "blue", "green", "yellow", "pink"]
+    for dT, c in zip(dTs, colors):
+        name = f"YZ_CMi_TWO_SPOTS_dT{dT}"
+        rv_dict = load.rv(name)
+        crx_dict = load.crx(name, NIR=True)
+        dlw_dict = load.dlw(name, NIR=True)
+
+        label = f"dT={dT}K"
+
+        plot_rv(rv_dict, ax=ax[0, 0], instrument="CARMENES_VIS", label=label, color=c)
+        plot_activity(crx_dict, ax=ax[1, 0], instrument="CARMENES_VIS", label=label, color=c)
+        plot_activity(dlw_dict, ax=ax[2, 0], instrument="CARMENES_VIS", label=label, color=c)
+
+        plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], fit=None, label=label, color=c)
+        plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], fit=None, label=label, color=c)
+
+
+    ax[1, 0].legend().remove()
+    ax[1, 1].legend().remove()
+    ax[2, 0].legend().remove()
+    ax[2, 1].legend().remove()
+
+    fig.set_tight_layout(True)
+
+    out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/26.07.2022")
+    plt.savefig(out_dir / "dT_grid.png", dpi=300)
+    plt.show()
+
+
 
 if __name__ == "__main__":
     # bjd, band_photometry = calc_photometry("TALK_0")
     # plt.plot(bjd, band_photometry / np.median(band_photometry))
     # plt.show()
 
-    name = "NIR_SPOT"
-    check_time_series(name, reduction="serval")
+    # name = "NIR_SPOT"
+    plot_vsini_series()
+    fig, ax = plt.subplots(3, 2, figsize=(20, 10))
     # check_time_series(name, reduction="raccoon")
     # plot_temperatures(name)
