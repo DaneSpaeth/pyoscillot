@@ -395,72 +395,136 @@ def test_case():
 
                 # And give that flux to the neighboring cells
                 loop_incoming_v_hor = source_outgoing_flux + target_outgoing_flux
+                cumulative_v_hor = loop_incoming_v_hor.copy()
+                sum_source_incoming_flux = 0
+                sum_target_incoming_flux = 0
 
-                for n in range(100):
-                    source_incoming_flux = loop_incoming_v_hor[row, col]
-                    target_incoming_flux = loop_incoming_v_hor[target_row, target_col]
+                ### Possibility
+                # fig, ax = plt.subplots(2, 3, figsize=(16,9))
+                # for a, n in zip(ax.flatten(), range(9)):
+                #     # The plotting
+                #     img = a.imshow(cumulative_v_hor, vmin=0, vmax=1000)
+                #     a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=10)
+                #     for r in range(2,5):
+                #         for c in range(4,6):
+                #             a.text(c, r, round(cumulative_v_hor[r,c]))
+                #     a.set_title(f"Step {n}")
+                #     fig.colorbar(img, label=f"Incoming Flux [m/s]", ax=a)
+                #     source_incoming_flux = loop_incoming_v_hor[row, col]
+                #     target_incoming_flux = loop_incoming_v_hor[target_row, target_col]
+                #
+                #     new_source_incoming_flux = source_incoming_flux #- sum_source_incoming_flux
+                #     new_target_incoming_flux = target_incoming_flux #- sum_target_incoming_flux
+                #
+                #
+                #
+                #     source_outgoing_flux = calc_outgoing_flux(row,
+                #                                               col,
+                #                                               flux_percentages,
+                #                                               new_source_incoming_flux)
+                #     loop_incoming_v_hor[row, col] = 0
+                #     target_outgoing_flux = calc_outgoing_flux(target_row,
+                #                                               target_col,
+                #                                               flux_percentages,
+                #                                               new_target_incoming_flux)
+                #
+                #     sum_source_incoming_flux += new_source_incoming_flux
+                #     sum_target_incoming_flux += new_target_incoming_flux
+                #     loop_incoming_v_hor[target_row, target_col] = 0
+                #     loop_incoming_v_hor = (source_outgoing_flux + target_outgoing_flux)
+                #     cumulative_v_hor += loop_incoming_v_hor
+                #
+                # fig.set_tight_layout(True)
+                # fig.suptitle("Possibility 2: Incoming flux is still accounted for in troubling cells - Upper cells get more, but total flux has increased?")
+                # from pathlib import Path
+                # out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
+                # # plt.savefig(out_dir / "POSSIBILITY_2.png", dpi=300)
+                # plt.show()
+                # exit()
 
-                    source_outgoing_flux = calc_outgoing_flux(row,
-                                                              col,
-                                                              flux_percentages,
-                                                              source_incoming_flux)
-                    loop_incoming_v_hor[row, col] = 0
-                    target_outgoing_flux = calc_outgoing_flux(target_row,
-                                                              target_col,
-                                                              flux_percentages,
-                                                              target_incoming_flux)
-                    loop_incoming_v_hor[target_row, target_col] = 0
-                    loop_incoming_v_hor += (source_outgoing_flux + target_outgoing_flux)
-                break
-                pass
-                # for n in range(1000):
+                ### Possibility 3
+                fig, ax = plt.subplots(2, 3, figsize=(16, 9))
+                a = ax[0,0]
+
+                img = a.imshow(loop_incoming_v_hor, vmin=0, vmax=1000)
+                a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=10)
+                for r in range(2,5):
+                    for c in range(4,6):
+                        a.text(c, r, round(loop_incoming_v_hor[r,c]))
+                # a.set_title(f"Step {n}")
+                fig.colorbar(img, label=f"Incoming Flux [m/s]", ax=a)
+
+                source_incoming_flux = loop_incoming_v_hor[row, col]
+                target_incoming_flux = loop_incoming_v_hor[target_row, target_col]
+
+                if source_incoming_flux > target_incoming_flux:
+                    source_incoming_flux -= target_incoming_flux
+                    target_incoming_flux = 0
+                else:
+                    target_incoming_flux -= source_incoming_flux
+                    source_incoming_flux = 0
+                loop_incoming_v_hor[row, col] = source_incoming_flux
+                loop_incoming_v_hor[target_row, target_col] = target_incoming_flux
+
+                a = ax[0,1]
+                img = a.imshow(loop_incoming_v_hor, vmin=0, vmax=1000)
+                a.quiver(cc, rr, grad_col_norm, -grad_row_norm, scale=10)
+                for r in range(2, 5):
+                    for c in range(4, 6):
+                        a.text(c, r, round(loop_incoming_v_hor[r, c]))
+                # a.set_title(f"Step {n}")
+                fig.colorbar(img, label=f"Incoming Flux [m/s]", ax=a)
+
+
+                fig.set_tight_layout(True)
+                fig.suptitle(
+                    "Possibility 3: Calc the difference!")
+                from pathlib import Path
+                out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
+                plt.savefig(out_dir / "POSSIBILITY_3.png", dpi=300)
+                plt.show()
+                exit()
+
+                # break
 
 
 
 
-            try:
-                # Probably you have catched a loop!
-                smallest_flux_pct = 1
-                smallest_fl_idx = 0
-                for fl_idx in np.argsort(tmp_remaining_nodes.flatten()):
-                    # Find the element with the smallest flux_percentage
-                    _row, _col = np.unravel_index(fl_idx, (simulation_cell_size, simulation_cell_size))
-                    if num_remaining_incoming_nodes[_row, _col] == 0:
-                        continue
-                    local_flux_percentages = flux_percentages[_row, _col, :, :]
-                    nonzero_flux_percentages = local_flux_percentages[local_flux_percentages > 0.]
-                    min_flux_pct = np.min(nonzero_flux_percentages)
-                    if min_flux_pct < smallest_flux_pct:
-                        smallest_flux_pct = min_flux_pct
-                        smallest_fl_idx = fl_idx
-
-                # Now that you have the element with the smallest flux percentage
-                smallest_row, smallest_col = np.unravel_index(smallest_fl_idx, (simulation_cell_size, simulation_cell_size))
-                local_flux_percentages = flux_percentages[smallest_row, smallest_col, :, :]
-                local_target_row, local_target_col = np.where(local_flux_percentages == smallest_flux_pct)
-                local_target_row = local_target_row[0]
-                local_target_col = local_target_col[0]
-                global_target_row = smallest_row-1+(local_target_row)
-                global_target_col = smallest_col-1+(local_target_col)
-                # Reduce the number of remaining incoming nodes
-                num_remaining_incoming_nodes[global_target_row, global_target_col] -= 1
-                num_outgoing_nodes[smallest_row, smallest_col] -= 1
-                flux_percentages[smallest_row, smallest_col, :, :][flux_percentages[smallest_row, smallest_col, :, :] == smallest_flux_pct] = 0.
-                flux_percentages[smallest_row, smallest_col, :, :] /= np.sum(flux_percentages[smallest_row, smallest_col, :, :])
-                continue
-            except:
-                break
-
-
-
-
-
-
-
-
-            print(flux_percentages[row, col, :, :])
-            break
-            troubling_cells[row, col] = True
+            # try:
+            #     # Probably you have catched a loop!
+            #     smallest_flux_pct = 1
+            #     smallest_fl_idx = 0
+            #     for fl_idx in np.argsort(tmp_remaining_nodes.flatten()):
+            #         # Find the element with the smallest flux_percentage
+            #         _row, _col = np.unravel_index(fl_idx, (simulation_cell_size, simulation_cell_size))
+            #         if num_remaining_incoming_nodes[_row, _col] == 0:
+            #             continue
+            #         local_flux_percentages = flux_percentages[_row, _col, :, :]
+            #         nonzero_flux_percentages = local_flux_percentages[local_flux_percentages > 0.]
+            #         min_flux_pct = np.min(nonzero_flux_percentages)
+            #         if min_flux_pct < smallest_flux_pct:
+            #             smallest_flux_pct = min_flux_pct
+            #             smallest_fl_idx = fl_idx
+            #
+            #     # Now that you have the element with the smallest flux percentage
+            #     smallest_row, smallest_col = np.unravel_index(smallest_fl_idx, (simulation_cell_size, simulation_cell_size))
+            #     local_flux_percentages = flux_percentages[smallest_row, smallest_col, :, :]
+            #     local_target_row, local_target_col = np.where(local_flux_percentages == smallest_flux_pct)
+            #     local_target_row = local_target_row[0]
+            #     local_target_col = local_target_col[0]
+            #     global_target_row = smallest_row-1+(local_target_row)
+            #     global_target_col = smallest_col-1+(local_target_col)
+            #     # Reduce the number of remaining incoming nodes
+            #     num_remaining_incoming_nodes[global_target_row, global_target_col] -= 1
+            #     num_outgoing_nodes[smallest_row, smallest_col] -= 1
+            #     flux_percentages[smallest_row, smallest_col, :, :][flux_percentages[smallest_row, smallest_col, :, :] == smallest_flux_pct] = 0.
+            #     flux_percentages[smallest_row, smallest_col, :, :] /= np.sum(flux_percentages[smallest_row, smallest_col, :, :])
+            #     continue
+            # except:
+            #     break
+            # print(flux_percentages[row, col, :, :])
+            # break
+            # troubling_cells[row, col] = True
         sequence[row, col] = counter
 
         # Calculate the flux that is transported to the different cells
@@ -520,31 +584,31 @@ def test_case():
     # flux_image[test_idx_row_list[test_idx] - 1:test_idx_row_list[test_idx] + 2,
     # test_idx_col_list[test_idx] - 1:test_idx_col_list[test_idx] + 2] = flux_percentages[
     #     test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    # img = ax[0, 1].imshow(v_vertical, origin=plot_origin)
-    # ax[0, 1].set_title(f"Vertical Velocity")
-    # fig.colorbar(img, label=f"Vertical Velocity", ax=ax[0, 1])
+    img = ax[1, 0].imshow(v_vertical, origin=plot_origin)
+    ax[1, 0].set_title(f"Vertical Velocity, Sum={np.sum(v_vertical)}")
+    fig.colorbar(img, label=f"Vertical Velocity", ax=ax[1, 0])
 
-    img = ax[1, 0].imshow(num_incoming_nodes, origin=plot_origin)
-    ax[1, 0].set_title("Nr of incoming nodes")
-    fig.colorbar(img, label="# incoming nodes", ax=ax[1, 0])
+    # img = ax[1, 0].imshow(num_incoming_nodes, origin=plot_origin)
+    # ax[1, 0].set_title("Nr of incoming nodes")
+    # fig.colorbar(img, label="# incoming nodes", ax=ax[1, 0])
 
     # img = ax[1, 0].imshow(rr, origin=plot_origin)
     # ax[1, 0].set_title("RowRow")
     # fig.colorbar(img, label="Row", ax=ax[1, 0])
 
-    #flux_image = np.zeros(rr.shape)
-    #test_idx = 2
-    #flux_image[test_idx_row_list[test_idx]-1:test_idx_row_list[test_idx]+2,
-    #test_idx_col_list[test_idx]-1:test_idx_col_list[test_idx]+2] = flux_percentages[
+    # flux_image = np.zeros(rr.shape)
+    # test_idx = 1
+    # flux_image[test_idx_row_list[test_idx]-1:test_idx_row_list[test_idx]+2,
+    # test_idx_col_list[test_idx]-1:test_idx_col_list[test_idx]+2] = flux_percentages[
     #    test_idx_row_list[test_idx], test_idx_col_list[test_idx]]
-    # img = ax[1, 1].imshow(incoming_v_hor, origin=plot_origin)
-    # ax[1, 1].set_title(f"Incoming flux")
-    # fig.colorbar(img, label="Incoming Flux [m/s]", ax=ax[1, 1])
+    img = ax[1, 1].imshow(loop_incoming_v_hor, origin=plot_origin)
+    ax[1, 1].set_title(f"Incoming flux, Sum={np.sum(loop_incoming_v_hor)}")
+    fig.colorbar(img, label=f"Incoming Flux [m/s]", ax=ax[1, 1])
 
 
-    img = ax[1, 1].imshow(num_remaining_incoming_nodes, origin=plot_origin)
-    ax[1, 1].set_title(f"Troubling Cells")
-    fig.colorbar(img, label="Num Remaining Incoming Nodes", ax=ax[1, 1])
+    # img = ax[1, 1].imshow(num_remaining_incoming_nodes, origin=plot_origin)
+    # ax[1, 1].set_title(f"Troubling Cells")
+    # fig.colorbar(img, label="Num Remaining Incoming Nodes", ax=ax[1, 1])
 
 
     half_cell = 0.5
@@ -583,7 +647,7 @@ def test_case():
 
     from pathlib import Path
     out_dir = Path("/home/dspaeth/data/simulations/tmp_plots")
-    # plt.savefig(out_dir / "remaining_problems.png", dpi=300)
+    plt.savefig(out_dir / "SOLUTION_NO_FLUX.png", dpi=300)
     plt.show()
 
 

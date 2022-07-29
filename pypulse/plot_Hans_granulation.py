@@ -8,12 +8,6 @@ import dataloader as load
 out_dir = Path("/home/dspaeth/data/simulations/tmp_plots/")
 
 intensity = load.granulation_map()
-# intensity = intensity[0:100, :, :]
-
-# print(intensity.shape)
-# exit()
-
-
 index = 0
 def updatefig(index):
     im.set_array(intensity[index, :, :])
