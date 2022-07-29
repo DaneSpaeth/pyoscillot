@@ -1,7 +1,8 @@
-from datetime import datetime,  timedelta, date
+from datetime import datetime, timedelta, date
 import random
 import numpy as np
 from parse_ini import parse_global_ini
+
 
 def sample_phase(sample_P, N_global=30, N_periods=1,
                  N_local=(1, 1), random_day_range=(0, 1)):
@@ -45,12 +46,13 @@ def sample_phase(sample_P, N_global=30, N_periods=1,
                            timedelta(days=1), sample_P)) / sample_P
     return phase_sample.astype(float), time_sample
 
+
 def sample_phase_randomuniform(N_global, N_periods, period):
     """ Sample time and phase for a random timesampling with one observation in random nights with additional
         random sampling within the night
     ."""
     stop = datetime.combine(date.today(), datetime.min.time())
-    days_int = int(round(N_periods*period))
+    days_int = int(round(N_periods * period))
     start = stop - timedelta(days=days_int)
 
     # Randomly choose days in between
@@ -69,27 +71,40 @@ def sample_phase_randomuniform(N_global, N_periods, period):
         observed_datetime = start + dtime
         time_sample = np.append(time_sample, observed_datetime)
 
-    phase_sample = (np.mod((time_sample - start) / timedelta(days=1), period)) / period
+    phase_sample = (np.mod((time_sample - start) /
+                           timedelta(days=1), period)) / period
 
     return phase_sample.astype(float), time_sample
 
+
 def presample_spot_phase(N_global, N_periods, period, savename):
     """ Presample the phases of a spot sim for repeated use"""
-    phase_sample, time_sample = sample_phase_randomuniform(N_global, N_periods, period)
+    phase_sample, time_sample = sample_phase_randomuniform(
+        N_global, N_periods, period)
 
     global_dict = parse_global_ini()
     out_directory = global_dict["datapath"]
     out_file = out_directory / "timesamples" / f"{savename}.dat"
+
+    if out_file.is_file():
+        print(f"{out_file} exists already!")
+        print("Overwriting is not allowed!")
+        exit()
+
+    print(f"Save to {out_file}")
 
     with open(out_file, "w") as f:
         for p, t in zip(phase_sample, time_sample):
             line = f"{p:.15f}    {t.isoformat()}\n"
             f.write(line)
 
+
 def load_presampled_spot_phase(savename):
     """ Load a presampled spot phase."""
     global_dict = parse_global_ini()
     load_directory = global_dict["datapath"]
+
+    savename = savename.replace(".dat", "")
     load_file = load_directory / "timesamples" / f"{savename}.dat"
 
     phase_sample = np.array([])
@@ -98,13 +113,12 @@ def load_presampled_spot_phase(savename):
         for line in f:
             cols = line.strip().split()
             phase_sample = np.append(phase_sample, float(cols[0]))
-            time_sample = np.append(time_sample, datetime.fromisoformat(cols[1]))
+            time_sample = np.append(
+                time_sample, datetime.fromisoformat(cols[1]))
 
     return phase_sample, time_sample
 
 
-
-
-
 if __name__ == "__main__":
-    presample_spot_phase(20, 10, 3.238, "N20_Np10_p3c238")
+    pass
+   # presample_spot_phase(60, 20, 4.3491, "N60_Np20_p4c3491")
