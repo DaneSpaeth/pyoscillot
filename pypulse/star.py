@@ -46,13 +46,8 @@ class GridSpectrumSimulator():
             :param deltaT: Temp difference to Teff in K
             :param bool reset: If True, reset the temp before adding another spot
         """
-        az = phase * 360.
-        self.three_dim_star.add_spot(radius, phi_pos=az, theta_pos=theta_pos, T_spot=T_spot)
-
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots(1)
-        # ax.imshow(self.projector.temperature(), origin="lower")
-        # plt.show()
+        phi = phase * 360.
+        self.three_dim_star.add_spot(radius, phi_pos=phi, theta_pos=theta_pos, T_spot=T_spot)
 
     def add_granulation(self, dT=500, dv=1000, granule_size=2):
         """ Add a random granulation pattern to the star.
@@ -109,9 +104,9 @@ class GridSpectrumSimulator():
         fine_ref_spectra = {}
         for utemp in unique_temp:
             _, local_spectrum, _ = get_interpolated_spectrum(utemp,
-                                                       ref_wave=rest_wavelength,
-                                                       ref_spectra=ref_spectra,
-                                                       ref_headers=ref_headers)
+                                                             ref_wave=rest_wavelength,
+                                                             ref_spectra=ref_spectra,
+                                                             ref_headers=ref_headers)
             fine_ref_spectra[utemp] = local_spectrum
         return fine_ref_spectra
 
@@ -141,6 +136,16 @@ class GridSpectrumSimulator():
         # numba does not like dictionaries
         fine_ref_temperatures = np.array(list(fine_ref_spectra.keys()))
         fine_ref_spectra = np.array(list(fine_ref_spectra.values()))
+
+        import sys
+        print(f"Star :{sys.getsizeof(self)} bytes")
+        print(f"self.temperature:{sys.getsizeof(self.temperature)} bytes")
+        print(f"self.rotation:{sys.getsizeof(self.rotation)} bytes")
+        print(f"self.pulsation :{sys.getsizeof(self.pulsation)} bytes")
+        print(f"self.granulation:{sys.getsizeof(self.granulation)} bytes")
+        print(f"Fine ref spectra: {sys.getsizeof(fine_ref_spectra)} bytes")
+        print(f"Fine ref spectra shape: {fine_ref_spectra.shape()}")
+        print(f"Fine ref temperatures: {fine_ref_temperatures}")
 
         rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
                                                                      self.rotation,
