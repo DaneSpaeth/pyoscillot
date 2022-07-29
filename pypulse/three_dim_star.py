@@ -110,10 +110,7 @@ class ThreeDimStar():
 
         self.spotmask += above_plane_mask
         print(f"Add spot with temperature {T_spot}")
-        temperature_before = self.temperature
         self.temperature[self.spotmask.astype(bool)] = T_spot
-
-        # print(np.max(self.temperature - temperature_before))
 
     def add_granulation(self):
         """ Add granulation to the star starting from Hans models"""
