@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 def interpolate(spectrum, wavelength, template_file=None,
                 target_max_snr=300, adjust_snr=True, add_noise=True,
-                snr_profile=None):
+                snr_profile=None, channel="VIS"):
     """ Interpolate to the Carmenes spectrum. Should work for both VIS and NIR"""
     if template_file is not None:
         (spec_templ, cont_templ, sig_templ,
@@ -28,7 +28,10 @@ def interpolate(spectrum, wavelength, template_file=None,
         snr_per_order = snr_profile * target_max_snr
 
     new_spec = []
-    spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
+    if channel == "VIS":
+        spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
+    else:
+        spectrum = adjust_resolution(wavelength, spectrum, R=80400, w_sample=5)
     for order in range(len(wave_templ)):
 
         # print(f"Order={order}")
@@ -40,8 +43,8 @@ def interpolate(spectrum, wavelength, template_file=None,
         order_spec = func(wave_templ[order])
 
         # Reduce the level to something similar to CARMENES
-        #print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
-        #print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
+        # print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
+        # print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
         # Sometimes there can be negative counts in the templ spec
         # Therefore we use the abs() here
         order_spec = order_spec * \
