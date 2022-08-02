@@ -5,6 +5,7 @@ from datasaver import DataSaver
 import socket
 from datetime import datetime
 from theoretical_rvs import theoretical_main
+from pathlib import Path
 try:
     from check_time_series import check_time_series
 except ModuleNotFoundError:
@@ -69,7 +70,7 @@ def main(ticket, run_laptop=False):
         elif instruments == "CARMENES":
             reduce_CARMENES_VIS(global_dict, name, star)
 
-            reduce_CARMENES_NIR(global_dict, name, star)
+            # reduce_CARMENES_NIR(global_dict, name, star)
 
         elif instruments == "CARMENES_VIS":
             reduce_CARMENES_VIS(global_dict, name, star)
@@ -89,8 +90,8 @@ def main(ticket, run_laptop=False):
             print("Flux could not be copied!")
             pass
 
-        check_time_series(name, reduction="serval")
-        check_time_series(name, reduction="raccoon")
+        # check_time_series(name, reduction="serval")
+        # check_time_series(name, reduction="raccoon")
 
 def reduce_CARMENES_VIS(global_dict, name, star):
     """ Convenience function to reduce CARMENES_VIS spectra"""
@@ -134,11 +135,13 @@ def reduce_HARPS(global_dict, name, star):
 
 if __name__ == "__main__":
 
-    ticket = "presampled_spot.ini"
+    root = Path().cwd() / "tickets"
+    ticket = root / "EV_Lac_spot_configurations" / "EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER.ini"
+
+    # for ticket in reversed(tickets):
+    #     if ticket.name ==  "EV_Lac_4SPOTS.ini":
+    #         continue
     main(ticket, run_laptop=False)
-    # ticket2 = "talk_ticket2.ini"
-    # main(ticket2, run_laptop=False)
-    # ticket3 = "talk_ticket3.ini"
-    # main(ticket3, run_laptop=False)
-    # ticket4 = "talk_ticket4.ini"
-    # main(ticket4, run_laptop=False)
+
+    exit()
+
