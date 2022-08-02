@@ -8,7 +8,9 @@ from pathlib import Path
 
 global_dict = parse_global_ini()
 DATADIR = global_dict["datapath"]
+DATADIR = Path("/home/dane/Documents/PhD/pypulse/mounted_data")
 SPECTRADIR = DATADIR / "fake_spectra"
+
 
 COLOR_DICT = {"Lick": "blue",
               "SONG": "orange",
@@ -161,7 +163,10 @@ def get_data_and_lims(sim_star, mode):
     rv_dict = load.rv(sim_star)
     for key in rv_dict.keys():
         rv_dict[key]["bjd"] = rv_dict[key]["bjd"] - 2400000
-        crx_dict[key]["bjd"] = crx_dict[key]["bjd"] - 2400000
+        try:
+            crx_dict[key]["bjd"] = crx_dict[key]["bjd"] - 2400000
+        except KeyError:
+            continue
         dlw_dict[key]["bjd"] = dlw_dict[key]["bjd"] - 2400000
         rv_dict[key]["rv_original"] = rv_dict[key]["rv"]
         rv_dict[key]["rv"] = rv_dict[key]["rv"] - np.median(rv_dict[key]["rv"])

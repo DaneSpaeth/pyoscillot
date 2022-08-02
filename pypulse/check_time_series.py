@@ -34,7 +34,7 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
             if downscale_raccoon_errors:
                 act_dict[instrument][error_key] = act_dict[instrument][error_key] * 0.1
 
-    plot_rv(rv_dict, ax=ax[0, 0])
+    plot_rv(rv_dict, ax=ax[0, 0], instrument="CARMENES_VIS")
     plot_activity(activity1_dict, ax=ax[1, 0])
     plot_activity(activity2_dict, ax=ax[2, 0])
     plot_activity(activity3_dict, ax=ax[3, 0])
@@ -42,7 +42,9 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
     plot_activity_rv(rv_dict, activity2_dict, ax=ax[2, 1], fit=None)
     plot_activity_rv(rv_dict, activity3_dict, ax=ax[3, 1], fit=None)
     fig.set_tight_layout(True)
-    plt.show()
+
+    out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/26.07.2022")
+    plt.savefig(out_dir / "two_spots.png", dpi=300)
 
 
 def plot_temperature(name):
@@ -131,8 +133,8 @@ def plot_vsini_series():
         plot_activity(crx_dict, ax=ax[1, 0], instrument="CARMENES_VIS", label=label, color=c)
         plot_activity(dlw_dict, ax=ax[2, 0], instrument="CARMENES_VIS", label=label, color=c)
 
-        plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], fit=None, label=label, color=c)
-        plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], fit=None, label=label, color=c)
+        plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument="CARMENES_VIS", fit=None, label=label, color=c)
+        plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], instrument="CARMENES_VIS", fit=None, label=label, color=c)
 
 
     ax[1, 0].legend().remove()
@@ -163,8 +165,8 @@ def plot_dT_series():
         plot_activity(crx_dict, ax=ax[1, 0], instrument="CARMENES_VIS", label=label, color=c)
         plot_activity(dlw_dict, ax=ax[2, 0], instrument="CARMENES_VIS", label=label, color=c)
 
-        plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], fit=None, label=label, color=c)
-        plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], fit=None, label=label, color=c)
+        plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument="CARMENES_VIS", fit=None, label=label, color=c)
+        plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1],instrument="CARMENES_VIS", fit=None, label=label, color=c)
 
 
     ax[1, 0].legend().remove()
@@ -185,8 +187,9 @@ if __name__ == "__main__":
     # plt.plot(bjd, band_photometry / np.median(band_photometry))
     # plt.show()
 
-    # name = "NIR_SPOT"
+    #name = "TWO_SPOTS_20d"
+    #check_time_series(name, reduction="serval")
     plot_vsini_series()
-    fig, ax = plt.subplots(3, 2, figsize=(20, 10))
-    # check_time_series(name, reduction="raccoon")
+    plot_dT_series()
+    #fig, ax = plt.subplots(3, 2, figsize=(20, 10))
     # plot_temperatures(name)
