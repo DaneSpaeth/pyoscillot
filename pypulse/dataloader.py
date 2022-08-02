@@ -137,7 +137,7 @@ def download_phoenix(filename, out_dir, feh, spec_intensity=False):
     print(f"Saved to {str(out_dir / filename)}")
 
 
-def carmenes_template(filename="CARMENES_VIS_template.fits"):
+def carmenes_template(filename="CARMENES_VIS_template.fits", serval_output=False):
     """ Return spec, sig, cont and wave of Carmenes template."""
     if Path(filename).is_absolute():
         template = filename
@@ -149,6 +149,9 @@ def carmenes_template(filename="CARMENES_VIS_template.fits"):
         cont = hdul[2].data
         sig = hdul[3].data
         wave = hdul[4].data
+        if serval_output:
+            wave = np.exp(sig)
+            sig = None
 
     return (spec, cont, sig, wave)
 
@@ -178,7 +181,8 @@ def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
 
 def granulation_map():
     """ Laod a granulation map from Hans. At the moment always the same"""
-    filenames = ["d3t50g25mm00n01.3-c.idlsave", "d3t50g25mm00n01.d-p.idlsave", "d3t50g25mm00n01.q-z.idlsave",]
+    filenames = ["d3t50g25mm00n01.3-c.idlsave",
+                 "d3t50g25mm00n01.d-p.idlsave", "d3t50g25mm00n01.q-z.idlsave", ]
     intensity = None
     for filename in filenames:
         file = DATAROOT / "granulation_Hans" / filename
@@ -230,11 +234,34 @@ def plot_central_order_intensitites():
 
 
 if __name__ == "__main__":
-    (spec, cont, sig, wave) = carmenes_template("CARMENES_NIR_template.fits")
-    order = 0
-    plt.plot(wave[order], spec[order], label="HIP73620")
-    plt.legend()
-    plt.xlabel("Wavelength [A]")
-    plt.ylabel("Flux")
-    plt.tight_layout()
-    plt.show()
+
+    file = "/home/dane/mounted_srv/simulations/fake_spectra/YZ_CMi_TWO_SPOTS_dT200/CARMENES_VIS/car-20220313T21h00m33s-sci-fake-vis_A.fits"
+
+    file = "/home/dane/mounted_srv/simulations/fake_spectra/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER/CARMENES_VIS/car-20220430T18h01m32s-sci-fake-vis_A.fits"
+    # file = "/home/dane/Documents/PhD/plapy/data/RV_lib/serval/SIMULATION/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER/CARMENES_VIS/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER.fits"
+    template = "/home/dane/Documents/PhD/pypulse/data/CARMENES_templates/CARMENES_template_YZ_CMi.fits"
+    (spec, cont, sig, wave) = carmenes_template(
+        file, serval_output=False)
+
+
+
+    def _plot_order_range(start, filename=None):
+        out_root = Path("/home/dane/Documents/PhD/Sabine_overviews/02.08.2022/")
+        fig, ax = plt.subplots(3, 4,figsize=(16,9))
+        for order, a in zip(range(start, start+12), ax.flatten()):
+
+            a.plot(wave[order], spec[order], label="YZ_CMi template")
+            a.set_xlabel("Wavelength [A]")
+            physical_order = 118 - order
+            a.set_title(f"Order:{order}/{physical_order}")
+            a.set_ylabel("Flux")
+        fig.set_tight_layout(True)
+        if filename:
+            fig.suptitle(filename)
+        plt.savefig(out_root / f"Orders{start}-{start+12}.png", dpi=300)
+        plt.show()
+
+    # _plot_order_range(10, filename=Path(file).name)
+    # _plot_order_range(20, filename=Path(file).name)
+    # _plot_order_range(30, filename=Path(file).name)
+    _plot_order_range(40, filename=Path(file).name)
