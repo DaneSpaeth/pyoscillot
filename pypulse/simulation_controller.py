@@ -282,9 +282,8 @@ class SimulationController():
                         time_sample, bjds, bcs):
                     print(r)
         else:
-            raise NotImplementedError
-            for r in map(self._run_spot_sim, idx_list,
-                         K_sample, time_sample, bjds, bcs):
+            for r in map(self._run_spot_sim, idx_list, K_sample, phase_samples,
+                        time_sample, bjds, bcs):
                 print(r)
 
     def _run_spot_sim(self, idx, v, phases, time, bjd, bc):
@@ -604,5 +603,5 @@ class SimulationController():
 
 
 if __name__ == "__main__":
-    ticket = "tickets/spec_intensity.ini"
+    ticket = "tickets/EV_Lac_spot_configurations/EV_Lac_4SPOTS_debug.ini"
     SimulationController(ticket)

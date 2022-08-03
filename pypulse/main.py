@@ -136,7 +136,7 @@ def reduce_HARPS(global_dict, name, star):
 if __name__ == "__main__":
 
     root = Path().cwd() / "tickets"
-    ticket = root / "EV_Lac_spot_configurations" / "EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER.ini"
+    ticket = root / "EV_Lac_spot_configurations" / "EV_Lac_4SPOTS.ini"
 
     # for ticket in reversed(tickets):
     #     if ticket.name ==  "EV_Lac_4SPOTS.ini":
