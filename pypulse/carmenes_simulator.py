@@ -29,7 +29,7 @@ def interpolate(spectrum, wavelength, template_file=None,
 
     new_spec = []
     if channel == "VIS":
-        spectrum = adjust_resolution(wavelength, spectrum, R=90000, w_sample=5)
+        spectrum = adjust_resolution(wavelength, spectrum, R=94600, w_sample=5)
     else:
         spectrum = adjust_resolution(wavelength, spectrum, R=80400, w_sample=5)
     for order in range(len(wave_templ)):
