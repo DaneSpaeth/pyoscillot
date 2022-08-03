@@ -70,7 +70,7 @@ def main(ticket, run_laptop=False):
         elif instruments == "CARMENES":
             reduce_CARMENES_VIS(global_dict, name, star)
 
-            # reduce_CARMENES_NIR(global_dict, name, star)
+            reduce_CARMENES_NIR(global_dict, name, star)
 
         elif instruments == "CARMENES_VIS":
             reduce_CARMENES_VIS(global_dict, name, star)
@@ -136,12 +136,11 @@ def reduce_HARPS(global_dict, name, star):
 if __name__ == "__main__":
 
     root = Path().cwd() / "tickets"
-    ticket = root / "EV_Lac_spot_configurations" / "EV_Lac_4SPOTS.ini"
+    new_ticket_root = root / "test_new_structure"
+    tickets = list(new_ticket_root.glob("*.ini"))
 
-    # for ticket in reversed(tickets):
-    #     if ticket.name ==  "EV_Lac_4SPOTS.ini":
-    #         continue
-    main(ticket, run_laptop=False)
+    for ticket in reversed(tickets):
+        main(ticket, run_laptop=False)
 
     exit()
 
