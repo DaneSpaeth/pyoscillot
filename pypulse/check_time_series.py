@@ -29,12 +29,26 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
         activity2_dict = load.bis(name)
         activity3_dict = load.contrast(name)
 
-        for act_dict in (activity1_dict, activity2_dict, activity3_dict):
-            error_key = list(act_dict[instrument].keys())[-1]
-            if downscale_raccoon_errors:
-                act_dict[instrument][error_key] = act_dict[instrument][error_key] * 0.1
+        for inst in activity1_dict:
+            offset = np.mean(activity1_dict[inst]["fwhm"])
+            activity1_dict[inst]["fwhm"] = activity1_dict[inst]["fwhm"] - offset
+        for inst in activity2_dict:
+            offset = np.mean(activity2_dict[inst]["bis"])
+            activity2_dict[inst]["bis"] = activity2_dict[inst]["bis"] - offset
+        for inst in activity3_dict:
+            offset = np.mean(activity3_dict[inst]["contrast"])
+            activity3_dict[inst]["contrast"] = activity3_dict[inst]["contrast"] - offset
 
-    plot_rv(rv_dict, ax=ax[0, 0], instrument="CARMENES_VIS")
+        # for act_dict in (activity1_dict, activity2_dict, activity3_dict):
+        #     error_key = list(act_dict[instrument].keys())[-1]
+        #     if downscale_raccoon_errors:
+        #         act_dict[instrument][error_key] = act_dict[instrument][error_key] * 0.1
+
+    # make all rvs around 0
+    for inst in rv_dict:
+        offset = np.mean(rv_dict[inst]["rv"])
+        rv_dict[inst]["rv"] = rv_dict[inst]["rv"] - offset
+    plot_rv(rv_dict, ax=ax[0, 0])
     plot_activity(activity1_dict, ax=ax[1, 0])
     plot_activity(activity2_dict, ax=ax[2, 0])
     plot_activity(activity3_dict, ax=ax[3, 0])
@@ -44,7 +58,8 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
     fig.set_tight_layout(True)
 
     out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/26.07.2022")
-    plt.savefig(out_dir / "two_spots.png", dpi=300)
+    # plt.savefig(out_dir / "two_spots.png", dpi=300)
+    plt.show()
 
 
 def plot_temperature(name):
@@ -187,9 +202,9 @@ if __name__ == "__main__":
     # plt.plot(bjd, band_photometry / np.median(band_photometry))
     # plt.show()
 
-    #name = "TWO_SPOTS_20d"
-    #check_time_series(name, reduction="serval")
-    plot_vsini_series()
-    plot_dT_series()
+    name = "PULSATION_l1_m1_phase0"
+    check_time_series(name, reduction="raccoon")
+    #plot_vsini_series()
+    #plot_dT_series()
     #fig, ax = plt.subplots(3, 2, figsize=(20, 10))
     # plot_temperatures(name)
