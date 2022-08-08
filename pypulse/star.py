@@ -216,7 +216,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
         if fine_ref_spectrum is None or temp != fine_ref_temperature:
             # If not compute a current ref spectrum
             fine_ref_temperature = temp
-            print(f"Compute new fine_ref_spectrum for Temp={temp}K")
+            # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
             # This one will automatically be kept in memory until all cells with this temperature are completed
             _, fine_ref_spectrum, _ = get_interpolated_spectrum(temp,
                                                           ref_wave=rest_wavelength,
