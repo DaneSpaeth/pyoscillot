@@ -61,7 +61,6 @@ def main(ticket, run_laptop=False):
             star = conf_dict['hip']
         instruments = conf_dict["instrument"].upper()
         if instruments == "ALL":
-
             reduce_CARMENES_VIS(global_dict, name, star)
 
             reduce_CARMENES_NIR(global_dict, name, star)
@@ -91,7 +90,7 @@ def main(ticket, run_laptop=False):
             pass
 
         # check_time_series(name, reduction="serval")
-        # check_time_series(name, reduction="raccoon")
+        check_time_series(name, reduction="raccoon")
 
 def reduce_CARMENES_VIS(global_dict, name, star):
     """ Convenience function to reduce CARMENES_VIS spectra"""
@@ -101,18 +100,18 @@ def reduce_CARMENES_VIS(global_dict, name, star):
                     name, star,
                     "CARMENES_VIS"])
 
-    # subprocess.run(["bash", "run_raccoon.sh",
-    #                 str(global_dict["datapath_laptop"]),
-    #                 str(global_dict["rvlibpath"]),
-    #                 name, star,
-    #                 "CARMENES_VIS"])
+    subprocess.run(["bash", "run_raccoon.sh",
+                    str(global_dict["datapath_laptop"]),
+                    str(global_dict["rvlibpath"]),
+                    name, star,
+                    "CARMENES_VIS"])
     #
     # # For raccoon also create the csv file
     # # A bit ugly but take the existing nzp correction code
     # # TODO: Refactor at some point
-    # outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
-    # nzps = read_in_nzps("vis")
-    # create_correction(outfile, nzps, raccoon=True)
+    outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
+    nzps = read_in_nzps("vis")
+    create_correction(outfile, nzps, raccoon=True)
 
 def reduce_CARMENES_NIR(global_dict, name, star):
     """ Convenience function to reduce CARMENES_NIR spectra"""
@@ -121,7 +120,19 @@ def reduce_CARMENES_NIR(global_dict, name, star):
                     str(global_dict["rvlibpath"]),
                     name, star,
                     "CARMENES_NIR"])
-    # TODO add raccoon NIR
+
+    subprocess.run(["bash", "run_raccoon.sh",
+                    str(global_dict["datapath_laptop"]),
+                    str(global_dict["rvlibpath"]),
+                    name, star,
+                    "CARMENES_NIR"])
+    #
+    # # For raccoon also create the csv file
+    # # A bit ugly but take the existing nzp correction code
+    # # TODO: Refactor at some point
+    outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_NIR_CCF" / "None.par.dat"
+    nzps = read_in_nzps("nir")
+    create_correction(outfile, nzps, raccoon=True)
 
 def reduce_HARPS(global_dict, name, star):
     """ Convenience function to reduce HARPS spectra"""
@@ -136,11 +147,8 @@ def reduce_HARPS(global_dict, name, star):
 if __name__ == "__main__":
 
     root = Path().cwd() / "tickets"
-    new_ticket_root = root / "test_new_structure"
-    tickets = list(new_ticket_root.glob("*.ini"))
+    ticket = root / "test_new_structure" / "pulsation.ini"
+    main(ticket)
 
-    for ticket in reversed(tickets):
-        main(ticket, run_laptop=False)
-
-    exit()
+    # exit()
 
