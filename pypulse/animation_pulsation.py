@@ -375,5 +375,5 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
 
 if __name__ == "__main__":
 
-    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0/talk_ticket.ini"
+    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0/pulsation.ini"
     animate_pulse(ticket, mode="pulsation")
