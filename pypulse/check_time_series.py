@@ -195,6 +195,187 @@ def plot_dT_series():
     plt.savefig(out_dir / "dT_grid.png", dpi=300)
     plt.show()
 
+def plot_vsini_pulsation_series():
+    """ Plot the vsini pulsation timeseries"""
+    vsini = range(1, 6)
+    colors = ["red", "blue", "green", "yellow", "black"]
+    for channel in ["VIS", "NIR"]:
+        fig, ax = plt.subplots(7, 2, figsize=(20, 10), sharex="col", sharey="row")
+        for v, c in zip(vsini, colors):
+            name = f"pulsation_vsini{v}"
+            rv_dict = load.rv(name)
+            crx_dict = load.crx(name, NIR=True)
+            dlw_dict = load.dlw(name, NIR=True)
+            halpha_dict = load.halpha(name)
+            fwhm_dict = load.fwhm(name)
+            bis_dict = load.bis(name)
+            contrast_dict = load.contrast(name)
+
+            label = f"vsini={v}km/s"
+
+            for inst in rv_dict.keys():
+                rv_dict[inst]["rv"] -= np.mean(rv_dict[inst]["rv"])
+
+            # normalize fwhm, bis, contrast
+            inst = f"CARMENES_{channel}_CCF"
+            fwhm_dict[inst]["fwhm"] -= np.mean(fwhm_dict[inst]["fwhm"])
+            contrast_dict[inst]["contrast"] -= np.mean(contrast_dict[inst]["contrast"])
+            bis_dict[inst]["bis"] -= np.mean(bis_dict[inst]["bis"])
+
+            inst = f"CARMENES_{channel}"
+            halpha_dict[inst]["halpha"] -= np.mean(halpha_dict[inst]["halpha"])
+
+            plot_rv(rv_dict, ax=ax[0, 0], instrument=f"CARMENES_{channel}", label=label, color=c)
+            plot_activity(crx_dict, ax=ax[1, 0], instrument=f"CARMENES_{channel}", label=label, color=c,
+                          short_label=True)
+            plot_activity(dlw_dict, ax=ax[2, 0], instrument=f"CARMENES_{channel}", label=label, color=c,
+                          short_label=True)
+            plot_activity(halpha_dict, ax=ax[3, 0], instrument=f"CARMENES_{channel}", label=label, color=c,
+                          short_label=True)
+            plot_activity(fwhm_dict, ax=ax[4, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c,
+                          short_label=True)
+            plot_activity(bis_dict, ax=ax[5, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c,
+                          short_label=True)
+            plot_activity(contrast_dict, ax=ax[6, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c,
+                          short_label=True)
+
+            plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument=f"CARMENES_{channel}", fit=None, label=label,
+                             color=c, short_label=True)
+            plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], instrument=f"CARMENES_{channel}", fit=None, label=label,
+                             color=c, short_label=True)
+            plot_activity_rv(rv_dict, halpha_dict, ax=ax[3, 1], instrument=f"CARMENES_{channel}", fit=None, label=label,
+                             color=c, short_label=True)
+            plot_activity_rv(rv_dict, fwhm_dict, ax=ax[4, 1], instrument=f"CARMENES_{channel}_CCF", fit=None,
+                             label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, bis_dict, ax=ax[5, 1], instrument=f"CARMENES_{channel}_CCF", fit=None,
+                             label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, contrast_dict, ax=ax[6, 1], instrument=f"CARMENES_{channel}_CCF", fit=None,
+                             label=label, color=c, short_label=True)
+
+        for i in range(1, ax.shape[0]):
+            ax[i, 0].legend().remove()
+            ax[i, 1].legend().remove()
+
+        plt.subplots_adjust(left=0.05, right=0.99, top=0.99, bottom=0.05, hspace=0, wspace=0.03)
+
+        out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/04.09.2022")
+        plt.savefig(out_dir / f"{channel}_vsini_pulsation_grid.png", dpi=300)
+        plt.close()
+    # plt.show()
+
+def plot_phase_pulsation_series():
+    """ Plot the phase pulsation timeseries"""
+    phases = [0, 90, 180, 270]
+    colors = ["red", "blue", "green", "black"]
+    for channel in ["VIS", "NIR"]:
+        fig, ax = plt.subplots(7, 2, figsize=(20, 10), sharex="col", sharey="row")
+        for p, c in zip(phases, colors):
+            name = f"pulsation_phase{p}"
+            rv_dict = load.rv(name)
+            crx_dict = load.crx(name, NIR=True)
+            dlw_dict = load.dlw(name, NIR=True)
+            halpha_dict = load.halpha(name)
+            fwhm_dict = load.fwhm(name)
+            bis_dict = load.bis(name)
+            contrast_dict = load.contrast(name)
+
+            label=f"T_phase={p}°"
+
+            for inst in rv_dict.keys():
+                rv_dict[inst]["rv"] -= np.mean(rv_dict[inst]["rv"])
+
+            # normalize fwhm, bis, contrast
+            inst = f"CARMENES_{channel}_CCF"
+            fwhm_dict[inst]["fwhm"] -= np.mean(fwhm_dict[inst]["fwhm"])
+            contrast_dict[inst]["contrast"] -= np.mean(contrast_dict[inst]["contrast"])
+            bis_dict[inst]["bis"] -= np.mean(bis_dict[inst]["bis"])
+
+            inst = f"CARMENES_{channel}"
+            halpha_dict[inst]["halpha"] -= np.mean(halpha_dict[inst]["halpha"])
+
+            plot_rv(rv_dict, ax=ax[0, 0], instrument=f"CARMENES_{channel}", label=label, color=c)
+            plot_activity(crx_dict, ax=ax[1, 0], instrument=f"CARMENES_{channel}", label=label, color=c, short_label=True)
+            plot_activity(dlw_dict, ax=ax[2, 0], instrument=f"CARMENES_{channel}", label=label, color=c, short_label=True)
+            plot_activity(halpha_dict, ax=ax[3, 0], instrument=f"CARMENES_{channel}", label=label, color=c, short_label=True)
+            plot_activity(fwhm_dict, ax=ax[4, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c, short_label=True)
+            plot_activity(bis_dict, ax=ax[5, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c, short_label=True)
+            plot_activity(contrast_dict, ax=ax[6, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c, short_label=True)
+
+            plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument=f"CARMENES_{channel}", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], instrument=f"CARMENES_{channel}", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, halpha_dict, ax=ax[3, 1], instrument=f"CARMENES_{channel}", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, fwhm_dict, ax=ax[4, 1], instrument=f"CARMENES_{channel}_CCF", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, bis_dict, ax=ax[5, 1], instrument=f"CARMENES_{channel}_CCF", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, contrast_dict, ax=ax[6, 1], instrument=f"CARMENES_{channel}_CCF", fit=None, label=label, color=c, short_label=True)
+
+
+        for i in range(1, ax.shape[0]):
+            ax[i, 0].legend().remove()
+            ax[i, 1].legend().remove()
+
+        plt.subplots_adjust(left=0.05, right=0.99, top=0.99, bottom=0.05, hspace=0, wspace=0.03)
+
+        out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/04.09.2022")
+        plt.savefig(out_dir / f"{channel}_phase_pulsation_grid.png", dpi=300)
+        plt.close()
+
+def plot_dT_pulsation_series():
+    """ Plot the dT pulsation timeseries"""
+    temps = [25, 50, 75, 100, 125, 150, 175, 200]
+    colors = ["red", "blue", "green", "black", "purple", "yellow", "cyan", "orange"]
+    for channel in ["VIS", "NIR"]:
+        fig, ax = plt.subplots(7, 2, figsize=(20, 10), sharex="col", sharey="row")
+        for t, c in zip(temps, colors):
+            name = f"pulsation_dT{t}"
+            rv_dict = load.rv(name)
+            crx_dict = load.crx(name, NIR=True)
+            dlw_dict = load.dlw(name, NIR=True)
+            halpha_dict = load.halpha(name)
+            fwhm_dict = load.fwhm(name)
+            bis_dict = load.bis(name)
+            contrast_dict = load.contrast(name)
+
+            label=f"dT={t}K"
+
+            for inst in rv_dict.keys():
+                rv_dict[inst]["rv"] -= np.mean(rv_dict[inst]["rv"])
+
+            # normalize fwhm, bis, contrast
+            inst = f"CARMENES_{channel}_CCF"
+            fwhm_dict[inst]["fwhm"] -= np.mean(fwhm_dict[inst]["fwhm"])
+            contrast_dict[inst]["contrast"] -= np.mean(contrast_dict[inst]["contrast"])
+            bis_dict[inst]["bis"] -= np.mean(bis_dict[inst]["bis"])
+
+            inst = f"CARMENES_{channel}"
+            halpha_dict[inst]["halpha"] -= np.mean(halpha_dict[inst]["halpha"])
+
+            plot_rv(rv_dict, ax=ax[0, 0], instrument=f"CARMENES_{channel}", label=label, color=c)
+            plot_activity(crx_dict, ax=ax[1, 0], instrument=f"CARMENES_{channel}", label=label, color=c, short_label=True)
+            plot_activity(dlw_dict, ax=ax[2, 0], instrument=f"CARMENES_{channel}", label=label, color=c, short_label=True)
+            plot_activity(halpha_dict, ax=ax[3, 0], instrument=f"CARMENES_{channel}", label=label, color=c, short_label=True)
+            plot_activity(fwhm_dict, ax=ax[4, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c, short_label=True)
+            plot_activity(bis_dict, ax=ax[5, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c, short_label=True)
+            plot_activity(contrast_dict, ax=ax[6, 0], instrument=f"CARMENES_{channel}_CCF", label=label, color=c, short_label=True)
+
+            plot_activity_rv(rv_dict, crx_dict, ax=ax[1, 1], instrument=f"CARMENES_{channel}", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, dlw_dict, ax=ax[2, 1], instrument=f"CARMENES_{channel}", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, halpha_dict, ax=ax[3, 1], instrument=f"CARMENES_{channel}", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, fwhm_dict, ax=ax[4, 1], instrument=f"CARMENES_{channel}_CCF", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, bis_dict, ax=ax[5, 1], instrument=f"CARMENES_{channel}_CCF", fit=None, label=label, color=c, short_label=True)
+            plot_activity_rv(rv_dict, contrast_dict, ax=ax[6, 1], instrument=f"CARMENES_{channel}_CCF", fit=None, label=label, color=c, short_label=True)
+
+
+        for i in range(1, ax.shape[0]):
+            ax[i, 0].legend().remove()
+            ax[i, 1].legend().remove()
+
+        ax[0,0].legend(ncol=2)
+
+        plt.subplots_adjust(left=0.05, right=0.99, top=0.99, bottom=0.05, hspace=0, wspace=0.03)
+
+        out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/04.09.2022")
+        plt.savefig(out_dir / f"{channel}_dT_pulsation_grid.png", dpi=300)
+        plt.close()
 
 
 if __name__ == "__main__":
@@ -202,9 +383,12 @@ if __name__ == "__main__":
     # plt.plot(bjd, band_photometry / np.median(band_photometry))
     # plt.show()
 
-    name = "PULSATION_l1_m1_phase0"
-    check_time_series(name, reduction="raccoon")
+    # name = "PULSATION_l1_m1_phase0"
+    # check_time_series(name, reduction="raccoon")
     #plot_vsini_series()
     #plot_dT_series()
     #fig, ax = plt.subplots(3, 2, figsize=(20, 10))
     # plot_temperatures(name)
+    # plot_vsini_pulsation_series()
+    #plot_phase_pulsation_series()
+    plot_dT_pulsation_series()
