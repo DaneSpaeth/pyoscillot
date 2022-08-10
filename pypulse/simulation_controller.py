@@ -98,13 +98,16 @@ class SimulationController():
             # TODO REMOVE
             snr_profile = None
 
+            order_levels = self.conf.get("order_levels", "star")
+
             shifted_spec, wave = carmenes.interpolate(
                 spectrum, shift_wavelength,
                 template_file=fits_template,
                 snr_profile=snr_profile,
                 target_max_snr=float(self.conf["snr"]),
                 adjust_snr=False,
-                channel="VIS")
+                channel="VIS",
+                order_levels=order_levels)
 
             new_header = carmenes.get_new_header(time, bc, bjd,
                                                  snr_profile=snr_profile,
@@ -152,13 +155,16 @@ class SimulationController():
             # TODO REMOVE
             snr_profile = None
 
+            order_levels = self.conf.get("order_levels", "star")
+
             shifted_spec, wave = carmenes.interpolate(
                 spectrum, shift_wavelength,
                 template_file=fits_template,
                 snr_profile=snr_profile,
                 target_max_snr=float(self.conf["snr"]),
                 adjust_snr=False,
-                channel="NIR")
+                channel="NIR",
+                order_levels=order_levels)
 
             new_header = carmenes.get_new_header(time, bc, bjd,
                                                  snr_profile=snr_profile,

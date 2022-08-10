@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 
 def interpolate(spectrum, wavelength, template_file=None,
                 target_max_snr=300, adjust_snr=True, add_noise=True,
-                snr_profile=None, channel="VIS"):
+                snr_profile=None, channel="VIS",
+                order_levels="star"):
     """ Interpolate to the Carmenes spectrum. Should work for both VIS and NIR"""
     if template_file is not None:
         (spec_templ, cont_templ, sig_templ,
@@ -42,13 +43,19 @@ def interpolate(spectrum, wavelength, template_file=None,
         func = interp1d(wavelength, spectrum, kind="cubic")
         order_spec = func(wave_templ[order])
 
-        # Reduce the level to something similar to CARMENES
-        # print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
-        # print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
-        # Sometimes there can be negative counts in the templ spec
-        # Therefore we use the abs() here
-        order_spec = order_spec * \
-            np.abs(np.nanmean(spec_templ[order])) / np.nanmean(order_spec)
+        if order_levels == "star":
+            # Reduce the level to something similar to CARMENES
+            # print(f"Nanmean spec_templ={np.nanmean(spec_templ[order])}")
+            # print(f"Nanmean order_spec={np.nanmean(order_spec[order])}")
+            # Sometimes there can be negative counts in the templ spec
+            # Therefore we use the abs() here
+            order_spec = order_spec * \
+                np.abs(np.nanmean(spec_templ[order])) / np.nanmean(order_spec)
+        elif order_levels == "uniform":
+            # Reduce the levels of each order to roughly one
+            order_spec = order_spec / np.nanmean(order_spec)
+        else:
+            raise NotImplementedError
 
         # TODO REMOVE BACK
         # Do not correct for cont anymore
