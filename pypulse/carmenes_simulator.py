@@ -77,8 +77,8 @@ def interpolate(spectrum, wavelength, template_file=None,
                 new_median_snr=snr_per_order[order])
 
         # Set the old orders that were nan back to nan
-        nan_mask = np.isnan(sig_templ[order])
-        order_spec[nan_mask] = np.nan
+        # nan_mask = np.isnan(sig_templ[order])
+        # order_spec[nan_mask] = np.nan
 
         new_spec.append(order_spec)
     new_spec = np.array(new_spec)
