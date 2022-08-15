@@ -39,9 +39,8 @@ class GridSpectrumSimulator():
             :param phase: Phase ranging from 0 to 1 (0 being left edge,
                                                      1 being one time around)
             :param radius: Radius in degree
-            :param altitude: Altitude on star in degree (90 is on equator)
-            :param deltaT: Temp difference to Teff in K
-            :param bool reset: If True, reset the temp before adding another spot
+            :param theta_pos: Altitude on star in degree (90 is on equator)
+            :param T_spot: Spot temperature in K
         """
         phi = phase * 360.
         self.three_dim_star.add_spot(radius, phi_pos=phi, theta_pos=theta_pos, T_spot=T_spot)
@@ -53,7 +52,7 @@ class GridSpectrumSimulator():
             :param float dv: Velocity variation in m/s
             :param float granule_size: Spatial granule size in degree
         """
-        self.three_dim_star.add_granulation(dT=dT, dv=dv, granule_size=granule_size)
+        self.three_dim_star.add_granulation()
 
     def _get_ref_spectra_for_mode(self, mode, wavelength_range):
         """ Get a wavelength grid and dictionarys of the available
@@ -111,7 +110,6 @@ class GridSpectrumSimulator():
         # self.granulation = self.projector.granulation_velocity()
         self.granulation = np.zeros(self.pulsation.shape)
 
-
         T_precision_decimals = 0
         rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
                                                                      self.rotation,
@@ -127,7 +125,6 @@ class GridSpectrumSimulator():
         self.calc_flux()
 
         return rest_wavelength, total_spectrum, v_total
-
 
     def get_arrays(self):
         """ Get all arrays (e.g. pulsation, temp) of the simulation.
@@ -167,7 +164,6 @@ class GridSpectrumSimulator():
         self.flux = np.sum(self.spectrum)
         return self.flux
 
-# @jit(nopython=True)
 def _compute_spectrum(temperature, rotation, pulsation, granulation,
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals):
     """ Compute the spectrum.
@@ -180,7 +176,6 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
     v_c_pulse = pulsation / C
     v_c_gran = granulation / C
     total_spectrum = np.zeros(len(rest_wavelength))
-
 
     # We have a new approach, instead of precalculating all fine ref spectra which leads to a lot of memory overhead
     # we sort the temperature array and round it to the T_precision. Next compute the temperature adjusted
@@ -206,11 +201,23 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
 
     # total_cells = len(sorted_temperature)
     # done = 0
+    num_skipped_nans_pulsation = (np.count_nonzero(~np.isnan(sorted_temperature)) -
+                                  np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
+    print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulssation! Probably at the pole!")
 
     for temp, v_c_r, v_c_p, v_c_g in zip(sorted_temperature, sorted_v_c_rot, sorted_v_c_pulse, sorted_v_c_gran):
         # print(f"Calc cell {done}/{total_cells}")
         # done += 1
         if np.isnan(temp):
+            continue
+        if np.isnan(v_c_r):
+            print(f"Skip a cell since rotation is NaN")
+            continue
+        if np.isnan(v_c_p):
+            print(f"Skip a cell since pulsation is NaN")
+            continue
+        if np.isnan(v_c_g):
+            print(f"Skip a cell since granulation is NaN")
             continue
         # first check if you have a current ref spectrum
         if fine_ref_spectrum is None or temp != fine_ref_temperature:
@@ -219,9 +226,9 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
             # This one will automatically be kept in memory until all cells with this temperature are completed
             _, fine_ref_spectrum, _ = get_interpolated_spectrum(temp,
-                                                          ref_wave=rest_wavelength,
-                                                          ref_spectra=ref_spectra,
-                                                          ref_headers=ref_headers)
+                                                                ref_wave=rest_wavelength,
+                                                                ref_spectra=ref_spectra,
+                                                                ref_headers=ref_headers)
 
         local_spectrum = fine_ref_spectrum.copy()
 
@@ -254,8 +261,6 @@ if __name__ == "__main__":
     star.add_spot(radius=5, theta_pos=30)
     star.add_spot(radius=5, theta_pos=0)
 
-
     fig, ax = plt.subplots(1)
     ax.imshow(star.projector.temperature(), origin="lower")
     plt.show()
-

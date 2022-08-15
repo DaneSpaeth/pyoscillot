@@ -609,5 +609,5 @@ class SimulationController():
 
 
 if __name__ == "__main__":
-    ticket = "tickets/EV_Lac_spot_configurations/EV_Lac_4SPOTS_debug.ini"
+    ticket = "tickets/pulsation_test.ini"
     SimulationController(ticket)

@@ -210,6 +210,7 @@ class ThreeDimStar():
 
         pulsation = 1j * k * v_p * displ
 
+
         self.displacement_phi += displ
         self.pulsation_phi += pulsation
 
@@ -394,10 +395,12 @@ class TwoDimProjector():
 
     def rotation(self):
         """ Project rotation onto a 2d plane."""
+        print(f"Rotation projection {self.line_of_sight}")
         rotation_2d = self._project(self.star.rotation,
                                     line_of_sight=self.line_of_sight,
                                     component="phi")
-        return np.rint(rotation_2d).astype(int)
+        # return np.rint(rotation_2d).astype(int)
+        return rotation_2d
 
     def granulation_rad(self):
         """ Project the radial part of the granulation velocity onto a 2d plane"""
@@ -626,51 +629,13 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    # import dataloader as load
-    # intensity = load.granulation_map()
-    #
-    # timestep = 0
-    # stacked_array = np.hstack((intensity[timestep, :, :], intensity[timestep, :, :]))
-    # stacked_array = np.vstack((stacked_array, stacked_array))
-    # print(stacked_array.shape)
-    # plt.imshow(stacked_array)
-    # plt.show()
+    star = ThreeDimStar()
+    star.create_rotation()
+    star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
+    projector = TwoDimProjector(star, N=300, border=3, limb_darkening=False, inclination=90)
 
-    N_cells = 8
-    inclination = 90
-    star = ThreeDimStar(N=160*N_cells)
-    star.add_granulation()
-    projector = TwoDimProjector(N=1000, star=star, limb_darkening=False, inclination=inclination)
-    fig, ax = plt.subplots(1)
-    img = ax.imshow(projector.temperature(), cmap="hot")
-    fig.colorbar(img, ax=ax, label="Temperature [K]")
-    plt.tight_layout()
-    plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/granulation_temperature_{N_cells**2}cells_inclination{inclination}_test3.png", dpi=300)
-    plt.show()
+    print(np.count_nonzero(~np.isnan(projector.pulsation())))
+    print(np.count_nonzero(~np.isnan(projector.temperature())))
 
-    fig, ax = plt.subplots(1)
-    img = ax.imshow(projector.granulation_rad(), cmap="jet")
-    fig.colorbar(img, ax=ax, label="Granulation Velocity Rad [m/s] (projected)")
-    plt.tight_layout()
-    plt.savefig(
-        f"/home/dspaeth/data/simulations/tmp_plots/granulation_rad_velocity_{N_cells ** 2}cells_inclination{inclination}_test3.png",
-        dpi=300)
-    plt.show()
 
-    fig, ax = plt.subplots(1)
-    img = ax.imshow(projector.granulation_phi(), cmap="jet")
-    fig.colorbar(img, ax=ax, label="Granulation Velocity Phi [m/s] (projected)")
-    plt.tight_layout()
-    plt.savefig(
-        f"/home/dspaeth/data/simulations/tmp_plots/granulation_phi_velocity_{N_cells ** 2}cells_inclination{inclination}_test3.png",
-        dpi=300)
-    plt.show()
 
-    fig, ax = plt.subplots(1)
-    img = ax.imshow(projector.granulation_theta(), cmap="jet")
-    fig.colorbar(img, ax=ax, label="Granulation Velocity Theta [m/s] (projected)")
-    plt.tight_layout()
-    plt.savefig(
-        f"/home/dspaeth/data/simulations/tmp_plots/granulation_theta_velocity_{N_cells ** 2}cells_inclination{inclination}_test3.png",
-        dpi=300)
-    plt.show()
