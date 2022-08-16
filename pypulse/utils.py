@@ -1,11 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import interpolate
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
 from scipy.interpolate import CubicSpline
-from dataloader import phoenix_spectrum
-from numba import jit
+from dataloader import phoenix_spectrum, telluric_mask
+from scipy.signal import periodogram
+from scipy.interpolate import interp1d
+
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+# mpl.use('TkAgg')
+
+
 
 def create_circular_mask(h, w, center=None, radius=None):
     """ Create a circular mask.
@@ -203,6 +210,7 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     # Find stddev of Gaussian kernel for smoothing
     R_grid = (w_log[1:-1] + w_log[0:-2]) / (w_log[1:-1] - w_log[0:-2]) / 2
     sigma = np.median(R_grid) / R
+    print(sigma)
     if sigma < 1:
         sigma = 1
 
@@ -220,42 +228,192 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     return f_sm
 
 
+def _overplot_telluric_mask(ax):
+    xlim_low = ax.get_xlim()[0]
+    xlim_high = ax.get_xlim()[1]
+
+    telluric_m = telluric_mask()
+    telluric_w = telluric_m[:, 0]
+    telluric_m = telluric_m[:, 1]
+
+    mask_low =  telluric_w >= xlim_low
+    mask_high = telluric_w <= xlim_high
+    mask = np.logical_and(mask_low, mask_high)
+    telluric_m = telluric_m[mask]
+    telluric_w = telluric_w[mask]
+
+    for w, w_next, m, m_next in zip(telluric_w[0:-1], telluric_w[1:], telluric_m[0:-1], telluric_m[1:]):
+        if m:
+            if m_next:
+                ax.axvspan(w, w_next, alpha=0.5, color='grey')
+
+
+def rebin(wold, sold, wnew):
+    """Interpolates OR integrates a spectrum onto a new wavelength scale, depending
+    on whether number of pixels per angstrom increases or decreases. Integration
+    is effectively done analytically under a cubic spline fit to old spectrum.
+
+    Ported to from rebin.pro (IDL) to Python by Frank Grundahl (FG).
+    Original program written by Jeff Valenti.
+
+    IDL Edit History:
+    ; 10-Oct-90 JAV Create.
+    ; 22-Sep-91 JAV Translated from IDL to ANA.
+    ; 27-Aug-93 JAV Fixed bug in endpoint check: the "or" was essentially an "and".
+    ; 26-Aug-94 JAV Made endpoint check less restrictive so that identical old and
+    ;       new endpoints are now allowed. Switched to new Solaris library
+    ;       in call_external.
+    ; Nov01 DAF eliminated call_external code; now use internal idl fspline
+    ; 2008: FG replaced fspline with spline
+
+    :param wold: Input wavelength vector.
+    :type wold: ndarray[nr_pix_in]
+    :param sold: Input spectrum to be binned.
+    :type sold: ndarray[nr_pix_in]
+    :param wnew: New wavelength vector to bin to.
+    :type wnew: ndarray[nr_pix_out]
+
+    :return: Newly binned spectrum.
+    :rtype: ndarray[nr_pix_out]
+    """
+
+    def idl_rebin(a, shape):
+        sh = shape[0], a.shape[0] // shape[0], shape[1], a.shape[1] // shape[1]
+        return a.reshape(sh).mean(-1).mean(1)
+
+    # Determine spectrum attributes.
+    nold = np.int32(len(wold))  # Number of old points
+    nnew = np.int32(len(wnew))  # Number of new points
+    psold = (wold[nold - 1] - wold[0]) / (nold - 1)  # Old pixel scale
+    psnew = (wnew[nnew - 1] - wnew[0]) / (nnew - 1)  # New pixel scale
+
+    # Verify that new wavelength scale is a subset of old wavelength scale.
+    if (wnew[0] < wold[0]) or (wnew[nnew - 1] > wold[nold - 1]):
+        logging.warning('New wavelength scale not subset of old.')
+
+    # Select integration or interpolation depending on change in dispersion.
+
+    if psnew < psold:
+
+        # Pixel scale decreased ie, finer pixels
+        # Interpolating onto new wavelength scale.
+        dum = interp1d(wold, sold)  # dum  = interp1d( wold, sold, kind='cubic' ) # Very slow it seems.
+        snew = dum(wnew)
+
+    else:
+
+        # Pixel scale increased ie more coarse
+        # Integration under cubic spline - changed to interpolation.
+
+        xfac = np.int32(psnew / psold + 0.5)  # pixel scale expansion factor
+
+        # Construct another wavelength scale (W) with a pixel scale close to that of
+        # the old wavelength scale (Wold), but with the additional constraint that
+        # every XFac pixels in W will exactly fill a pixel in the new wavelength
+        # scale (Wnew). Optimized for XFac < Nnew.
+
+        dw = 0.5 * (wnew[2:] - wnew[:-2])  # Local pixel scale
+
+        pre = np.float(2.0 * dw[0] - dw[1])
+        post = np.float(2.0 * dw[nnew - 3] - dw[nnew - 4])
+
+        dw = np.append(dw[::-1], pre)[::-1]
+        dw = np.append(dw, post)
+        w = np.zeros((nnew, xfac), dtype='float')
+
+        # Loop thru subpixels
+        for i in range(0, xfac):
+            w[:, i] = wnew + dw * (np.float(2 * i + 1) / (2 * xfac) - 0.5)  # pixel centers in W
+
+        nig = nnew * xfac  # Elements in interpolation grid
+        w = np.reshape(w, nig)  # Make into 1-D
+
+        # Interpolate old spectrum (Sold) onto wavelength scale W to make S. Then
+        # sum every XFac pixels in S to make a single pixel in the new spectrum
+        # (Snew). Equivalent to integrating under cubic spline through Sold.
+
+        # dum    = interp1d( wold, sold, kind='cubic' ) # Very slow!
+        # fill_value in interp1d added to deal with w-values just outside the interpolation range
+        dum = interp1d(wold, sold, fill_value="extrapolate")
+        s = dum(w)
+        s = s / xfac  # take average in each pixel
+        sdummy = s.reshape(nnew, xfac)
+        snew = xfac * idl_rebin(sdummy, [nnew, 1])
+        snew = np.reshape(snew, nnew)
+
+    return snew
+
+
 if __name__ == "__main__":
 
     from dataloader import carmenes_template
-    (spec, cont, sig, wave) = carmenes_template("CARMENES_template.fits")
-    idx = 20
-    carm_spec = spec[idx]
-    carm_wave = wave[idx]
-    carm_cont = cont[idx]
-    carm_sig = sig[idx]
+    (_spec, _cont, _sig, _wave) = carmenes_template("CARMENES_VIS_templates/CARMENES_template_HIP73620.fits")
 
-    wave, spec, _ = phoenix_spectrum(Teff=4800, logg=2.5,
-                                     wavelength_range=(carm_wave[0], carm_wave[-1]))
-    spec = spec / np.max(spec)
-    smoothed_spec = adjust_resolution(wave, spec, 90000, w_sample=5)
-    # smoothed_oversample_spec = adjust_resolution(
-    #    wave, spec, 90000, w_sample=100)
-    # plt.plot(wave, spec)
+    for order in range(0, 60):
+        carm_spec = _spec[order]
+        carm_wave = _wave[order]
+        carm_cont = _cont[order]
+        carm_sig = _sig[order]
 
-    carm_spec /= np.nanmax(carm_spec)
-    # carm_spec = -1 * carm_spec + 1
-    # carm_spec = carm_spec / carm_cont
-    scale = np.nanmedian(spec) / np.nanmedian(carm_spec)
-    # shifted_nooversample_spec = add_doppler_shift(spec, wave, -2.0)
+        print(order)
+        wave, spec, _ = phoenix_spectrum(Teff=4800, logg=3.0,
+                                         wavelength_range=(carm_wave[0], carm_wave[-1]))
+        # spec = adjust_resolution(wave, spec, 94600, w_sample=1)
 
-    shifted_spec = add_doppler_shift(smoothed_spec, wave, -0.91)
-    shifted_spec_raw = add_doppler_shift(spec, wave, -0.91)
+        #big_wave, big_spec, _ = phoenix_spectrum(Teff=3300, logg=5.0,
+        #                                 wavelength_range=(5000, 19000))
 
-    # plt.plot(wave, spec, linewidth=3)
-    plt.plot(carm_wave, carm_spec * scale,
-             linewidth=2, label="CARMENES template")
-    plt.plot(wave, shifted_spec, linewidth=2, label="Smoothed PHOENIX")
-    # plt.plot(wave, smoothed_oversample_spec, linewidth=2, label="Oversampled PHOENIX")
-    # plt.plot(wave, smoothed_twice_spec, linewidth=3)
-    # plt.plot(carm_wave, carm_cont)
-    plt.xlim(6240, 6260)
-    # plt.ylim(0.15, 1.1)
-    plt.legend()
+        # big_spec = adjust_resolution(big_wave, big_spec, 94600, w_sample=1)
 
-    plt.show()
+
+        #mask_lower = big_wave > carm_wave[0]
+        #mask_upper = big_wave < carm_wave[-1]
+        #mask = np.logical_and(mask_upper, mask_lower)
+        # big_wave = big_wave[mask]
+        # big_spec = big_spec[mask]
+
+        # small_wave = wave[10:-10]
+        # small_spec = spec[10:-10]
+
+        # big_spec /= np.max(big_spec)
+        carm_spec /= np.nanmax(carm_spec)
+        spec /= np.max(spec)
+        scale = np.nanmedian(spec) / np.nanmedian(carm_spec)
+
+
+        shift = 0.0
+        spec = add_doppler_shift(spec, wave, shift)
+        func = interp1d(wave, spec, kind="cubic")
+        order_spec = func(carm_wave[10:-10])
+        # big_spec = add_doppler_shift(big_spec, big_wave, shift)
+
+        binned_spec = rebin(wave, spec, carm_wave[10:-10])
+
+
+        fig, ax = plt.subplots(1, figsize=(16,9))
+        ax.plot(carm_wave, carm_spec*scale,
+                linewidth=2, label="CARMENES template")
+        #ax.plot(big_wave, big_spec, linewidth=2, label="Smoothed PHOENIX (big)")
+        ax.plot(wave, spec, linewidth=2, label="Raw PHOENIX")
+        #ax.plot(carm_wave[10:-10], order_spec, linewidth=2, label="Interpolated, smoothed PHOENIX")
+        #ax.plot(carm_wave[10:-10], binned_spec, linewidth=2, label="Rebinned PHOENIX")
+        x_start = ax.get_xlim()[0]
+        x_diff = ax.get_xlim()[1] - x_start
+        # ax.set_xlim(x_start+0.3*x_diff, x_start+0.7*x_diff)
+
+
+        _overplot_telluric_mask(ax)
+
+
+        ax.legend()
+        ax.set_xlim(carm_wave.min(), carm_wave.max())
+        # ax.set_ylim(0, ax.get_ylim()[1])
+        fig.set_tight_layout(True)
+        ax.set_title(f"Order {order}")
+
+        #  ax.set_xlim(8180, 8200)
+        # ax.set_ylim(0.15, 0.3)
+
+        # plt.show()
+        plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/orders_73620/order{order}.png")
+
