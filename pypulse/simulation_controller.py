@@ -10,7 +10,7 @@ from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from pathlib import Path
 from parse_ini import parse_ticket, parse_global_ini
-from time_sampling import sample_phase, load_presampled_spot_phase
+from time_sampling import sample_phase, load_presampled_phase
 import carmenes_simulator as carmenes
 import harps_simulator as harps
 from theoretical_rvs import calc_theoretical_results
@@ -255,7 +255,7 @@ class SimulationController():
         else:
             # In this mode the infos N, N_periods and P are not used
             filename = self.conf["timesampling"]
-            phase_sample, time_sample = load_presampled_spot_phase(filename)
+            phase_sample, time_sample = load_presampled_phase(filename)
             print(time_sample)
             # Overwrite N
             N = len(phase_sample)
@@ -361,13 +361,18 @@ class SimulationController():
         # Determine the time sample
         # At the moment take the first mode as sampling period
         P = self.conf[self.simulation_keys[0]]["period"]
-        if not self.conf["timesampling"] == "auto":
-            # TODO allow to sample also with presampling here
-            raise NotImplementedError
-        _, time_sample = sample_phase(
-            P, N_periods=N_periods, N_global=N,
-            N_local=(N_local_min, N_local_max),
-            random_day_range=(rand_day_min, rand_day_max))
+        if self.conf["timesampling"] == "auto":
+            _, time_sample = sample_phase(
+                P, N_periods=N_periods, N_global=N,
+                N_local=(N_local_min, N_local_max),
+                random_day_range=(rand_day_min, rand_day_max))
+        else:
+            filename = self.conf["timesampling"]
+            phase_sample, time_sample = load_presampled_phase(filename)
+            print(time_sample)
+            # Overwrite N
+            N = len(phase_sample)
+            self.conf["n"] = N
 
         K_sample = np.zeros(len(time_sample))
 

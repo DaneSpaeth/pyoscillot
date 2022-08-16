@@ -203,7 +203,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
     # done = 0
     num_skipped_nans_pulsation = (np.count_nonzero(~np.isnan(sorted_temperature)) -
                                   np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
-    print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulssation! Probably at the pole!")
+    print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulsation! Probably at the pole!")
 
     for temp, v_c_r, v_c_p, v_c_g in zip(sorted_temperature, sorted_v_c_rot, sorted_v_c_pulse, sorted_v_c_gran):
         # print(f"Calc cell {done}/{total_cells}")

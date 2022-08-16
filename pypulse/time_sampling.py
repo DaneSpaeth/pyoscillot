@@ -77,10 +77,17 @@ def sample_phase_randomuniform(N_global, N_periods, period):
     return phase_sample.astype(float), time_sample
 
 
-def presample_spot_phase(N_global, N_periods, period, savename):
+def presample_phase(N_global, N_periods, period, sampling="uniform"):
     """ Presample the phases of a spot sim for repeated use"""
-    phase_sample, time_sample = sample_phase_randomuniform(
-        N_global, N_periods, period)
+    if sampling == "uniform":
+        phase_sample, time_sample = sample_phase(period, N_global, N_periods)
+    elif sampling == "randomuniform":
+        phase_sample, time_sample = sample_phase_randomuniform(
+            N_global, N_periods, period)
+    else:
+        raise NotImplementedError(f"Sampling {sampling} is not supported!")
+
+    savename = f"N{N_global}_Np{N_periods}_P{str(period).replace('.', 'c')}_{sampling}"
 
     global_dict = parse_global_ini()
     out_directory = global_dict["datapath"]
@@ -99,7 +106,7 @@ def presample_spot_phase(N_global, N_periods, period, savename):
             f.write(line)
 
 
-def load_presampled_spot_phase(savename):
+def load_presampled_phase(savename):
     """ Load a presampled spot phase."""
     global_dict = parse_global_ini()
     load_directory = global_dict["datapath"]
@@ -120,5 +127,4 @@ def load_presampled_spot_phase(savename):
 
 
 if __name__ == "__main__":
-    pass
-   # presample_spot_phase(60, 20, 4.3491, "N60_Np20_p4c3491")
+   presample_phase(20, 1, 596.6, "uniform")
