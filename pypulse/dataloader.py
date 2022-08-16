@@ -232,6 +232,14 @@ def plot_central_order_intensitites():
     plt.legend()
     plt.show()
 
+def telluric_mask():
+    """ Load a telluric mask from telluric_mask_carm_short.dat"""
+    file = DATAROOT / "telluric_mask_carm_short.dat"
+    data = np.loadtxt(file)
+
+    return data
+
+
 
 if __name__ == "__main__":
 
