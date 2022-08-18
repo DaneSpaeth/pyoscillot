@@ -90,7 +90,7 @@ def main(ticket, run_laptop=False):
             pass
 
         # check_time_series(name, reduction="serval")
-        check_time_series(name, reduction="raccoon")
+        # check_time_series(name, reduction="raccoon")
 
 def reduce_CARMENES_VIS(global_dict, name, star):
     """ Convenience function to reduce CARMENES_VIS spectra"""
@@ -147,8 +147,17 @@ def reduce_HARPS(global_dict, name, star):
 if __name__ == "__main__":
 
     root = Path().cwd() / "tickets"
-    ticket = root / "test_new_structure" / "pulsation.ini"
-    main(ticket)
+    folders = [root / "pulsation_l1m1_vsini_grid",
+               root / "pulsation_l1m1_phase_grid"]
+               # root / "pulsation_l1m1_dT_grid"]
+
+    folders = [root / "done_two_spots_diff_templates"]
+
+
+    for folder in folders:
+        tickets = folder.glob("*.ini")
+        for ticket in tickets:
+            main(ticket, run_laptop=False)
 
     # exit()
 

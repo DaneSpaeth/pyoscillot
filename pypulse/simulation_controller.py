@@ -614,5 +614,5 @@ class SimulationController():
 
 
 if __name__ == "__main__":
-    ticket = "tickets/pulsation_test.ini"
+    ticket = "tickets/uniform_test.ini"
     SimulationController(ticket)
