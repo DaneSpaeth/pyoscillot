@@ -574,7 +574,7 @@ class SimulationController():
 
         return(f"Star {idx+1}/{N} finished")
 
-    def get_bjd(self, time_list, star, t_exp=106.091):
+    def get_bjd(self, time_list, star, t_exp=60):
         """ Get the BJD for times in time_list as UTC.
 
             At the moment I decide to set the barycentric correction to 0.
@@ -591,22 +591,32 @@ class SimulationController():
         for jdutc in jdutc_times:
             jdutc.format = "jd"
 
-        # Define the Calar Alto Observatory
-        caha = observatories.calar_alto
-        lat = float(caha["lat"].replace(" N", ""))
-        lon = -float((caha["lon"].replace(" W", "")))
-        alt = 2168.
+        jds = [jd.value for jd in jdutc_times]
 
-        bjds = []
-        for jdutc in jdutc_times:
-            try:
-                star = f"HIP{int(star)}"
-            except ValueError:
-                star = star
-            bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, starname=star,
-                                                 lat=lat, longi=lon,
-                                                 alt=alt, ephemeris='de430')
-            bjds.append(float(bjd_result[0]))
+        # # Define the Calar Alto Observatory
+        # caha = observatories.calar_alto
+        # lat = float(caha["lat"].replace(" N", ""))
+        # lon = -float((caha["lon"].replace(" W", "")))
+        # alt = 2168.
+        #
+        # bjds = []
+        # for jdutc in jdutc_times:
+        #     try:
+        #         star = f"HIP{int(star)}"
+        #     except ValueError:
+        #         star = star
+        #     bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, starname=star,
+        #                                          lat=lat, longi=lon,
+        #                                          alt=alt, ephemeris='de430')
+        #     bjds.append(float(bjd_result[0]))
+
+        # Skip all that calculation of the real bjd
+        # Just set the bjd to jd
+        # In this way we will be regularly sampled in bjd although that means that in reality the times and the
+        # bjd do not add up (but that is not really defined anyway)
+
+        jds = np.array(jds)
+        bjds = jds.copy()
 
         return bjds
 

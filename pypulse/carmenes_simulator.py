@@ -103,7 +103,9 @@ def get_new_header(time, bc=None, bjd=None, snr_profile=None,
                    "MJD-OBS": time.mjd,
                    "CARACAL MJD-OBS": time.mjd,
                    "CARACAL JD": time.jd - 2400000,
-                   "CARACAL HJD": time.jd - 2400000}
+                   "CARACAL HJD": time.jd - 2400000,
+                   "EXPTIME": 60,
+                   "CARACAL TMEAN": 30}
     # HJD is wrong but not so important at the moment
     if bc is not None:
         header_dict["CARACAL BERV"] = bc / 1000
