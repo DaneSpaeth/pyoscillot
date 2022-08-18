@@ -10,6 +10,8 @@ def planck(wav, T):
 
         :param float/np.array wav: Wavelength in m
         :param T: Temperature in K
+
+        :returns intensity: in J/s sr-1 m⁻2 m⁻1
     """
     a = 2.0 * const.H * const.C**2
     b = const.H * const.C / (wav * const.K_b * T)
@@ -295,21 +297,9 @@ def distance_from_px(img, row, col):
     return dist
 
 if __name__ == "__main__":
-    T_grid = np.ones((100, 100)) * 3100
-    T_grid[0:20, :] = 3001
-    T_grid[50:60, :] = 3200
+    wave, spec, header = phoenix_spectrum()
 
-    wave, ref_spectra, ref_headers = get_ref_spectra(
-        T_grid, logg=2.0, feh=0.0, wavelength_range=(3000, 12000))
-
-    wave, spec1, header3 = get_interpolated_spectrum(3050,
-                                                     ref_wave=wave,
-                                                     ref_spectra=ref_spectra,
-                                                     ref_headers=ref_headers)
-    wave, spec2, header3 = get_interpolated_spectrum(3060,
-                                                     ref_wave=wave,
-                                                     ref_spectra=ref_spectra,
-                                                     ref_headers=ref_headers)
-    plt.plot(wave, spec2)
-    plt.plot(wave, spec1)
+    fig, ax = plt.subplots(1, figsize=(16, 9))
+    ax.plot(wave, spec)
+    ax.plot(wave, planck(wave*1e-10, 4800)*4*np.pi, color="red")
     plt.show()
