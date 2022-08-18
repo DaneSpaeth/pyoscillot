@@ -120,6 +120,7 @@ class GridSpectrumSimulator():
                                                                      ref_headers,
                                                                      T_precision_decimals)
         self.spectrum = total_spectrum
+        self.wavelength = rest_wavelength
 
         # Also calculate the flux
         self.calc_flux()
@@ -140,7 +141,9 @@ class GridSpectrumSimulator():
             "pulsation": self.projector.pulsation(),
             "temperature": self.projector.temperature(),
             "rotation": self.projector.rotation(),
-            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann()}
+            "intensity_stefan_boltzmann": self.projector.intensity_stefan_boltzmann(),
+            "spectrum":self.spectrum,
+            "wavelength":self.wavelength}
             #"granulation_velocity":self.projector.granulation_velocity()}
 
         return array_dict
