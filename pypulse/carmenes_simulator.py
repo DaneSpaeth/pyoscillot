@@ -53,6 +53,7 @@ def interpolate(spectrum, wavelength, template_file=None,
                 np.abs(np.nanmean(spec_templ[order])) / np.nanmean(order_spec)
         elif order_levels == "uniform":
             # Reduce the levels of each order to roughly one
+            print(f"Use uniform order level")
             order_spec = order_spec / np.nanmean(order_spec)
         else:
             raise NotImplementedError
