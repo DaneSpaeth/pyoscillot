@@ -23,6 +23,11 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
         activity1_dict = load.crx(name, NIR=True)
         activity2_dict = load.dlw(name, NIR=True)
         activity3_dict = load.halpha(name, NIR=True)
+        try:
+            rv_dict.pop("CARMENES_VIS_CCF")
+            rv_dict.pop("CARMENES_NIR_CCF")
+        except KeyError:
+            pass
     else:
         # instrument = "CARMENES_VIS_CCF"
         activity1_dict = load.fwhm(name)
@@ -391,4 +396,6 @@ if __name__ == "__main__":
     # plot_temperatures(name)
     # plot_vsini_pulsation_series()
     #plot_phase_pulsation_series()
-    plot_dT_pulsation_series()
+    # plot_dT_pulsation_series()
+    name = "PHOTON_FLUX_REBINNED"
+    check_time_series(name, reduction="serval")
