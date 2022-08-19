@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 
 DIVIDING_TEMP = 5100
 
+def energy_flux_to_photon_flux(wavelength, spectrum):
+    """ Convert a sepctrum giben in energy flux (such as a PHOENIX spectrum) to a photon flux"""
+    energy_photon = const.H * const.C / wavelength
+    spectrum_photon = spectrum / energy_photon
+    return spectrum_photon
+
 def planck(wav, T):
     """ Return planck's law at wavelength and Temperature.
 
