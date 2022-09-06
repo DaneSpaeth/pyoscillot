@@ -10,9 +10,12 @@ from animation_pulsation import (
 
 global_dict = parse_global_ini()
 
+ALPHA = 0.4
+MARKERSIZE = 8
+
 
 def animate_rv_lambda(ticket, mode="pulsation"):
-    instruments = ["CARMENES_VIS", "HARPS"]
+    instruments = ["CARMENES_VIS"]
 
     conf = parse_ticket(ticket)
     sim_star = conf["name"]
@@ -20,7 +23,6 @@ def animate_rv_lambda(ticket, mode="pulsation"):
     pulsations, rv_dict, crx_dict, dlw_dict, rvo_dict, lims = get_data_and_lims(
         sim_star, mode)
 
-    print(crx_dict["HARPS"].keys())
     # Initialize the plot part
     images = pulsations
     # fig, ax = plt.subplots(4, 1, figsize=(16, 9))
@@ -52,25 +54,36 @@ def animate_rv_lambda(ticket, mode="pulsation"):
         # update the image
         print(index)
         im.set_array(images[index])
-        ax = update_plots(ax, index + 1, rv_dict,
+        ax = update_plots(ax, index, rv_dict,
                           crx_dict, rvo_dict, instruments, lims)
+
+        if index == 19:
+            plt.savefig(outfolder / f"{sim_star}_{mode}_crx_rvo.png", dpi=300)
+
         return im,
 
     ani = animation.FuncAnimation(
-        fig, updatefig, images, interval=125, blit=False, repeat=False)
-    outfolder = Path("/home/dane/Documents/PhD/pypulse/animations")
+        fig, updatefig, images, interval=175, blit=False, repeat=False)
+    outfolder = Path("/home/dane/Documents/PhD/PFE-SPP1992 meeting")
     ani.save(outfolder / f"{sim_star}_{mode}_crx_rvo.gif")
 
 
 def init_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments):
     """ Init plots."""
     for instrument in instruments:
-        ax[1].errorbar(rv_dict[instrument]["bjd"][:index],
-                       rv_dict[instrument]["rv"][:index],
-                       yerr=rv_dict[instrument]["rve"][:index],
+        ax[1].errorbar(rv_dict[instrument]["bjd"],
+                       rv_dict[instrument]["rv"],
+                       yerr=rv_dict[instrument]["rve"],
+                       linestyle="None", marker="o",
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+        ax[1].errorbar(rv_dict[instrument]["bjd"][index],
+                       rv_dict[instrument]["rv"][index],
+                       yerr=rv_dict[instrument]["rve"][index],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
 
         ax[2].errorbar(crx_dict[instrument]["bjd"][:index],
                        crx_dict[instrument]["crx"][:index],
@@ -102,18 +115,26 @@ def update_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments, lims):
     for instrument in instruments:
         # update the first plot
         last_bjd = rv_dict[instrument]["bjd"][:index][-1]
-        ax[1].errorbar(rv_dict[instrument]["bjd"][:index],
-                       rv_dict[instrument]["rv"][:index],
-                       yerr=rv_dict[instrument]["rve"][:index],
+        ax[1].errorbar(rv_dict[instrument]["bjd"],
+                       rv_dict[instrument]["rv"],
+                       yerr=rv_dict[instrument]["rve"],
+                       linestyle="None", marker="o",
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+        ax[1].errorbar(rv_dict[instrument]["bjd"][index],
+                       rv_dict[instrument]["rv"][index],
+                       yerr=rv_dict[instrument]["rve"][index],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
         min_time = rv_dict["CARMENES_VIS"]["bjd"].min()
         max_time = rv_dict["CARMENES_VIS"]["bjd"].max()
         ax[1].set_xlim(min_time - 1, max_time + 1)
         ax[1].set_ylim(lims["MIN_RV"] - 5, lims["MAX_RV"] + 5,)
-        ax[1].set_xlabel("Time [JD] - 2400000")
-        ax[1].set_ylabel("RV [m/s]")
+        # ax[1].set_ylim(lims["MIN_RV"] - 5, 150)
+        ax[1].set_xlabel("BJD - 2450000")
+        ax[1].set_ylabel(r"RV $[\frac{m}{s}]$")
         ax[1].ticklabel_format(useOffset=False, style='plain')
 
         orders = list(rvo_dict[instrument]["orders"].keys())
@@ -137,21 +158,28 @@ def update_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments, lims):
         log_wave = np.linspace(log_wave_A.min(), log_wave_A.max())
         ax[2].plot(log_wave, alpha + beta * (log_wave - np.log(l_v)),
                    color=COLOR_DICT[instrument])
-        ax[2].set_xlabel("Ln Wavelength [A]")
-        ax[2].set_ylabel("RV [m/s]")
+        ax[2].set_xlabel(r"$\ln(\lambda) [\AA]$")
+        ax[2].set_ylabel(r"RV $[\frac{m}{s}]$")
         ax[2].set_ylim(lims["MIN_RV"] - 20, lims["MAX_RV"] + 20,)
 
-        ax[3].errorbar(crx_dict[instrument]["bjd"][:index],
-                       crx_dict[instrument]["crx"][:index],
-                       yerr=crx_dict[instrument]["crxe"][:index],
+        ax[3].errorbar(crx_dict[instrument]["bjd"],
+                       crx_dict[instrument]["crx"],
+                       yerr=crx_dict[instrument]["crxe"],
+                       linestyle="None", marker="o",
+                       alpha=ALPHA,
+                       color=COLOR_DICT[instrument])
+        ax[3].errorbar(crx_dict[instrument]["bjd"][index],
+                       crx_dict[instrument]["crx"][index],
+                       yerr=crx_dict[instrument]["crxe"][index],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
         ax[3].set_xlim(min_time - 1, max_time + 1)
         ax[3].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
 
-        ax[3].set_xlabel("Time [JD] - 2400000")
-        ax[3].set_ylabel("CRX [m/s/Np]")
+        ax[3].set_xlabel(r"BJD - 2450000")
+        ax[3].set_ylabel(r"CRX $[\frac{m/s}{Np}]$")
         ax[3].ticklabel_format(useOffset=False, style='plain')
 
     ax[1].legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
@@ -161,5 +189,11 @@ def update_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments, lims):
 
 
 if __name__ == "__main__":
-    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0_m-1/talk_ticket3.ini"
+    root = Path("/home/dane/mounted_srv/simulations/fake_spectra")
+    name = "pulsation_dT50"
+    # ticket = root / "pulsation_dT100" / "pulsation_dT100.ini"
+    # name = "HIP16335_l1m1_dT100"
+    ticket = root / name / f"{name}.ini"
+
+    print(ticket)
     animate_rv_lambda(ticket)

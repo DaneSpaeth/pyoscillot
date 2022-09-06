@@ -8,8 +8,12 @@ from pathlib import Path
 
 global_dict = parse_global_ini()
 DATADIR = global_dict["datapath"]
-DATADIR = Path("/home/dane/Documents/PhD/pypulse/mounted_data")
+DATADIR = Path("/home/dane/mounted_srv/simulations")
 SPECTRADIR = DATADIR / "fake_spectra"
+
+
+ALPHA = 0.4
+MARKERSIZE = 8
 
 
 COLOR_DICT = {"Lick": "blue",
@@ -115,6 +119,7 @@ def create_high_res_arrays(ticket):
 def read_in_saved_arrays_pulsation(sim_name, mode="pulsation"):
 
     highres_array_dir = SPECTRADIR / sim_name / "highres_arrays"
+
     # Be clever, use the mode as the directoy
     array_dir = highres_array_dir / mode
     array_paths = array_dir.glob("*npy")
@@ -161,24 +166,26 @@ def get_data_and_lims(sim_star, mode):
 
     # Read in data
     rv_dict = load.rv(sim_star)
+    offset = 2450000
     for key in rv_dict.keys():
-        rv_dict[key]["bjd"] = rv_dict[key]["bjd"] - 2400000
+        rv_dict[key]["bjd"] = rv_dict[key]["bjd"] - offset
         try:
-            crx_dict[key]["bjd"] = crx_dict[key]["bjd"] - 2400000
+            crx_dict[key]["bjd"] = crx_dict[key]["bjd"] - offset
         except KeyError:
             continue
-        dlw_dict[key]["bjd"] = dlw_dict[key]["bjd"] - 2400000
+        dlw_dict[key]["bjd"] = dlw_dict[key]["bjd"] - offset
         rv_dict[key]["rv_original"] = rv_dict[key]["rv"]
         rv_dict[key]["rv"] = rv_dict[key]["rv"] - np.median(rv_dict[key]["rv"])
 
     all_crx = np.array([])
-    for instrument in crx_dict.keys():
+    instruments = ["CARMENES_VIS"]
+    for instrument in instruments:
         all_crx = np.concatenate((all_crx, crx_dict[instrument]["crx"]))
     all_dlw = np.array([])
-    for instrument in dlw_dict.keys():
+    for instrument in instruments:
         all_dlw = np.concatenate((all_dlw, dlw_dict[instrument]["dlw"]))
     all_rv = np.array([])
-    for instrument in rv_dict.keys():
+    for instrument in instruments:
         all_rv = np.concatenate((all_rv, rv_dict[instrument]["rv"]))
 
     lims = {"MIN_RV": np.min(all_rv),
@@ -188,6 +195,10 @@ def get_data_and_lims(sim_star, mode):
             "MIN_DLW": np.min(all_dlw),
             "MAX_DLW": np.max(all_dlw)}
 
+    # TODO REMOVE
+    # lims["MAX_RV"] = 30
+    # lims["MIN_RV"] = -30
+
     return pulsations, rv_dict, crx_dict, dlw_dict, rvo_dict, lims
 
 
@@ -196,7 +207,7 @@ def animate_pulse(ticket, instrument=None, mode="pulsation"):
 
         At the moment only allow one instruments at a time.
     """
-    instruments = ["CARMENES_VIS", "HARPS"]
+    instruments = ["CARMENES_VIS"]
 
     conf = parse_ticket(ticket)
     sim_star = conf["name"]
@@ -238,13 +249,13 @@ def animate_pulse(ticket, instrument=None, mode="pulsation"):
             # update the image
             print(index)
             im.set_array(images[index])
-            ax = update_plots(ax, index + 1, rv_dict,
+            ax = update_plots(ax, index, rv_dict,
                               crx_dict, instruments, lims, dlw=dlw)
             return im,
 
         ani = animation.FuncAnimation(
-            fig, updatefig, images, interval=125, blit=False, repeat=False)
-        outfolder = Path("/home/dane/Documents/PhD/pypulse/animations")
+            fig, updatefig, images, interval=200, blit=False, repeat=False)
+        outfolder = Path("/home/dane/Documents/PhD/PFE-SPP1992 meeting")
         if not dlw:
             ani.save(outfolder / f"{sim_star}_{mode}_crx.gif")
         else:
@@ -256,7 +267,7 @@ def animate_pulse(ticket, instrument=None, mode="pulsation"):
         im = ax[0].imshow(images[index], animated=True,
                           origin="lower", cmap="seismic", vmin=VMIN, vmax=VMAX)
         ax = init_plots(ax, index, rv_dict, crx_dict, instruments, dlw=dlw)
-        ax = update_plots(ax, index + 1, rv_dict,
+        ax = update_plots(ax, index, rv_dict,
                           crx_dict, instruments, lims, dlw=dlw)
         if not dlw:
             plt.savefig(outfolder / f"{sim_star}_{mode}_crx.pdf")
@@ -272,30 +283,54 @@ def animate_pulse(ticket, instrument=None, mode="pulsation"):
 def init_plots(ax, index, rv_dict, crx_dict, instruments, dlw=False):
     """ Init plots."""
     for instrument in instruments:
-        ax[1].errorbar(rv_dict[instrument]["bjd"][:index],
-                       rv_dict[instrument]["rv"][:index],
-                       yerr=rv_dict[instrument]["rve"][:index],
+        ax[1].errorbar(rv_dict[instrument]["bjd"],
+                       rv_dict[instrument]["rv"],
+                       yerr=rv_dict[instrument]["rve"],
+                       linestyle="None", marker="o",
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+        ax[1].errorbar(rv_dict[instrument]["bjd"][index],
+                       rv_dict[instrument]["rv"][index],
+                       yerr=rv_dict[instrument]["rve"][index],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
 
         if dlw:
             key = "dlw"
         else:
             key = "crx"
-        ax[2].errorbar(crx_dict[instrument]["bjd"][:index],
-                       crx_dict[instrument][key][:index],
-                       yerr=crx_dict[instrument][key + "e"][:index],
+        ax[2].errorbar(crx_dict[instrument]["bjd"],
+                       crx_dict[instrument][key],
+                       yerr=crx_dict[instrument][key + "e"],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+        ax[2].errorbar(crx_dict[instrument]["bjd"][index],
+                       crx_dict[instrument][key][index],
+                       yerr=crx_dict[instrument][key + "e"][index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
 
-        ax[3].errorbar(rv_dict[instrument]["rv"][:index],
-                       crx_dict[instrument][key][:index],
-                       yerr=crx_dict[instrument][key + "e"][:index],
+        ax[3].errorbar(rv_dict[instrument]["rv"],
+                       crx_dict[instrument][key],
+                       yerr=crx_dict[instrument][key + "e"],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+
+        ax[3].errorbar(rv_dict[instrument]["rv"][index],
+                       crx_dict[instrument][key][index],
+                       yerr=crx_dict[instrument][key + "e"][index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
         # if dlw is not None:
     #     ax[4].errorbar(time[:index], dlw[:index],
     #                    yerr=dlwe[:index], linestyle="None", marker="o")
@@ -313,12 +348,19 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
 
     for instrument in instruments:
         # update the first plot
-        ax[1].errorbar(rv_dict[instrument]["bjd"][:index],
-                       rv_dict[instrument]["rv"][:index],
-                       yerr=rv_dict[instrument]["rve"][:index],
+        ax[1].errorbar(rv_dict[instrument]["bjd"],
+                       rv_dict[instrument]["rv"],
+                       yerr=rv_dict[instrument]["rve"],
+                       linestyle="None", marker="o",
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+        ax[1].errorbar(rv_dict[instrument]["bjd"][index],
+                       rv_dict[instrument]["rv"][index],
+                       yerr=rv_dict[instrument]["rve"][index],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
         min_time = rv_dict["CARMENES_VIS"]["bjd"].min()
         max_time = rv_dict["CARMENES_VIS"]["bjd"].max()
         ax[1].set_xlim(min_time - 1, max_time + 1)
@@ -331,12 +373,20 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
             key = "crx"
         else:
             key = "dlw"
-        ax[2].errorbar(crx_dict[instrument]["bjd"][:index],
-                       crx_dict[instrument][key][:index],
-                       yerr=crx_dict[instrument][key + "e"][:index],
+        ax[2].errorbar(crx_dict[instrument]["bjd"],
+                       crx_dict[instrument][key],
+                       yerr=crx_dict[instrument][key + "e"],
                        linestyle="None", marker="o",
                        label=instrument,
-                       color=COLOR_DICT[instrument])
+                       color=COLOR_DICT[instrument],
+                       alpha=ALPHA)
+        ax[2].errorbar(crx_dict[instrument]["bjd"][index],
+                       crx_dict[instrument][key][index],
+                       yerr=crx_dict[instrument][key + "e"][index],
+                       linestyle="None", marker="o",
+                       label=instrument,
+                       color=COLOR_DICT[instrument],
+                       markersize=MARKERSIZE)
         ax[2].set_xlim(min_time - 1, max_time + 1)
         if not dlw:
             ax[2].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
@@ -350,12 +400,21 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
         ax[2].ticklabel_format(useOffset=False, style='plain')
 
         if len(ax) == 4:
-            ax[3].errorbar(rv_dict[instrument]["rv"][:index],
-                           crx_dict[instrument][key][:index],
-                           yerr=crx_dict[instrument][key + "e"][:index],
+            ax[3].errorbar(rv_dict[instrument]["rv"],
+                           crx_dict[instrument][key],
+                           yerr=crx_dict[instrument][key + "e"],
                            linestyle="None", marker="o",
                            label=instrument,
-                           color=COLOR_DICT[instrument])
+                           color=COLOR_DICT[instrument],
+                           alpha=ALPHA)
+
+            ax[3].errorbar(rv_dict[instrument]["rv"][index],
+                           crx_dict[instrument][key][index],
+                           yerr=crx_dict[instrument][key + "e"][index],
+                           linestyle="None", marker="o",
+                           label=instrument,
+                           color=COLOR_DICT[instrument],
+                           markersize=MARKERSIZE)
             ax[3].set_xlim(lims["MIN_RV"] - 5, lims["MAX_RV"] + 5)
             if not dlw:
                 ax[3].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
@@ -374,6 +433,13 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
 
 
 if __name__ == "__main__":
+    root = Path("/home/dane/mounted_srv/simulations/fake_spectra")
+    root = SPECTRADIR
+    name = "pulsation180"
+    ticket = root / "pulsation_phase180" / f"{name}.ini"
+    create_high_res_arrays(ticket)
+    # print("Here")
+    exit()
 
-    ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0/pulsation.ini"
+    # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0/pulsation.ini"
     animate_pulse(ticket, mode="pulsation")
