@@ -233,7 +233,8 @@ def animate_pulse(ticket, instrument=None, mode="pulsation"):
 
     im = ax[0].imshow(images[index], animated=True,
                       origin="lower", cmap="seismic", vmin=VMIN, vmax=VMAX)
-    ax = init_plots(ax, index + 1, rv_dict, crx_dict, instruments)
+    ax = init_plots(ax, index, rv_dict, crx_dict, instruments)
+    index = -1
 
     def create_plot(im, fig, ax, images, index, rv_dict, crx_dict, instruments, lims, dlw=False):
         """ Convienence function to create the same plots once with crx and once with dlw.
@@ -254,7 +255,7 @@ def animate_pulse(ticket, instrument=None, mode="pulsation"):
             return im,
 
         ani = animation.FuncAnimation(
-            fig, updatefig, images, interval=200, blit=False, repeat=False)
+            fig, updatefig, images, interval=150, blit=False, repeat=False)
         outfolder = Path("/home/dane/Documents/PhD/PFE-SPP1992 meeting")
         if not dlw:
             ani.save(outfolder / f"{sim_star}_{mode}_crx.gif")
@@ -365,8 +366,8 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
         max_time = rv_dict["CARMENES_VIS"]["bjd"].max()
         ax[1].set_xlim(min_time - 1, max_time + 1)
         ax[1].set_ylim(lims["MIN_RV"] - 5, lims["MAX_RV"] + 5,)
-        ax[1].set_xlabel("Time [JD] - 2400000")
-        ax[1].set_ylabel("RV [m/s]")
+        ax[1].set_xlabel("BJD - 2450000")
+        ax[1].set_ylabel(r"RV $[\frac{m}{s}]$")
         ax[1].ticklabel_format(useOffset=False, style='plain')
 
         if not dlw:
@@ -392,11 +393,11 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
             ax[2].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
         else:
             ax[2].set_ylim(lims["MIN_DLW"] - 5, lims["MAX_DLW"] + 5,)
-        ax[2].set_xlabel("Time [JD] - 2400000")
+        ax[2].set_xlabel("BJD - 2450000")
         if not dlw:
-            ax[2].set_ylabel("CRX [m/s/Np]")
+            ax[2].set_ylabel(r"CRX $[\frac{m/s}{Np}]$")
         else:
-            ax[2].set_ylabel("dLW [m^2/s^2]")
+            ax[2].set_ylabel(r"dLW $[\frac{m^2}{s^2}]$")
         ax[2].ticklabel_format(useOffset=False, style='plain')
 
         if len(ax) == 4:
@@ -420,11 +421,11 @@ def update_plots(ax, index, rv_dict, crx_dict, instruments, lims, dlw=False):
                 ax[3].set_ylim(lims["MIN_CRX"] - 5, lims["MAX_CRX"] + 5,)
             else:
                 ax[3].set_ylim(lims["MIN_DLW"] - 5, lims["MAX_DLW"] + 5,)
-            ax[3].set_xlabel("RV [m/s]")
+            ax[3].set_xlabel(r"RV $[\frac{m}{s}]$")
             if not dlw:
-                ax[3].set_ylabel("CRX [m/s/Np]")
+                ax[3].set_ylabel(r"CRX $[\frac{m/s}{Np}]$")
             else:
-                ax[3].set_ylabel("dLW [m^2/s^2]")
+                ax[3].set_ylabel(r"dLW $[\frac{m^2}{s^2}]$")
 
     ax[1].legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
                  mode="expand", borderaxespad=0, ncol=len(ax[1].lines))

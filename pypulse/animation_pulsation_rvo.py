@@ -41,7 +41,8 @@ def animate_rv_lambda(ticket, mode="pulsation"):
 
     im = ax[0].imshow(images[index], animated=True,
                       origin="lower", cmap="seismic", vmin=VMIN, vmax=VMAX)
-    ax = init_plots(ax, index + 1, rv_dict, crx_dict, rvo_dict, instruments)
+    ax = init_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments)
+    index = -1
 
     def updatefig(*args):
         nonlocal index
@@ -63,7 +64,7 @@ def animate_rv_lambda(ticket, mode="pulsation"):
         return im,
 
     ani = animation.FuncAnimation(
-        fig, updatefig, images, interval=175, blit=False, repeat=False)
+        fig, updatefig, images, interval=150, blit=False, repeat=False)
     outfolder = Path("/home/dane/Documents/PhD/PFE-SPP1992 meeting")
     ani.save(outfolder / f"{sim_star}_{mode}_crx_rvo.gif")
 
@@ -114,7 +115,7 @@ def update_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments, lims):
 
     for instrument in instruments:
         # update the first plot
-        last_bjd = rv_dict[instrument]["bjd"][:index][-1]
+        # last_bjd = rv_dict[instrument]["bjd"][:index][-1]
         ax[1].errorbar(rv_dict[instrument]["bjd"],
                        rv_dict[instrument]["rv"],
                        yerr=rv_dict[instrument]["rve"],

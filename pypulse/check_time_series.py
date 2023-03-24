@@ -62,9 +62,9 @@ def check_time_series(name, instrument=None, reduction="serval", downscale_racco
     plot_activity_rv(rv_dict, activity3_dict, ax=ax[3, 1], fit=None)
     fig.set_tight_layout(True)
 
-    out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/26.07.2022")
-    # plt.savefig(out_dir / "two_spots.png", dpi=300)
-    plt.show()
+    out_dir = Path("/home/dane/Documents/PhD/Sabine_overviews/07.09.2022/simulations")
+    plt.savefig(out_dir / f"{reduction}_{name}.png", dpi=300)
+    # plt.show()
 
 
 def plot_temperature(name):
@@ -397,5 +397,15 @@ if __name__ == "__main__":
     # plot_vsini_pulsation_series()
     #plot_phase_pulsation_series()
     # plot_dT_pulsation_series()
-    name = "PHOTON_FLUX_REBINNED"
-    check_time_series(name, reduction="serval")
+
+    names = ["HIP16335_l1m0_dT50",
+             "HIP16335_l1m1_dT50",
+             "HIP16335_l1m1_dT100",
+             "HIP16335_l1m1_dT100_phase30",
+             "HIP16335_l1m1_dT200",
+             "HIP16335_l1m-1_dT50",
+             "HIP16335_l2m0_dT100",
+             "HIP16335_l2m1_dT100",
+             "HIP16335_l2m2_dT100"]
+    for name in names:
+        check_time_series(name, reduction="serval")

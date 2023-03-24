@@ -232,6 +232,7 @@ def plot_central_order_intensitites():
     plt.legend()
     plt.show()
 
+
 def telluric_mask():
     """ Load a telluric mask from telluric_mask_carm_short.dat"""
     file = DATAROOT / "telluric_mask_carm_short.dat"
@@ -240,36 +241,13 @@ def telluric_mask():
     return data
 
 
-
 if __name__ == "__main__":
 
-    file = "/home/dane/mounted_srv/simulations/fake_spectra/YZ_CMi_TWO_SPOTS_dT200/CARMENES_VIS/car-20220313T21h00m33s-sci-fake-vis_A.fits"
+    file = "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP46457/car-20220210T22h04m27s-sci-gtoc-vis_A.fits"
 
-    file = "/home/dane/mounted_srv/simulations/fake_spectra/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER/CARMENES_VIS/car-20220430T18h01m32s-sci-fake-vis_A.fits"
-    # file = "/home/dane/Documents/PhD/plapy/data/RV_lib/serval/SIMULATION/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER/CARMENES_VIS/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER.fits"
-    template = "/home/dane/Documents/PhD/pypulse/data/CARMENES_templates/CARMENES_template_YZ_CMi.fits"
-    (spec, cont, sig, wave) = carmenes_template(
-        file, serval_output=False)
-
-
-
-    def _plot_order_range(start, filename=None):
-        out_root = Path("/home/dane/Documents/PhD/Sabine_overviews/02.08.2022/")
-        fig, ax = plt.subplots(3, 4,figsize=(16,9))
-        for order, a in zip(range(start, start+12), ax.flatten()):
-
-            a.plot(wave[order], spec[order], label="YZ_CMi template")
-            a.set_xlabel("Wavelength [A]")
-            physical_order = 118 - order
-            a.set_title(f"Order:{order}/{physical_order}")
-            a.set_ylabel("Flux")
-        fig.set_tight_layout(True)
-        if filename:
-            fig.suptitle(filename)
-        plt.savefig(out_root / f"Orders{start}-{start+12}.png", dpi=300)
-        plt.show()
-
-    # _plot_order_range(10, filename=Path(file).name)
-    # _plot_order_range(20, filename=Path(file).name)
-    # _plot_order_range(30, filename=Path(file).name)
-    _plot_order_range(40, filename=Path(file).name)
+    (spec, cont, sig, wave) = carmenes_template(file)
+    fig, ax = plt.subplots(1, figsize=(16, 9))
+    order = 0
+    ax.plot(wave[order], spec[order])
+    ax.set_xlabel("Wavbelength [A]")
+    plt.show()
