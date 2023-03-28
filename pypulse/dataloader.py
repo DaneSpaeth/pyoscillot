@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wget
 from parse_ini import parse_global_ini
-import idlsave
+# import idlsave
 
 global_dict = parse_global_ini()
 DATAROOT = global_dict["datapath"]
