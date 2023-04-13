@@ -5,19 +5,13 @@ from datasaver import DataSaver
 import socket
 from datetime import datetime
 from theoretical_rvs import theoretical_main
+from create_nzp_files import create_nzp_file, create_ascii_file
 from pathlib import Path
 try:
     from check_time_series import check_time_series
 except ModuleNotFoundError:
     pass
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
-
-import sys
-try:
-    sys.path.append("/home/dane/Documents/PhD/pyCARM/pyCARM")
-    from correct_nzps import create_correction, read_in_nzps
-except:
-    pass
 
 
 def main(ticket, run=True, serval=True, raccoon=True, run_laptop=False):
@@ -102,6 +96,9 @@ def reduce_CARMENES_VIS(global_dict, name, star, serval=True, raccoon=True):
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_VIS"])
+        outfile = global_dict["rvlibpath"] / "serval" / "SIMULATION" / name / "CARMENES_VIS" / f"{name}.rvc.dat"
+        csv_file = create_nzp_file(outfile, raccoon=False)
+        create_ascii_file(csv_file)
 
     if raccoon:
         subprocess.run(["bash", "run_raccoon_srv.sh",
@@ -109,14 +106,11 @@ def reduce_CARMENES_VIS(global_dict, name, star, serval=True, raccoon=True):
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_VIS"])
-    #
-    # # For raccoon also create the csv file
-    # # A bit ugly but take the existing nzp correction code
-    # # TODO: Refactor at some point
-    # # TODO: add back
-    # outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
-    # nzps = read_in_nzps("vis")
-    # create_correction(outfile, nzps, raccoon=True)
+
+        outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_VIS_CCF" / "None.par.dat"
+        csv_file = create_nzp_file(outfile, raccoon=True)
+        create_ascii_file(csv_file)
+
 
 def reduce_CARMENES_NIR(global_dict, name, star, serval=True, raccoon=True):
     """ Convenience function to reduce CARMENES_NIR spectra"""
@@ -126,20 +120,20 @@ def reduce_CARMENES_NIR(global_dict, name, star, serval=True, raccoon=True):
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_NIR"])
+        outfile = global_dict["rvlibpath"] / "serval" / "SIMULATION" / name / "CARMENES_NIR" / f"{name}.rvc.dat"
+        csv_file = create_nzp_file(outfile, raccoon=False)
+        create_ascii_file(csv_file)
     if raccoon:
         subprocess.run(["bash", "run_raccoon_srv.sh",
                         str(global_dict["datapath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_NIR"])
-    #
-    # # For raccoon also create the csv file
-    # # A bit ugly but take the existing nzp correction code
-    # # TODO: Refactor at some point
-    # # TODO: add back
-    # outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_NIR_CCF" / "None.par.dat"
-    # nzps = read_in_nzps("nir")
-    # create_correction(outfile, nzps, raccoon=True)
+
+        outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "CARMENES_NIR_CCF" / "None.par.dat"
+        csv_file = create_nzp_file(outfile, raccoon=True)
+        create_ascii_file(csv_file)
+
 
 def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
     """ Convenience function to reduce HARPS spectra"""
@@ -157,6 +151,6 @@ if __name__ == "__main__":
 
     # define ticket
     ticket = root / "NGC4349-127" / "test2.ini"
-    main(ticket, run=False, serval=False, raccoon=True, run_laptop=False)
+    main(ticket, run=False, serval=True, raccoon=True, run_laptop=False)
 
 
