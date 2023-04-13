@@ -20,6 +20,11 @@ else
     SERVALINST=$INST
 fi
 
+if [ $INST = "HARPS" ]
+then
+  INST="HARPS_pre2015"
+fi
+
 $SERVAL/src/serval.py ${SIMNAME} $DATAPATH/fake_spectra/$SIMNAME/$INST -inst $SERVALINST -targrv 0 -atmmask "" -pspline -targ $STAR -brvref DRS -safemode 2
 mv $SIMNAME/* $OUTPATH
 rmdir $SIMNAME
