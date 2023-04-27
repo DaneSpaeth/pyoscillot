@@ -159,7 +159,7 @@ def carmenes_template(filename="CARMENES_VIS_template.fits", serval_output=False
 def harps_template(spec_filename="HARPS_template_e2ds_A.fits",
                    wave_filename="HARPS_template_wave_A.fits",
                    blaze_filename="HARPS_template_blaze_A.fits"):
-    """ Return spec, sig, cont and wave of Carmenes template."""
+    """ Return spec, sig, cont and wave of Harps template."""
     spec_template = DATAROOT / spec_filename
     with fits.open(spec_template) as hdul:
         hdu = hdul[0]
