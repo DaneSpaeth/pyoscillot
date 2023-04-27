@@ -5,7 +5,7 @@ from parse_ini import parse_global_ini
 
 
 def sample_phase(sample_P, N_global=30, N_periods=1,
-                 N_local=(1, 1), random_day_range=(0, 1)):
+                 N_local=(1, 1), random_day_range=(0, 1), start=None, start_phase=0):
     """ New a bit more random phase sampling. Really ugly at the moment
 
         :param float sample_P: Global Period to sample
@@ -24,9 +24,12 @@ def sample_phase(sample_P, N_global=30, N_periods=1,
         It therefore replaces the previous function.
     """
     # stop = datetime.combine(date.today(), datetime.min.time())
-    stop = datetime(2021, 6, 10, hour=0, minute=0, second=0)
+    if not start:
+        stop = datetime(2021, 6, 10, hour=0, minute=0, second=0)
 
-    start = stop - timedelta(days=int(sample_P * N_periods))
+        start = stop - timedelta(days=int(sample_P * N_periods))
+    else:
+        stop = start + timedelta(days=int(sample_P * N_periods))
 
     time_sample = []
 
@@ -44,6 +47,9 @@ def sample_phase(sample_P, N_global=30, N_periods=1,
     time_sample = np.array(time_sample)
     phase_sample = (np.mod((time_sample - start) /
                            timedelta(days=1), sample_P)) / sample_P
+    # Also allow a phase offset
+    phase_sample += start_phase
+    phase_sample = np.mod(phase_sample, 1.0)
     return phase_sample.astype(float), time_sample
 
 
@@ -77,10 +83,10 @@ def sample_phase_randomuniform(N_global, N_periods, period):
     return phase_sample.astype(float), time_sample
 
 
-def presample_phase(N_global, N_periods, period, sampling="uniform"):
+def presample_phase(N_global, N_periods, period, sampling="uniform", start=None, start_phase=0):
     """ Presample the phases of a spot sim for repeated use"""
     if sampling == "uniform":
-        phase_sample, time_sample = sample_phase(period, N_global, N_periods)
+        phase_sample, time_sample = sample_phase(period, N_global, N_periods, start=start, start_phase=start_phase)
     elif sampling == "randomuniform":
         phase_sample, time_sample = sample_phase_randomuniform(
             N_global, N_periods, period)
@@ -127,4 +133,4 @@ def load_presampled_phase(savename):
 
 
 if __name__ == "__main__":
-   presample_phase(20, 1, 596.6, "uniform")
+    presample_phase(40, 3, 674.5, "uniform", start=datetime.strptime("2005-03-20T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f")- timedelta(days=200))
