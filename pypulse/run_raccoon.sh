@@ -38,7 +38,6 @@ then
       --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME/CARMENES_NIR_CCF \
       --dirserval $RVLIBPATH/serval/SIMULATION/$SIMNAME/$INST \
       --plot_sv \
-      --bervmax 100 \
       --verbose
 fi
 

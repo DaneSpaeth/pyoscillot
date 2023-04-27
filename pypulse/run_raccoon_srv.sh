@@ -17,18 +17,18 @@ if [ $INST = "CARMENES_VIS" ]
 then
 
   # First create the new mask using the SERVAL template
-#  raccoonmask $RVLIBPATH/serval/SIMULATION/$SIMNAME/CARMENES_VIS/$SIMNAME.fits serval $STAR \
-#    --inst CARM_VIS \
-#    --tplrv 0 \
-#    --cont poly \
-#    --contfiltmed 1 \
-#    --contfiltmax 400 \
-#    --contpolyord 2 \
-#    --line_fwhmmax 30.00 \
-#    --line_contrastminmin 0.06 \
-#    --line_depthw_percentdeepest 0.10 \
-#    --line_depthw_depthmaxquantile 0.6 \
-#    --dirout $RACCOONDATADIR/mask/CARM_VIS/$SIMNAME --verbose
+  raccoonmask $RVLIBPATH/serval/SIMULATION/$SIMNAME/CARMENES_VIS/$SIMNAME.fits serval $STAR \
+    --inst CARM_VIS \
+    --tplrv 0 \
+    --cont poly \
+    --contfiltmed 1 \
+    --contfiltmax 400 \
+    --contpolyord 2 \
+    --line_fwhmmax 30.00 \
+    --line_contrastminmin 0.06 \
+    --line_depthw_percentdeepest 0.10 \
+    --line_depthw_depthmaxquantile 0.6 \
+    --dirout $RACCOONDATADIR/mask/CARM_VIS/$SIMNAME --verbose
   raccoonccf \
       $DATAPATH/fake_spectra/$SIMNAME/$INST/*.fits \
       CARM_VIS \
@@ -60,12 +60,62 @@ then
   raccoonccf \
       $DATAPATH/fake_spectra/$SIMNAME/$INST/*.fits \
       CARM_NIR \
-      $RACCOONDATADIR/mask/CARM_NIR/$sp_type.mas \
+      $RACCOONDATADIR/mask/CARM_NIR/$SIMNAME/$SIMNAME.mas \
       --filtell $RACCOONDATADIR/tellurics/CARM_NIR/telluric_mask_nir4.dat \
       --rvshift none \
       --fcorrorders obshighsnr \
       --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME/CARMENES_NIR_CCF \
       --dirserval $RVLIBPATH/serval/SIMULATION/$SIMNAME/$INST \
+      --plot_sv \
+      --bervmax 100 \
+      --verbose
+elif [ $INST = "HARPS" ]
+then
+  raccoonmask $RVLIBPATH/serval/SIMULATION/$SIMNAME/HARPS_pre2015/$SIMNAME.fits serval $STAR \
+    --inst HARPS \
+    --tplrv 0 \
+    --cont poly \
+    --contfiltmed 1 \
+    --contfiltmax 400 \
+    --contpolyord 2 \
+    --line_fwhmmax 30.00 \
+    --line_contrastminmin 0.06 \
+    --line_depthw_percentdeepest 0.10 \
+    --line_depthw_depthmaxquantile 0.6 \
+    --dirout $RACCOONDATADIR/mask/HARPS/$SIMNAME --verbose
+
+    # Now we need to unzip the fits files
+    # Create a directory for the fits files
+    fits_dir=$DATAPATH/fake_spectra/$SIMNAME/$INST/fits
+    mkdir $fits_dir
+    cd $fits_dir
+    FILES=$(find $DATAPATH/fake_spectra/$SIMNAME/$INST/ -name '*.tar')
+    for file in $FILES
+    do
+      tar -xvf $file
+    done
+
+    # Now create a blazefile list
+    # TODO: Test if that is reasonable
+    BLAZEFILEPATH=/home/dspaeth/pypulse/data/HARPS_template_blaze_A.fits
+    BLAZETXTFILE=$fits_dir/blazefiles.txt
+    FILES=$(find $DATAPATH/fake_spectra/$SIMNAME/$INST/ -name '*.fits')
+    for file in $FILES
+    do
+      echo $file $BLAZEFILEPATH >> $BLAZETXTFILE
+    done
+
+
+    raccoonccf \
+      $fits_dir/*.fits \
+      HARPS \
+      $RACCOONDATADIR/mask/HARPS/$SIMNAME/$SIMNAME.mas \
+      --filtell $RACCOONDATADIR/tellurics/CARM_VIS/telluric_mask_carm_short.dat \
+      --filobs2blaze $BLAZETXTFILE \
+      --rvshift none \
+      --fcorrorders obshighsnr \
+      --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME/HARPS_pre2015 \
+      --dirserval $RVLIBPATH/serval/SIMULATION/$SIMNAME/HARPS_pre2015 \
       --plot_sv \
       --bervmax 100 \
       --verbose
