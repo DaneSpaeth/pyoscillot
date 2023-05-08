@@ -224,7 +224,7 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     # Interpolate back on original wavelength grid
     f_sm = np.interp(w_grid, w_log, f_conv)
 
-    # Write smoothed spectrum back into Spectrum object
+    # Return smoothed spectrum
     return f_sm
 
 
@@ -345,75 +345,20 @@ def rebin(wold, sold, wnew):
 
 
 if __name__ == "__main__":
+    num = 10000
+    wave = np.linspace(6000, 6500, num)
+    spec = np.ones_like(wave)
 
-    from dataloader import carmenes_template
-    (_spec, _cont, _sig, _wave) = carmenes_template("CARMENES_VIS_templates/CARMENES_template_HIP73620.fits")
+    interval = 1000
+    peak_idx = np.arange(int(0+interval/2), num, interval)
+    spec[peak_idx] += 0.1
 
-    for order in range(0, 60):
-        carm_spec = _spec[order]
-        carm_wave = _wave[order]
-        carm_cont = _cont[order]
-        carm_sig = _sig[order]
-
-        print(order)
-        wave, spec, _ = phoenix_spectrum(Teff=4800, logg=3.0,
-                                         wavelength_range=(carm_wave[0], carm_wave[-1]))
-        # spec = adjust_resolution(wave, spec, 94600, w_sample=1)
-
-        #big_wave, big_spec, _ = phoenix_spectrum(Teff=3300, logg=5.0,
-        #                                 wavelength_range=(5000, 19000))
-
-        # big_spec = adjust_resolution(big_wave, big_spec, 94600, w_sample=1)
+    spec_res = adjust_resolution(wave, spec, R=115000, w_sample=100)
 
 
-        #mask_lower = big_wave > carm_wave[0]
-        #mask_upper = big_wave < carm_wave[-1]
-        #mask = np.logical_and(mask_upper, mask_lower)
-        # big_wave = big_wave[mask]
-        # big_spec = big_spec[mask]
-
-        # small_wave = wave[10:-10]
-        # small_spec = spec[10:-10]
-
-        # big_spec /= np.max(big_spec)
-        carm_spec /= np.nanmax(carm_spec)
-        spec /= np.max(spec)
-        scale = np.nanmedian(spec) / np.nanmedian(carm_spec)
 
 
-        shift = 0.0
-        spec = add_doppler_shift(spec, wave, shift)
-        func = interp1d(wave, spec, kind="cubic")
-        order_spec = func(carm_wave[10:-10])
-        # big_spec = add_doppler_shift(big_spec, big_wave, shift)
-
-        binned_spec = rebin(wave, spec, carm_wave[10:-10])
-
-
-        fig, ax = plt.subplots(1, figsize=(16,9))
-        ax.plot(carm_wave, carm_spec*scale,
-                linewidth=2, label="CARMENES template")
-        #ax.plot(big_wave, big_spec, linewidth=2, label="Smoothed PHOENIX (big)")
-        ax.plot(wave, spec, linewidth=2, label="Raw PHOENIX")
-        #ax.plot(carm_wave[10:-10], order_spec, linewidth=2, label="Interpolated, smoothed PHOENIX")
-        #ax.plot(carm_wave[10:-10], binned_spec, linewidth=2, label="Rebinned PHOENIX")
-        x_start = ax.get_xlim()[0]
-        x_diff = ax.get_xlim()[1] - x_start
-        # ax.set_xlim(x_start+0.3*x_diff, x_start+0.7*x_diff)
-
-
-        _overplot_telluric_mask(ax)
-
-
-        ax.legend()
-        ax.set_xlim(carm_wave.min(), carm_wave.max())
-        # ax.set_ylim(0, ax.get_ylim()[1])
-        fig.set_tight_layout(True)
-        ax.set_title(f"Order {order}")
-
-        #  ax.set_xlim(8180, 8200)
-        # ax.set_ylim(0.15, 0.3)
-
-        # plt.show()
-        plt.savefig(f"/home/dspaeth/data/simulations/tmp_plots/orders_73620/order{order}.png")
-
+    plt.plot(wave, spec_res)
+    plt.xlim(6124, 6126)
+    plt.ylim(0.97, 1.05)
+    plt.show()
