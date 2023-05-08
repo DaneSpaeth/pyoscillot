@@ -6,28 +6,47 @@ from utils import adjust_resolution
 
 
 def interpolate(spectrum, wavelength):
-    """ Interpolate to the HARPS spectrum."""
-    (spec, wave, blaze) = harps_template()
+    """ Interpolate to the HARPS spectrum.
+
+
+        :param np.array spectrum: The calculated spectrum to interpolate to HARPS
+        :param np.array wavelength: The calculated wavelength to interpolate to HARPS
+    """
+    # Load the template spectra and wavelength
+    (tmpl_spec, tmpl_wave, tmpl_blaze) = harps_template(spec_filename="HARPS_template_ngc4349_127_e2ds_A.fits")
 
     interpol_spec = []
-    spectrum = adjust_resolution(wavelength, spectrum, R=115000, w_sample=5)
-    for order in range(len(wave)):
+    R_real = 115000
+    # R_test = 130000
+    print("Adjusting Resolution")
+    for order in range(len(tmpl_wave)):
 
-        order_spec = []
-        func = interp1d(wavelength, spectrum, kind="linear")
-        order_spec = func(wave[order])
+        # Cut the calculated wavelengths and spectra to the order
+        local_wave_mask = np.logical_and(wavelength > tmpl_wave[order][0] - 100,
+                                         wavelength < tmpl_wave[order][-1] + 100)
+
+        local_wavelength = wavelength[local_wave_mask]
+        local_spectrum = spectrum[local_wave_mask]
+
+        # Adjust the resolution per order
+        # This will use one kernel per order
+        local_spectrum = adjust_resolution(local_wavelength, local_spectrum, R=R_real, w_sample=20)
+
+        # Interpolate the calculated spectra onto the tmpl_wave grid
+        func = interp1d(local_wavelength, local_spectrum, kind="linear")
+        order_spec = func(tmpl_wave[order])
 
         # Adjust for the blaze
-        order_spec *= blaze[order]
+        order_spec *= tmpl_blaze[order]
 
         # Reduce the level to something similar to HARPS
         order_spec = order_spec * \
-            np.nanmean(spec[order]) / np.nanmean(order_spec)
+                     np.nanmean(tmpl_spec[order]) / np.nanmean(order_spec)
 
         interpol_spec.append(order_spec)
     interpol_spec = np.array(interpol_spec)
 
-    return interpol_spec, wave
+    return interpol_spec, tmpl_wave
 
 
 def get_new_header(time, bc=None, bjd=None):
@@ -60,3 +79,31 @@ def get_new_header(time, bc=None, bjd=None):
     # others: RA, DEC, UTC, LST, MJD-END
 
     return header_dict, comment_dict
+
+if __name__ == "__main__":
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+
+    num = 1000000
+    wave = np.linspace(3000, 9000, num)
+    spec = np.ones_like(wave)
+
+    interval = 100
+    peak_idx = np.arange(int(0 + interval / 2), num, interval)
+    spec[peak_idx] -= 0.5
+
+    interpol_spec, tmpl_wave = interpolate(spec, wave)
+
+    order = 30
+    plt.figure(dpi=300)
+    plt.plot(tmpl_wave[order], interpol_spec[order])
+
+    w = tmpl_wave[order]
+    s = interpol_spec[order]
+
+    mins_idx = s < 0.973
+
+    plt.plot(w[mins_idx], s[mins_idx])
+    plt.show()
+
+
