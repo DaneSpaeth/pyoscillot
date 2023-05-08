@@ -36,13 +36,6 @@ def main(ticket, run=True, serval=True, raccoon=True, run_laptop=False):
 
             # Now also calculate the theoretical results
             # theoretical_main(name)
-            stop = datetime.now()
-            timedelta = stop - start
-            minutes = timedelta.total_seconds() / 60
-            seconds = (minutes - int(minutes))*60
-            minutes = int(minutes)
-            seconds = round(seconds)
-            print(f"Program Took {minutes}:{seconds}")
 
     else:
         if run_laptop:
@@ -87,6 +80,13 @@ def main(ticket, run=True, serval=True, raccoon=True, run_laptop=False):
 
         # check_time_series(name, reduction="serval")
         # check_time_series(name, reduction="raccoon")
+    stop = datetime.now()
+    timedelta = stop - start
+    minutes = timedelta.total_seconds() / 60
+    seconds = (minutes - int(minutes)) * 60
+    minutes = int(minutes)
+    seconds = round(seconds)
+    print(f"Program Took {minutes}:{seconds}")
 
 def reduce_CARMENES_VIS(global_dict, name, star, serval=True, raccoon=True):
     """ Convenience function to reduce CARMENES_VIS spectra"""
@@ -143,6 +143,15 @@ def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "HARPS"])
+    if raccoon:
+        subprocess.run(["bash", "run_raccoon_srv.sh",
+                        str(global_dict["datapath"]),
+                        str(global_dict["rvlibpath"]),
+                        name, star,
+                        "HARPS"])
+        outfile = global_dict["rvlibpath"] / "raccoon" / "SIMULATION" / name / "HARPS_pre2015_CCF" / "None.par.dat"
+        csv_file = create_nzp_file(outfile, raccoon=True)
+        create_ascii_file(csv_file)
 
 
 
@@ -150,7 +159,27 @@ if __name__ == "__main__":
     root = Path().cwd() / "tickets"
 
     # define ticket
-    ticket = root / "NGC4349-127" / "test2.ini"
-    main(ticket, run=False, serval=True, raccoon=True, run_laptop=False)
+    tickets = []
+    #for i in range(25, 30):
+    #     ticket = root / "NGC4349-127" / f"test{i}.ini"
+    #     tickets.append(ticket)
+    #         # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    # for i in range(49, 54):
+    #     ticket = root / "NGC4349-127" / f"test{i}.ini"
+    #     tickets.append(ticket)
+    #
+    # tickets.append(root / "spots_dT_2/test5.ini")
+
+    tickets = sorted(list((root / "NGC4349_TestRot").glob("*.ini")))
+    print(tickets)
+
+
+    for ticket in tickets:
+        print(ticket, ticket.is_file())
+        main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    # i = 24
+    # ticket = root / "NGC4349-127" / f"test{i}.ini"
+    # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+
 
 

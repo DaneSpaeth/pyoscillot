@@ -114,7 +114,7 @@ then
       --filobs2blaze $BLAZETXTFILE \
       --rvshift none \
       --fcorrorders obshighsnr \
-      --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME/HARPS_pre2015 \
+      --dirout $RVLIBPATH/raccoon/SIMULATION/$SIMNAME/HARPS_pre2015_CCF \
       --dirserval $RVLIBPATH/serval/SIMULATION/$SIMNAME/HARPS_pre2015 \
       --plot_sv \
       --bervmax 100 \
