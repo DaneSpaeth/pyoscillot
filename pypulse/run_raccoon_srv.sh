@@ -5,8 +5,6 @@ SIMNAME=$3
 STAR=$4
 INST=$5
 
-sp_type=SIMULATION_73620
-
 # activate the venv for racconf
 source ${PYENV_ROOT}/versions/raccoon-venv/bin/activate
 
