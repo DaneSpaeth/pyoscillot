@@ -164,14 +164,14 @@ if __name__ == "__main__":
     #     ticket = root / "NGC4349-127" / f"test{i}.ini"
     #     tickets.append(ticket)
     #         # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
-    # for i in range(49, 54):
-    #     ticket = root / "NGC4349-127" / f"test{i}.ini"
-    #     tickets.append(ticket)
     #
     # tickets.append(root / "spots_dT_2/test5.ini")
 
-    tickets = sorted(list((root / "NGC4349_TestRot").glob("*.ini")))
-    print(tickets)
+    # rot_dir = Path(root / "NGC4349_TestRot")
+    # tickets = [rot_dir / "test67.ini"]
+    for i in range(74, 85):
+        ticket = root / "NGC4349_TestRot2" / f"test{i}.ini"
+        tickets.append(ticket)
 
 
     for ticket in tickets:

@@ -243,11 +243,14 @@ def telluric_mask():
 
 if __name__ == "__main__":
 
-    file = "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP46457/car-20220210T22h04m27s-sci-gtoc-vis_A.fits"
+    # file = "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP46457/car-20220210T22h04m27s-sci-gtoc-vis_A.fits"
 
-    (spec, cont, sig, wave) = carmenes_template(file)
+    (spec, wave, blaze) = harps_template()
     fig, ax = plt.subplots(1, figsize=(16, 9))
-    order = 0
-    ax.plot(wave[order], spec[order])
-    ax.set_xlabel("Wavbelength [A]")
-    plt.show()
+    order = 10
+
+    print(wave[order])
+    print(wave[71])
+    # ax.plot(wave[order], spec[order])
+    # ax.set_xlabel("Wavbelength [A]")
+    # plt.show()
