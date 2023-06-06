@@ -2,10 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 from dataloader import phoenix_spectrum, telluric_mask
 from scipy.signal import periodogram
-from scipy.interpolate import interp1d
 
 
 import matplotlib as mpl
@@ -108,7 +107,7 @@ def bisector_new(wave, spec, skip=2):
     right_wave = wave[center_idx + skip:]
     right_spec = spec[center_idx + skip:]
 
-    threshold = 0.03
+    threshold = 0.1
     right_mask = right_spec < 1 - threshold / 2
     right_spec = right_spec[right_mask]
     right_wave = right_wave[right_mask]
@@ -123,6 +122,80 @@ def bisector_new(wave, spec, skip=2):
         bisector_waves.append((right + w) / 2)
 
     return np.array(bisector_waves), np.array(bisector_flux), wave[center_idx]
+
+def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1):
+    """ Calculate the bisector of a line centered around line_center with width width.
+
+        :param np.array wave: Array of wavelengths. Same unit as line_center and outlier_clip
+        :param np.array spec: Normalized spectrum
+        :param float line_center: Central wavelength of line
+        :param float width: Rough width of line in same units as wave
+        :param int skip: Number of pixels to skip from the bottom
+        :param float outlier_clip: Clip outliers larger than value from bisector
+    """
+    bisector_waves = []
+    bisector_flux = []
+
+    num_widths = 2
+
+    print(num_widths*width)
+    mask = np.logical_and(wave >= line_center - num_widths * np.abs(width),
+                          wave <= line_center + num_widths * np.abs(width))
+
+    mask_sp = spec < 0.93
+    mask = np.logical_and(mask, mask_sp)
+
+    wave_line = wave[mask]
+    spec_line = spec[mask]
+
+    center_idx = np.argmin(np.abs(wave_line - line_center))
+    # Amount of datapoints to skip from the bottom
+    left_wave = wave_line[:center_idx - skip]
+    left_spec = spec_line[:center_idx - skip]
+    right_wave = wave_line[center_idx + skip:]
+    right_spec = spec_line[center_idx + skip:]
+
+    # threshold = 0.1
+    # right_mask = right_spec < 1 - threshold / 2
+    # right_spec = right_spec[right_mask]
+    # right_wave = right_wave[right_mask]
+
+    # make both array strictly increasing for the right part
+    incr_mask = np.diff(right_spec) > 0
+    while not np.all(incr_mask[:-1]):
+        incr_mask = np.diff(right_spec) > 0
+        # We choose to not use the final point
+        incr_mask = np.append(incr_mask, False)
+        right_spec = right_spec[incr_mask]
+        right_wave = right_wave[incr_mask]
+
+    # And decreasing for the left
+    decr_mask = np.diff(left_spec) < 0
+    while not np.all(decr_mask[:-1]):
+        decr_mask = np.diff(left_spec) < 0
+        # We choose to not use the final point
+        decr_mask = np.append(decr_mask, False)
+        left_spec = left_spec[decr_mask]
+        left_wave = left_wave[decr_mask]
+
+
+    left_cs = interp1d(np.flip(left_spec), np.flip(left_wave), fill_value="extrapolate")
+    right_cs = interp1d(right_spec, right_wave, fill_value="extrapolate")
+    lin_sp = np.linspace(np.min(spec_line), np.max(spec_line), 35)
+
+    left = left_cs(lin_sp)
+    right = right_cs(lin_sp)
+    bisector_waves = (left + right) / 2
+    bisector_flux = lin_sp
+
+    # Now mask out outliers
+    outlier_mask = np.abs(line_center - bisector_waves) <= outlier_clip
+
+    bisector_waves = bisector_waves[outlier_mask]
+    bisector_flux = bisector_flux[outlier_mask]
+
+
+    return bisector_waves, bisector_flux, left_wave, left_spec, right_wave, right_spec
 
 
 def add_doppler_shift(rest_spectrum, rest_wavelength, doppler_shift):
