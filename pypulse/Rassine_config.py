@@ -30,7 +30,7 @@ cwd = os.getcwd()
 #output_dir  = cwd                            # directory where output files are written
 
 spectrum_name = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
-output_dir = cwd
+output_dir = "/home/dspaeth/pypulse/pypulse"
 
 #synthetic_spectrum = False   # True if working with a noisy-free synthetic spectra
 synthetic_spectrum = True   # True if working with a noisy-free synthetic spectra
@@ -84,7 +84,9 @@ outputs_denoising_saved = 'undenoised'        # to only save a specific continuu
 light_version = True    # to save only the vital output
 
 
-config = {'synthetic_spectrum':synthetic_spectrum,
+config = {'spectrum_name':spectrum_name,
+          'output_dir':output_dir,
+          'synthetic_spectrum':synthetic_spectrum,
           'anchor_file':anchor_file,
           'column_wave':column_wave,
           'column_flux':column_flux,

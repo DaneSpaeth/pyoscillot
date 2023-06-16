@@ -157,3 +157,5 @@ theoretical_data/
 /etc/
 .idea/
 *.png
+pypulse/phoenix_spec_rassine.p
+pypulse/RASSINE_phoenix_spec_rassine.p

@@ -3,8 +3,13 @@ import matplotlib.pyplot as plt
 from astropy.convolution import convolve_fft
 from astropy.convolution import Gaussian1DKernel
 from scipy.interpolate import CubicSpline, interp1d
-from dataloader import phoenix_spectrum, telluric_mask
 from scipy.signal import periodogram
+from scipy.optimize import curve_fit
+import subprocess
+import pandas as pd
+from numpy.polynomial.polynomial import Polynomial
+from dataloader import phoenix_spectrum, telluric_mask
+
 
 
 import matplotlib as mpl
@@ -123,7 +128,10 @@ def bisector_new(wave, spec, skip=2):
 
     return np.array(bisector_waves), np.array(bisector_flux), wave[center_idx]
 
-def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1):
+def _gauss_continuum(x, mu, sigma, amplitude, continuum):
+    return continuum - (amplitude * np.exp(-(x - mu) ** 2 / 2 / sigma ** 2))
+
+def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1, continuum=1.0):
     """ Calculate the bisector of a line centered around line_center with width width.
 
         :param np.array wave: Array of wavelengths. Same unit as line_center and outlier_clip
@@ -136,24 +144,44 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1)
     bisector_waves = []
     bisector_flux = []
 
-    num_widths = 2
+    num_widths = 2.5
 
-    print(num_widths*width)
     mask = np.logical_and(wave >= line_center - num_widths * np.abs(width),
                           wave <= line_center + num_widths * np.abs(width))
 
-    mask_sp = spec < 0.93
+    mask_sp = spec < 0.9
     mask = np.logical_and(mask, mask_sp)
+    
 
-    wave_line = wave[mask]
-    spec_line = spec[mask]
-
-    center_idx = np.argmin(np.abs(wave_line - line_center))
+    wave_line = wave#[mask]
+    spec_line = spec#[mask]
+    
+    # Let's fit the minimum again to cut off the lower 10%
+    # Try to only fit the very center of the line
+    cutoff = 0.2
+    expected = (line_center, 0.05, cutoff, cutoff)
+    min_sp = np.min(spec_line)
+    mask = spec_line < min_sp + cutoff
+    try:
+        params, cov = curve_fit(_gauss_continuum, wave_line[mask], spec_line[mask], expected)
+    
+        lin_wv = np.linspace(np.min(wave_line[mask]), np.max(wave_line[mask]), 1000)
+        min_flux = np.min(_gauss_continuum(lin_wv, *params))
+        center = params[0]
+    except RuntimeError:
+        min_flux = np.min(spec_line)
+        center = line_center
+    
+    # mask = spec_line > min_flux + 0.1
+    # wave_line = wave_line[mask]
+    # spec_line = spec_line[mask]
+    
+    
     # Amount of datapoints to skip from the bottom
-    left_wave = wave_line[:center_idx - skip]
-    left_spec = spec_line[:center_idx - skip]
-    right_wave = wave_line[center_idx + skip:]
-    right_spec = spec_line[center_idx + skip:]
+    left_wave = wave_line[wave_line < center]
+    left_spec = spec_line[wave_line < center]
+    right_wave = wave_line[wave_line > center]
+    right_spec = spec_line[wave_line > center]
 
     # threshold = 0.1
     # right_mask = right_spec < 1 - threshold / 2
@@ -162,26 +190,33 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1)
 
     # make both array strictly increasing for the right part
     incr_mask = np.diff(right_spec) > 0
-    while not np.all(incr_mask[:-1]):
-        incr_mask = np.diff(right_spec) > 0
+    # while not np.all(incr_mask[:-1]):
+        # incr_mask = np.diff(right_spec) > 0
         # We choose to not use the final point
-        incr_mask = np.append(incr_mask, False)
-        right_spec = right_spec[incr_mask]
-        right_wave = right_wave[incr_mask]
+    if not incr_mask.all():
+        max_true_idx = np.argmin(incr_mask)
+        incr_mask[max_true_idx:] = False
+    incr_mask = np.append(incr_mask, False)
+    right_spec = right_spec[incr_mask]
+    right_wave = right_wave[incr_mask]
 
-    # And decreasing for the left
-    decr_mask = np.diff(left_spec) < 0
-    while not np.all(decr_mask[:-1]):
-        decr_mask = np.diff(left_spec) < 0
-        # We choose to not use the final point
-        decr_mask = np.append(decr_mask, False)
-        left_spec = left_spec[decr_mask]
-        left_wave = left_wave[decr_mask]
+    # And stricly increasing from right to left for the left
+    incr_mask = np.diff(np.flip(left_spec)) > 0
+    if not incr_mask.all():
+        max_true_idx = np.argmin(incr_mask)
+        incr_mask[max_true_idx:] = False
+            
+    # while not np.all(incr_mask[:-1]):
+    #     incr_mask = np.diff(np.flip(left_spec)) > 0
+    #     # We choose to not use the final point
+    incr_mask = np.append(incr_mask, False)
+    left_spec = left_spec[np.flip(incr_mask)]
+    left_wave = left_wave[np.flip(incr_mask)]
 
 
     left_cs = interp1d(np.flip(left_spec), np.flip(left_wave), fill_value="extrapolate")
     right_cs = interp1d(right_spec, right_wave, fill_value="extrapolate")
-    lin_sp = np.linspace(np.min(spec_line), np.max(spec_line), 35)
+    lin_sp = np.linspace(np.min(spec_line), np.max(spec_line), 75)
 
     left = left_cs(lin_sp)
     right = right_cs(lin_sp)
@@ -193,6 +228,10 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1)
 
     bisector_waves = bisector_waves[outlier_mask]
     bisector_flux = bisector_flux[outlier_mask]
+    
+    mask = np.logical_and(bisector_flux >= min_flux + (continuum - min_flux) * 0.1, bisector_flux < 0.9 * continuum)
+    bisector_waves[~mask] = np.nan
+    bisector_waves[~mask] = np.nan
 
 
     return bisector_waves, bisector_flux, left_wave, left_spec, right_wave, right_spec
@@ -415,6 +454,152 @@ def rebin(wold, sold, wnew):
         snew = np.reshape(snew, nnew)
 
     return snew
+
+
+def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right_wv, right_sp, gauss_params):
+    """ Add an individual fitted line to existing ax."""
+    ax.plot(wv, sp, marker="o", markersize=6)
+    ax.plot(left_wv, left_sp, linestyle="None", marker="o", markersize=5, color="green")
+    ax.plot(right_wv, right_sp, linestyle="None", marker="o", markersize=5, color="red")
+
+    ax.plot(bis_wave, bis, marker="o", markersize=5)
+    
+    ax.plot(wv, _gauss_continuum(wv, *gauss_params), marker="None", color="pink")
+    ylims = ax.get_ylim()
+    ax.vlines(line, ylims[0], ylims[1], color="tab:red", linestyle="dashed")
+    ax.set_ylim(ylims)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel(r"Wavelength [$\AA$]")
+    ax.set_ylabel("Flux")
+    ax.set_title(rf"FeI {line}$\AA$")
+    
+    return ax
+
+def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None, save=False):
+    """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
+    
+        :returns: numpy.Polynomial fit results to easily apply to every line depth
+    """
+    wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
+
+    Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
+
+    wave_air = wave / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
+
+    # Now create the Rassine fit
+    spec_df = pd.DataFrame({'wave':wave_air,'flux':spec})
+    pickle_path = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
+    spec_df.to_pickle(pickle_path)
+    subprocess.run(["python3",
+                "/home/dspaeth/Rassine_public/Rassine.py",
+                pickle_path])
+
+    rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
+
+    continuum = rassine_df["output"]["continuum_cubic"]
+
+    # Normalize
+    spec /= continuum
+
+    if debug_plot:
+        fig, debug_ax = plt.subplots(2,3)
+    # Compute the individual bisectors per line
+    bis_vs = []
+    biss = []
+    for idx, line in enumerate(Fe_lines):
+        # Choose an interval around the theoretical line center to look at
+        interval = 0.25
+        mask = np.logical_and(wave_air >= line - interval, wave_air <= line + interval)
+
+        wv = wave_air[mask]
+        sp = spec[mask]
+    
+        # Fit the width and center for an inital guess
+        expected = (line, 0.05, 0.9, 1.0)
+        try:
+            params, cov = curve_fit(_gauss_continuum, wv, sp, expected)
+            width = params[1]
+            continuum = params[-1]
+        except:
+            width = 0.05
+            continuum = 1.0
+    
+    
+        try:
+            bis_wave, bis, left_wv, left_sp, right_wv, right_sp = bisector_on_line(wv, 
+                                                                               sp, 
+                                                                               line,
+                                                                               width=width,
+                                                                               outlier_clip=0.05,
+                                                                               continuum=continuum)
+        
+            # Convert to velocities
+            bis_v = (bis_wave - line) / bis_wave * 3e8
+        
+            # Make debug plot
+            if debug_plot:
+                plot_individual_fit(debug_ax.flatten()[idx], line, wv, sp, bis_wave, bis, left_wv, left_sp, right_wv, right_sp, params)
+        
+        except Exception as e:
+            raise e
+    
+        bis_vs.append(bis_v)
+        biss.append(bis)
+    
+    if debug_plot:
+        fig.set_tight_layout(True)
+        out_root = "/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug"
+        savename = f"{Teff}K_{logg}_{FeH}_debug.png"
+        plt.savefig(f"{out_root}/{savename}", dpi=300)
+        plt.close()
+
+    bis_vs = np.array(bis_vs)
+    biss = np.array(biss)
+
+    
+    # Now let's compute the mean bisector
+    avg_bis = np.linspace(0.2, 0.8, 13)
+    step_bis = avg_bis[1] - avg_bis[0]
+    avg_v = np.zeros_like(avg_bis)
+    for idx, abis in enumerate(avg_bis):
+        mask = np.logical_and(biss.flatten() >= abis - step_bis, biss.flatten() < abis + step_bis)
+        avg_v[idx] = np.nanmean(bis_vs.flatten()[mask])
+
+    # Fit a second order polynomial
+    poly_fit = Polynomial.fit(avg_bis, avg_v, 2)
+    lin_bis = np.linspace(0.0, 1.0, 100)
+    poly_v = poly_fit(lin_bis)
+
+    # Now we want to have everything in the end centered around the fitted poly bisector
+    mean_v = np.mean(poly_v)
+    bis_vs -= mean_v
+    avg_v -= mean_v
+    poly_v -= mean_v
+    
+    if bis_plot:
+        if ax is None:
+            _ax = None
+            fig, ax = plt.subplots(1, dpi=300)
+        colors = ["green", "cyan", "purple", "orange", "yellow"]
+        for bis_v, bis, color, line in zip(bis_vs, biss, colors, Fe_lines): 
+            ax.plot(bis_v, bis, color=color, marker="o", markersize=5, label=rf"FeI {line}$\AA$")
+        ax.plot(avg_v, avg_bis, color="red", marker="o", markersize=7, linestyle="None")
+
+        ax.plot(poly_v, lin_bis, color="blue", linewidth=8)
+        
+        ax.set_ylim(0, 1)
+        ax.set_xlim(-200, 200)
+        ax.set_xlabel("Velocity [m/s]")
+        ax.set_ylabel("Flux")
+
+        if save:
+            fig.set_tight_layout(True)
+            ax.legend()
+            out_root = "/home/dspaeth/pypulse/data/plots/phoenix_bisectors/"
+            savename = f"{Teff}K_{logg}_{FeH}_bis.png"
+            plt.savefig(f"{out_root}/{savename}", dpi=300)
+    
+    return poly_fit
 
 
 if __name__ == "__main__":
