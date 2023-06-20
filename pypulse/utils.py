@@ -9,6 +9,7 @@ import subprocess
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from dataloader import phoenix_spectrum, telluric_mask
+from physics import delta_relativistic_doppler
 
 
 
@@ -172,27 +173,15 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
         min_flux = np.min(spec_line)
         center = line_center
     
-    # mask = spec_line > min_flux + 0.1
-    # wave_line = wave_line[mask]
-    # spec_line = spec_line[mask]
-    
-    
+
     # Amount of datapoints to skip from the bottom
     left_wave = wave_line[wave_line < center]
     left_spec = spec_line[wave_line < center]
     right_wave = wave_line[wave_line > center]
     right_spec = spec_line[wave_line > center]
 
-    # threshold = 0.1
-    # right_mask = right_spec < 1 - threshold / 2
-    # right_spec = right_spec[right_mask]
-    # right_wave = right_wave[right_mask]
-
     # make both array strictly increasing for the right part
     incr_mask = np.diff(right_spec) > 0
-    # while not np.all(incr_mask[:-1]):
-        # incr_mask = np.diff(right_spec) > 0
-        # We choose to not use the final point
     if not incr_mask.all():
         max_true_idx = np.argmin(incr_mask)
         incr_mask[max_true_idx:] = False
@@ -206,9 +195,6 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
         max_true_idx = np.argmin(incr_mask)
         incr_mask[max_true_idx:] = False
             
-    # while not np.all(incr_mask[:-1]):
-    #     incr_mask = np.diff(np.flip(left_spec)) > 0
-    #     # We choose to not use the final point
     incr_mask = np.append(incr_mask, False)
     left_spec = left_spec[np.flip(incr_mask)]
     left_wave = left_wave[np.flip(incr_mask)]
@@ -475,19 +461,20 @@ def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right
     
     return ax
 
-def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None, save=False):
-    """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
+
+def normalize_phoenix_spectrum(wave, spec):
+    """ Normalize a PHOENIX Spectrum using Rassine.
     
-        :returns: numpy.Polynomial fit results to easily apply to every line depth
+        All results are linearly interpolated back onto the original wavelength grid.
+    
+        :param np.array wave_vac: Wavelength in Angstrom
+        :param np.array spec: Unnormalized Spectrum
+        
+        :returns: np.array wave_norm, normalized wavelength
+        :retunrs np.array continuum, The fitted continuum
     """
-    wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
-
-    Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
-
-    wave_air = wave / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
-
     # Now create the Rassine fit
-    spec_df = pd.DataFrame({'wave':wave_air,'flux':spec})
+    spec_df = pd.DataFrame({'wave':wave,'flux':spec})
     pickle_path = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
     spec_df.to_pickle(pickle_path)
     subprocess.run(["python3",
@@ -497,9 +484,29 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
 
     continuum = rassine_df["output"]["continuum_cubic"]
-
+    
+    wave_rassine = rassine_df["wave"]
+    
     # Normalize
-    spec /= continuum
+    
+    continuum_interp = np.interp(wave, wave_rassine, continuum)
+    
+    spec_norm = spec / continuum_interp
+    
+    return wave, spec_norm, continuum_interp
+
+def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None, save=False):
+    """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
+    
+        :returns: numpy.Polynomial fit results to easily apply to every line depth
+    """
+    wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
+
+    Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
+
+    
+    wave_rassine, spec, _ = normalize_phoenix_spectrum(wave, spec)
+    wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
         fig, debug_ax = plt.subplots(2,3)
@@ -566,15 +573,17 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
         avg_v[idx] = np.nanmean(bis_vs.flatten()[mask])
 
     # Fit a second order polynomial
+    mean_v =  np.nanmean(avg_v)
+    avg_v -= mean_v
     poly_fit = Polynomial.fit(avg_bis, avg_v, 2)
     lin_bis = np.linspace(0.0, 1.0, 100)
     poly_v = poly_fit(lin_bis)
 
     # Now we want to have everything in the end centered around the fitted poly bisector
-    mean_v = np.mean(poly_v)
+    # mean_v = np.mean(poly_v)
     bis_vs -= mean_v
-    avg_v -= mean_v
-    poly_v -= mean_v
+    # avg_v -= mean_v
+    # poly_v -= mean_v
     
     if bis_plot:
         if ax is None:
@@ -601,22 +610,51 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     
     return poly_fit
 
+def remove_phoenix_bisector(wave, spec, Teff, logg, FeH):
+    """ Fit and Remove the phoenix bisector."""
+    poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True, save=True)
+    
+    # Now also normalize the full PHOENIX Spectrum
+    # Check the normalization
+    _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec)
+    # Interpolate that back on the original wavelength grid
+    # We need to allow the simple conversion from v to lambda in the next step
+    # spec_norm_interp = np.interp(wave, wave_rassine, spec_norm)
+    
+    # FOR DEBUGGING
+    line = 5705.15
+    interval = 0.25
+    mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+    
+    fig, ax = plt.subplots(1,2, figsize=(30,9))
+    
+    
+    delta_v = poly_fit(spec_norm)
+    delta_wave = delta_relativistic_doppler(wave, v=delta_v)
+    wave_corr = wave - delta_wave
+    ax[0].plot(wave[mask], spec_norm[mask], color="tab:red")
+    ax[1].plot(delta_v[mask], spec[mask])
+    
+    # ax[1].plot(wave[mask], delta_v[mask])
+    plt.savefig("dbug.png", dpi=300)
+    
+    # Interpolate back on original wavelength grid?
+    spec_corr = np.interp(wave, wave_corr, spec)
+    
+    # Also make a normalized version for debugging
+    spec_corr_norm = np.interp(wave, wave_corr, spec_norm)
+    
+    return spec_corr, spec_corr_norm, spec_norm, poly_fit, delta_v, delta_wave
+
 
 if __name__ == "__main__":
-    num = 10000
-    wave = np.linspace(6000, 6500, num)
-    spec = np.ones_like(wave)
+    
+    exit()
+    wave_rassine, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec)
+    # assert (wave == wave_rassine).all()
+    # ax.plot
+    
+    
+    # wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 10000))
+    # remove_phoenix_bisector(wave, spec, Teff, logg, FeH)
 
-    interval = 1000
-    peak_idx = np.arange(int(0+interval/2), num, interval)
-    spec[peak_idx] += 0.1
-
-    spec_res = adjust_resolution(wave, spec, R=115000, w_sample=100)
-
-
-
-
-    plt.plot(wave, spec_res)
-    plt.xlim(6124, 6126)
-    plt.ylim(0.97, 1.05)
-    plt.show()

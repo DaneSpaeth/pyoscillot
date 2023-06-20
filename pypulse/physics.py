@@ -2,6 +2,8 @@ import numpy as np
 import plapy.constants as const
 from dataloader import phoenix_spectrum, phoenix_spec_intensity
 import matplotlib.pyplot as plt
+from plapy.constants import C
+
 
 DIVIDING_TEMP = 5100
 
@@ -124,7 +126,7 @@ def get_interpolated_spectrum(T_local,
 
 
 def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
-                    spec_intensity=False):
+                    spec_intensity=False, fit_and_remove_bis=False):
     """ Return a wavelength grid and a dict of phoenix spectra and a dict of
         pheonix headers.
 
@@ -171,6 +173,9 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                 Teff=float(T), logg=logg, feh=feh,
                 wavelength_range=wavelength_range)
             # All waves are the same, so just return the last one
+            if fit_and_remove_bis:
+                raise NotImplementedError
+                
 
         return wave, ref_spectra, ref_headers
     else:
@@ -301,6 +306,16 @@ def distance_from_px(img, row, col):
     dist = np.sqrt(np.square(rows - row) +
                    np.square(cols - col))
     return dist
+
+def delta_relativistic_doppler(wave, v=None, v_c=None):
+    if v_c is None:
+        v_c = v / C
+    
+    wave_shifted = wave * np.sqrt((1 + v_c) / (1-v_c))
+    
+    delta_wave = wave_shifted - wave
+    
+    return delta_wave
 
 if __name__ == "__main__":
     wave, spec, header = phoenix_spectrum()

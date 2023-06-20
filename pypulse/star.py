@@ -2,13 +2,14 @@ import numpy as np
 from utils import gaussian
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
-from physics import get_ref_spectra, get_interpolated_spectrum
+from physics import get_ref_spectra, get_interpolated_spectrum, delta_relativistic_doppler
 
 class GridSpectrumSimulator():
     """ Simulate a spectrum of a star with a grid."""
 
     def __init__(self, N_star=500, N_border=5, Teff=4800, logg=3.0, feh=0.0,
-                 v_rot=3000, inclination=90, limb_darkening=True):
+                 v_rot=3000, inclination=90, limb_darkening=True,
+                 convective_blueshift=False):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -32,6 +33,7 @@ class GridSpectrumSimulator():
         self.feh = feh
         self.spectrum = None
         self.flux = None
+        self.conv_blue = convective_blueshift
 
     def add_spot(self, phase=0.25, theta_pos=90, radius=25, T_spot=4300):
         """ Add a circular starspot at position x,y.
@@ -65,7 +67,8 @@ class GridSpectrumSimulator():
                                             logg=self.logg,
                                             feh=self.feh,
                                             wavelength_range=wavelength_range,
-                                            spec_intensity=False)
+                                            spec_intensity=False,
+                                            fit_and_remove_bis=self.conv_blue)
             ref_mu = None
         elif mode == "spec_intensity":
             (rest_wavelength,
@@ -107,6 +110,7 @@ class GridSpectrumSimulator():
 
         self.rotation = self.projector.rotation()
         self.pulsation = self.projector.pulsation()
+        self.mu = self.projector.mu()
         # self.granulation = self.projector.granulation_velocity()
         self.granulation = np.zeros(self.pulsation.shape)
 
@@ -115,6 +119,7 @@ class GridSpectrumSimulator():
                                                                      self.rotation,
                                                                      self.pulsation,
                                                                      self.granulation,
+                                                                     self.mu, 
                                                                      rest_wavelength,
                                                                      ref_spectra,
                                                                      ref_headers,
@@ -167,8 +172,9 @@ class GridSpectrumSimulator():
         self.flux = np.sum(self.spectrum)
         return self.flux
 
-def _compute_spectrum(temperature, rotation, pulsation, granulation,
-                      rest_wavelength, ref_spectra, ref_headers, T_precision_decimals):
+def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
+                      rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
+                      add_convective_blueshift=True):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -183,24 +189,38 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
     # We have a new approach, instead of precalculating all fine ref spectra which leads to a lot of memory overhead
     # we sort the temperature array and round it to the T_precision. Next compute the temperature adjusted
     # spectrum for all cells at this temperature and compute the velocity adjustment
+    
+    # Unfortunately we now have to change that a bit to allow the BIS mu dependence
+    # We have the mu values given in the steps
+    # [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
 
     # First flatten all arrays
     temperature = temperature.flatten()
     v_c_rot = v_c_rot.flatten()
     v_c_pulse = v_c_pulse.flatten()
     v_c_gran = v_c_gran.flatten()
+    mu = mu.flatten()
 
     sorted_temp_indices = np.argsort(temperature)
     sorted_temperature = temperature[sorted_temp_indices]
     sorted_v_c_rot = v_c_rot[sorted_temp_indices]
     sorted_v_c_pulse = v_c_pulse[sorted_temp_indices]
     sorted_v_c_gran = v_c_gran[sorted_temp_indices]
+    sorted_mu = mu[sorted_temp_indices]
 
     sorted_temperature = np.round(sorted_temperature, decimals=T_precision_decimals)
+    
+    # The mu values that are available for the BIS calculations of convective_blueshift
+    print(sorted_mu)
+    available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
+    rounded_mu = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mu]
+    rounded_mu = np.array(rounded_mu)
+    print(rounded_mu)
 
     v_total = np.nanmean(pulsation)
     fine_ref_spectrum = None
     fine_ref_temperature = None
+    # fine_ref_mu = None
 
     # total_cells = len(sorted_temperature)
     # done = 0
@@ -208,7 +228,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
                                   np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
     print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulsation! Probably at the pole!")
 
-    for temp, v_c_r, v_c_p, v_c_g in zip(sorted_temperature, sorted_v_c_rot, sorted_v_c_pulse, sorted_v_c_gran):
+    for temp, v_c_r, v_c_p, v_c_g, m in zip(sorted_temperature, sorted_v_c_rot, sorted_v_c_pulse, sorted_v_c_gran, sorted_mu):
         # print(f"Calc cell {done}/{total_cells}")
         # done += 1
         if np.isnan(temp):
@@ -228,22 +248,28 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
             fine_ref_temperature = temp
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
             # This one will automatically be kept in memory until all cells with this temperature are completed
+            
+            # Ok so now we assume that the ref_spectra are correctly BIS reduced or not
             _, fine_ref_spectrum, _ = get_interpolated_spectrum(temp,
                                                                 ref_wave=rest_wavelength,
                                                                 ref_spectra=ref_spectra,
                                                                 ref_headers=ref_headers)
 
         local_spectrum = fine_ref_spectrum.copy()
+        # At this point adjust for the Convective Blueshift Bisector
 
         if not v_c_r and not v_c_p and not v_c_g:
             # print(f"Skip Star Element {row, col}")
             total_spectrum += local_spectrum
         else:
             # print(f"Calculate Star Element {row, col}")
-            local_wavelength = rest_wavelength + \
-                               v_c_r * rest_wavelength + \
-                               v_c_g * rest_wavelength + \
-                               v_c_p * rest_wavelength
+            # local_wavelength = rest_wavelength + \
+            #                    v_c_r * rest_wavelength + \
+            #                    v_c_g * rest_wavelength + \
+            #                    v_c_p * rest_wavelength
+            v_c_tot = v_c_r + v_c_g + v_c_p
+            local_wavelength = rest_wavelength + delta_relativistic_doppler(rest_wavelength,
+                                                                            v_c=v_c_tot)
 
             # Interpolate the spectrum to the same rest wavelength grid
             interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
@@ -256,14 +282,5 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation,
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     star = GridSpectrumSimulator(N_star=300, N_border=1, v_rot=3000, limb_darkening=False, inclination=60)
-    star.add_spot(radius=5, theta_pos=180)
-    star.add_spot(radius=5, theta_pos=150)
-    star.add_spot(radius=5, theta_pos=120)
-    star.add_spot(radius=5, theta_pos=90)
-    star.add_spot(radius=5, theta_pos=60)
-    star.add_spot(radius=5, theta_pos=30)
-    star.add_spot(radius=5, theta_pos=0)
-
-    fig, ax = plt.subplots(1)
-    ax.imshow(star.projector.temperature(), origin="lower")
-    plt.show()
+    star.add_pulsation(l=1, m=1, T_var=20)
+    star.calc_spectrum()
