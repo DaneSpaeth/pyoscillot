@@ -441,6 +441,71 @@ def rebin(wold, sold, wnew):
 
     return snew
 
+def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
+                    spec_intensity=False, fit_and_remove_bis=False):
+    """ Return a wavelength grid and a dict of phoenix spectra and a dict of
+        pheonix headers.
+
+        The dict has the form {Temp1:spectrum1, Temp2:spectrum2}
+
+        This dict and wavelength grid can be used to interpolate the spectra
+        for local T in a later step. Loading them beforhand as a dictionary
+        reduces the amount of disk reading at later stages (i.e. if you
+        read everytime you want to compute a local T spectrum)
+
+        :param np.array T_grid: Temperature grid in K. The function
+                                automatically determines the necessary ref spec
+        :param float logg: log(g) for PHOENIX spectrum
+        :param float feh: [Fe/H] for PHOENIX spectrum
+        :param tuple wavelength_range: Wavelength range fro spectrum in A
+
+        :param bool spec_intensity: If True it will return the spec intensity
+                                    spectra cubes and the mu angle as the final
+                                    parameter
+
+        :return: tuple of (wavelength grid, T:spec dict, T:header dict, [mu])
+
+    """
+    T_grid = T_grid[~np.isnan(T_grid)]
+    T_grid = T_grid[T_grid > 0]
+    T_grid = np.round(T_grid, -2)
+    T_unique = np.unique(T_grid)
+    T_unique = T_unique.astype(int)
+
+    # Append the next lowest and next highest values as well
+    T_unique = np.insert(T_unique, 0, T_unique[0] - 100)
+    T_unique = np.append(T_unique, T_unique[-1] + 100)
+
+    # And now define a grid from the lowest to the highest value with all full 100s
+
+    T_unique = np.linspace(np.min(T_unique), np.max(T_unique), int(
+        (np.max(T_unique) - np.min(T_unique)) / 100) + 1, dtype=int)
+
+    ref_spectra = {}
+    ref_headers = {}
+    if not spec_intensity:
+        for T in T_unique:
+            wave, spec, ref_headers[T] = phoenix_spectrum(
+                Teff=float(T), logg=logg, feh=feh,
+                wavelength_range=wavelength_range)
+            # All waves are the same, so just return the last one
+            if fit_and_remove_bis:
+                spec_corr, _, _, _, _, _ = remove_phoenix_bisector(wave, spec, T, logg, feh)
+                spec = spec_corr
+            ref_spectra[T] = spec
+                
+                
+
+        return wave, ref_spectra, ref_headers
+    else:
+        for T in T_unique:
+            wave, ref_spectra[T], mu, ref_headers[T] = phoenix_spec_intensity(
+                Teff=float(T), logg=logg, feh=feh,
+                wavelength_range=wavelength_range)
+            # All waves are the same, also all mu should be the same
+            # So just return the last one
+        return wave, ref_spectra, ref_headers, mu
+
 
 def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right_wv, right_sp, gauss_params):
     """ Add an individual fitted line to existing ax."""
@@ -610,33 +675,28 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     
     return poly_fit
 
-def remove_phoenix_bisector(wave, spec, Teff, logg, FeH):
+def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=5705.15):
     """ Fit and Remove the phoenix bisector."""
     poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True, save=True)
     
     # Now also normalize the full PHOENIX Spectrum
     # Check the normalization
     _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec)
-    # Interpolate that back on the original wavelength grid
-    # We need to allow the simple conversion from v to lambda in the next step
-    # spec_norm_interp = np.interp(wave, wave_rassine, spec_norm)
-    
-    # FOR DEBUGGING
-    line = 5705.15
-    interval = 0.25
-    mask = np.logical_and(wave >= line - interval, wave <= line + interval)
-    
-    fig, ax = plt.subplots(1,2, figsize=(30,9))
-    
     
     delta_v = poly_fit(spec_norm)
     delta_wave = delta_relativistic_doppler(wave, v=delta_v)
     wave_corr = wave - delta_wave
-    ax[0].plot(wave[mask], spec_norm[mask], color="tab:red")
-    ax[1].plot(delta_v[mask], spec[mask])
-    
-    # ax[1].plot(wave[mask], delta_v[mask])
-    plt.savefig("dbug.png", dpi=300)
+    # FOR DEBUGGING
+    if debug_plot:
+        interval = 0.25
+        mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+        
+        fig, ax = plt.subplots(1,2, figsize=(30,9))
+        ax[0].plot(wave[mask], spec_norm[mask], color="tab:red")
+        ax[1].plot(delta_v[mask], spec[mask])
+        
+        # ax[1].plot(wave[mask], delta_v[mask])
+        plt.savefig("dbug.png", dpi=300)
     
     # Interpolate back on original wavelength grid?
     spec_corr = np.interp(wave, wave_corr, spec)

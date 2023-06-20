@@ -1,8 +1,8 @@
 import numpy as np
-from utils import gaussian
+from utils import gaussian, get_ref_spectra
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
-from physics import get_ref_spectra, get_interpolated_spectrum, delta_relativistic_doppler
+from physics import get_interpolated_spectrum, delta_relativistic_doppler
 
 class GridSpectrumSimulator():
     """ Simulate a spectrum of a star with a grid."""

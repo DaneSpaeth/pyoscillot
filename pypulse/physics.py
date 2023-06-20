@@ -1,9 +1,8 @@
 import numpy as np
-import plapy.constants as const
-from dataloader import phoenix_spectrum, phoenix_spec_intensity
 import matplotlib.pyplot as plt
+import plapy.constants as const
 from plapy.constants import C
-
+from dataloader import phoenix_spectrum, phoenix_spec_intensity
 
 DIVIDING_TEMP = 5100
 
@@ -124,68 +123,6 @@ def get_interpolated_spectrum(T_local,
         spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
     return wave, spec, header
 
-
-def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
-                    spec_intensity=False, fit_and_remove_bis=False):
-    """ Return a wavelength grid and a dict of phoenix spectra and a dict of
-        pheonix headers.
-
-        The dict has the form {Temp1:spectrum1, Temp2:spectrum2}
-
-        This dict and wavelength grid can be used to interpolate the spectra
-        for local T in a later step. Loading them beforhand as a dictionary
-        reduces the amount of disk reading at later stages (i.e. if you
-        read everytime you want to compute a local T spectrum)
-
-        :param np.array T_grid: Temperature grid in K. The function
-                                automatically determines the necessary ref spec
-        :param float logg: log(g) for PHOENIX spectrum
-        :param float feh: [Fe/H] for PHOENIX spectrum
-        :param tuple wavelength_range: Wavelength range fro spectrum in A
-
-        :param bool spec_intensity: If True it will return the spec intensity
-                                    spectra cubes and the mu angle as the final
-                                    parameter
-
-        :return: tuple of (wavelength grid, T:spec dict, T:header dict, [mu])
-
-    """
-    T_grid = T_grid[~np.isnan(T_grid)]
-    T_grid = T_grid[T_grid > 0]
-    T_grid = np.round(T_grid, -2)
-    T_unique = np.unique(T_grid)
-    T_unique = T_unique.astype(int)
-
-    # Append the next lowest and next highest values as well
-    T_unique = np.insert(T_unique, 0, T_unique[0] - 100)
-    T_unique = np.append(T_unique, T_unique[-1] + 100)
-
-    # And now define a grid from the lowest to the highest value with all full 100s
-
-    T_unique = np.linspace(np.min(T_unique), np.max(T_unique), int(
-        (np.max(T_unique) - np.min(T_unique)) / 100) + 1, dtype=int)
-
-    ref_spectra = {}
-    ref_headers = {}
-    if not spec_intensity:
-        for T in T_unique:
-            wave, ref_spectra[T], ref_headers[T] = phoenix_spectrum(
-                Teff=float(T), logg=logg, feh=feh,
-                wavelength_range=wavelength_range)
-            # All waves are the same, so just return the last one
-            if fit_and_remove_bis:
-                raise NotImplementedError
-                
-
-        return wave, ref_spectra, ref_headers
-    else:
-        for T in T_unique:
-            wave, ref_spectra[T], mu, ref_headers[T] = phoenix_spec_intensity(
-                Teff=float(T), logg=logg, feh=feh,
-                wavelength_range=wavelength_range)
-            # All waves are the same, also all mu should be the same
-            # So just return the last one
-        return wave, ref_spectra, ref_headers, mu
     
 def radiance_to_temperature(radiance):
     """ Convert an array of radiance to temperature.
