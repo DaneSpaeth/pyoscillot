@@ -711,6 +711,43 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=
     
     return spec_corr, spec_corr_norm, spec_norm, poly_fit, delta_v, delta_wave
 
+def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, line=5705.15):
+    """ Add in a bisector to the data.
+    
+        Ideally the wave and spec should be cleaned of any previous bisectors.
+        
+        :param np.array wave: The Wavelength array
+        :param np.array spec: The Spectrum Flux array (not normalized)
+        :param np.polynomial.Polynomial: A numpy Polynomial describing the Bisector 
+        
+        :returns: Corrected Spectrum, normalized corrected spectrum
+    """
+    _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
+    
+    delta_v = bis_polynomial(spec_norm)
+    delta_wave = delta_relativistic_doppler(wave, v=delta_v)
+    wave_corr = wave + delta_wave
+    
+    # FOR DEBUGGING
+    if debug_plot:
+        interval = 0.25
+        mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+        
+        fig, ax = plt.subplots(1,2, figsize=(30,9))
+        ax[0].plot(wave[mask], spec_norm[mask], color="tab:red")
+        ax[1].plot(delta_v[mask], spec[mask])
+        
+        # ax[1].plot(wave[mask], delta_v[mask])
+        plt.savefig("dbug.png", dpi=300)
+        
+    # Interpolate back on original wavelength grid?
+    spec_corr = np.interp(wave, wave_corr, spec)
+    
+    # Also make a normalized version for debugging
+    spec_corr_norm = np.interp(wave, wave_corr, spec_norm)
+    
+    return spec_corr, spec_corr_norm, spec_norm, delta_v, delta_wave
+
 
 if __name__ == "__main__":
     
