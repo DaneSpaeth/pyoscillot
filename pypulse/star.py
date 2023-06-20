@@ -19,6 +19,7 @@ class GridSpectrumSimulator():
                                  each)
             :param int Teff: Effective Temperature [K] (must be available)
             :param int v_rot: V*sin(i) [m/s]
+            :param bool convective_blueshift: Add in the conv blueshift Bisectors
         """
         self.three_dim_star = ThreeDimStar(Teff=Teff, v_rot=v_rot)
         self.three_dim_star.create_rotation(v_rot)

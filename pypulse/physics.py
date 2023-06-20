@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plapy.constants as const
 from plapy.constants import C
-from dataloader import phoenix_spectrum, phoenix_spec_intensity
+from dataloader import phoenix_spectrum
 
 DIVIDING_TEMP = 5100
 

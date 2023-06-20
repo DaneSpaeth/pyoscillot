@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 import subprocess
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
-from dataloader import phoenix_spectrum, telluric_mask
+from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs
 from physics import delta_relativistic_doppler
 
 
@@ -212,8 +212,8 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     # Now mask out outliers
     outlier_mask = np.abs(line_center - bisector_waves) <= outlier_clip
 
-    bisector_waves = bisector_waves[outlier_mask]
-    bisector_flux = bisector_flux[outlier_mask]
+    bisector_waves[~outlier_mask] = np.nan
+    bisector_flux[~outlier_mask] = np.nan
     
     mask = np.logical_and(bisector_flux >= min_flux + (continuum - min_flux) * 0.1, bisector_flux < 0.9 * continuum)
     bisector_waves[~mask] = np.nan
@@ -490,11 +490,10 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                 wavelength_range=wavelength_range)
             # All waves are the same, so just return the last one
             if fit_and_remove_bis:
+                print("Fit and Remove the PHOENIX bisectors")
                 spec_corr, _, _, _, _, _ = remove_phoenix_bisector(wave, spec, T, logg, feh)
                 spec = spec_corr
             ref_spectra[T] = spec
-                
-                
 
         return wave, ref_spectra, ref_headers
     else:
@@ -527,7 +526,7 @@ def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right
     return ax
 
 
-def normalize_phoenix_spectrum(wave, spec):
+def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False):
     """ Normalize a PHOENIX Spectrum using Rassine.
     
         All results are linearly interpolated back onto the original wavelength grid.
@@ -539,21 +538,25 @@ def normalize_phoenix_spectrum(wave, spec):
         :retunrs np.array continuum, The fitted continuum
     """
     # Now create the Rassine fit
-    spec_df = pd.DataFrame({'wave':wave,'flux':spec})
-    pickle_path = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
-    spec_df.to_pickle(pickle_path)
-    subprocess.run(["python3",
-                "/home/dspaeth/Rassine_public/Rassine.py",
-                pickle_path])
+    if run:
+        spec_df = pd.DataFrame({'wave':wave,'flux':spec})
+        pickle_path = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
+        spec_df.to_pickle(pickle_path)
+        subprocess.run(["python3",
+                    "/home/dspaeth/Rassine_public/Rassine.py",
+                    pickle_path])
 
-    rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
-
+        rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
+    else:
+        rassine_df = Rassine_outputs(Teff, logg, feh)
     continuum = rassine_df["output"]["continuum_cubic"]
     
     wave_rassine = rassine_df["wave"]
+    print(f"Wavelength Range from Rassine: {wave_rassine[0]}:{wave_rassine[-1]}")
+    assert wave[0] >= wave_rassine[0], f"Your wavelength array starts below the Rassine array limit {wave[0]} < {wave_rassine[0]}" 
+    assert wave[-1] <= wave_rassine[-1], f"Your wavelength array ends above the Rassine array limit {wave[-1]} > {wave_rassine[1]}" 
     
     # Normalize
-    
     continuum_interp = np.interp(wave, wave_rassine, continuum)
     
     spec_norm = spec / continuum_interp
@@ -570,7 +573,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
 
     
-    wave_rassine, spec, _ = normalize_phoenix_spectrum(wave, spec)
+    wave_rassine, spec, _ = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
     wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
@@ -602,7 +605,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
                                                                                sp, 
                                                                                line,
                                                                                width=width,
-                                                                               outlier_clip=0.05,
+                                                                               outlier_clip=0.005,
                                                                                continuum=continuum)
         
             # Convert to velocities
@@ -617,11 +620,13 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     
         bis_vs.append(bis_v)
         biss.append(bis)
+        
     
     if debug_plot:
         fig.set_tight_layout(True)
         out_root = "/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug"
         savename = f"{Teff}K_{logg}_{FeH}_debug.png"
+        print(f"Save debug plot to {out_root}/{savename}")
         plt.savefig(f"{out_root}/{savename}", dpi=300)
         plt.close()
 
@@ -681,7 +686,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=
     
     # Now also normalize the full PHOENIX Spectrum
     # Check the normalization
-    _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec)
+    _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
     
     delta_v = poly_fit(spec_norm)
     delta_wave = delta_relativistic_doppler(wave, v=delta_v)

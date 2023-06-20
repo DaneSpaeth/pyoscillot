@@ -8,7 +8,7 @@ def plot_bis_corr_oneline():
     Teff = 4500
     logg = 2.0
     FeH = 0.0
-    wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(3000, 15000))
+    wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(3500, 7000))
     spec_corr, spec_corr_norm, spec_norm, poly_fit, delta_v, delta_wave = remove_phoenix_bisector(wave, spec, Teff, logg, FeH)
     
     line = 5705.15

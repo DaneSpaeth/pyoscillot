@@ -312,6 +312,8 @@ class SimulationController():
         limb_darkening = bool(int(self.conf["limb_darkening"]))
         inclination = self.conf["inclination"]
         v_rot = self.conf["v_rot"]
+        # For backwards compatibility: Get the conv blueshift param, default = False
+        convective_blueshift = bool(int(self.conf.get("convective_blueshift", 0)))
 
         print(f"Calculate star {idx}/{N-1} at bjd {bjd}")
         star = GridSpectrumSimulator(
@@ -321,7 +323,8 @@ class SimulationController():
             feh=self.conf["feh"],
             v_rot=v_rot,
             inclination=inclination,
-            limb_darkening=limb_darkening)
+            limb_darkening=limb_darkening,
+            convective_blueshift=convective_blueshift)
 
         # Assume that you only have spots
         for sim, phase in zip(self.simulation_keys, phases):
@@ -415,6 +418,8 @@ class SimulationController():
         """
         N = int(self.conf["n"])
         limb_darkening = bool(int(self.conf["limb_darkening"]))
+        # For backwards compatibility: Get the conv blueshift param, default = False
+        convective_blueshift = bool(int(self.conf.get("convective_blueshift", 0)))
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
@@ -426,7 +431,8 @@ class SimulationController():
             logg=float(self.conf["logg"]),
             feh=float(self.conf["feh"]),
             v_rot=v_rot, inclination=inclination,
-            limb_darkening=limb_darkening)
+            limb_darkening=limb_darkening,
+            convective_blueshift=convective_blueshift)
 
         # Add all specified pulsations
         for sim in self.simulation_keys:
@@ -526,6 +532,8 @@ class SimulationController():
         # TODO refactor the parameters of the funcion (I don't need any of these)
         N = int(self.conf["n"])
         limb_darkening = bool(int(self.conf["limb_darkening"]))
+        # For backwards compatibility: Get the conv blueshift param, default = False
+        convective_blueshift = bool(int(self.conf.get("convective_blueshift", 0)))
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
@@ -542,7 +550,8 @@ class SimulationController():
             logg=float(self.conf["logg"]),
             feh=float(self.conf["feh"]),
             v_rot=v_rot, inclination=inclination,
-            limb_darkening=limb_darkening)
+            limb_darkening=limb_darkening,
+            convective_blueshift=convective_blueshift)
 
 
         # Todo Implement the automatic number of granules

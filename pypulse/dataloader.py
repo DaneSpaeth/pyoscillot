@@ -3,6 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import wget
+import pandas as pd
 from parse_ini import parse_global_ini
 # import idlsave
 
@@ -231,6 +232,21 @@ def plot_central_order_intensitites():
     plt.plot(mean_wave, mean_spec, label="template", color="black")
     plt.legend()
     plt.show()
+    
+def Rassine_outputs(Teff, logg, feh):
+    """ Load precalculated Rassine outputs."""
+    folder = DATAROOT / "Rassine_dataframes_for_phoenix"
+    Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
+    filename = f"lte{int(Teff):05d}-{logg:.2f}{feh:+.1f}.PHOENIX-ACES-AGSS-COND-2011-HiRes.p"
+    
+    file = folder / filename
+    if not file.exists():
+        raise FileNotFoundError(f"{file} does not exist")
+    
+    print(f"Load precalculated Rassine results from {file}")
+    dataframe = pd.read_pickle(file)
+    
+    return dataframe
 
 
 def telluric_mask():
