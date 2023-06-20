@@ -1,4 +1,4 @@
-from dataloader import phoenix_spectrum
+from dataloader import phoenix_spectrum, Zhao_bis_polynomials
 from utils import remove_phoenix_bisector, _gauss_continuum, bisector_on_line
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
@@ -86,13 +86,20 @@ def plot_bis_corr_oneline():
     bis_v_corr -= mean_v
     
     ax[1].plot(bis_v, bis, color="black", marker="o", markersize=8, label="Original Bisector")
-    ax[1].plot(bis_v_corr, bis_corr, color="tab:red", marker="o", markersize=6, label="Adjusted Bisector")
+    ax[1].plot(bis_v_corr, bis_corr, color="tab:red", marker="o", markersize=6, label="Removed PHOENIX Bisector")
     ax[1].plot(poly_fit(bis_corr), bis_corr, linewidth=5, label="Fitted Mean Bisector")
     ax[1].plot(dv, sp, linewidth=5, label="Used Delta V", color="green", linestyle="None", marker="o")
-    ax[1].set_xlim(-75, 75)
+    # ax[1].set_xlim(-75, 75)
     ax[1].vlines(0, 0, 1, linestyle="dashed", color="black")
     ax[1].set_ylim(0,1)
     ax[1].set_xlabel(r"v [m/s]")
+    
+    mu_bis_dict = Zhao_bis_polynomials()
+    
+    # print(mu_bis_dict)
+    # exit()
+    lin_depth = np.linspace(0, 1, 100)
+    ax[1].plot(mu_bis_dict[1.0](lin_depth), lin_depth, label="Zhao Polyomial mu=1.0", color="tab:green")
     ax[1].legend()
     
     fig.set_tight_layout(True)

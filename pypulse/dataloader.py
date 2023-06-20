@@ -2,6 +2,7 @@ from astropy.io import fits
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.polynomial import Polynomial
 import wget
 import pandas as pd
 from parse_ini import parse_global_ini
@@ -247,6 +248,23 @@ def Rassine_outputs(Teff, logg, feh):
     dataframe = pd.read_pickle(file)
     
     return dataframe
+
+def Zhao_bis_polynomials():
+    """ Load the bisector polynomials as published by Zhao2023.
+    
+        :returns: Dictionary of {mu_angles:np.Polynomial of the BIS as fct of depth}
+    """
+    filedict = np.load(DATAROOT / "CB_Zhao23" / "coeff_mu_v1.npz", allow_pickle=True)
+    coeffs = filedict["coeff_obs"]
+    mus = filedict["mus"]
+
+    # convert into one dict
+    mu_dict = {}
+    for mu, coeff in zip(mus, coeffs):
+        poly = Polynomial(coeff[::-1])
+        mu_dict[mu] = poly
+
+    return mu_dict
 
 
 def telluric_mask():
