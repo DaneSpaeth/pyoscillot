@@ -1,8 +1,9 @@
 import numpy as np
-from utils import gaussian, get_ref_spectra
+from utils import gaussian, get_ref_spectra, add_bisector 
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
+from dataloader import Zhao_bis_polynomials
 
 class GridSpectrumSimulator():
     """ Simulate a spectrum of a star with a grid."""
@@ -69,7 +70,7 @@ class GridSpectrumSimulator():
                                             feh=self.feh,
                                             wavelength_range=wavelength_range,
                                             spec_intensity=False,
-                                            fit_and_remove_bis=self.conv_blue)
+                                            change_bis=self.conv_blue)
             ref_mu = None
         elif mode == "spec_intensity":
             (rest_wavelength,
@@ -174,8 +175,7 @@ class GridSpectrumSimulator():
         return self.flux
 
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
-                      rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
-                      add_convective_blueshift=True):
+                      rest_wavelength, ref_spectra, ref_headers, T_precision_decimals):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -207,29 +207,29 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     sorted_v_c_rot = v_c_rot[sorted_temp_indices]
     sorted_v_c_pulse = v_c_pulse[sorted_temp_indices]
     sorted_v_c_gran = v_c_gran[sorted_temp_indices]
-    sorted_mu = mu[sorted_temp_indices]
+    sorted_mus = mu[sorted_temp_indices]
 
     sorted_temperature = np.round(sorted_temperature, decimals=T_precision_decimals)
     
     # The mu values that are available for the BIS calculations of convective_blueshift
-    print(sorted_mu)
     available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
-    rounded_mu = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mu]
-    rounded_mu = np.array(rounded_mu)
-    print(rounded_mu)
-
+    rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
+    rounded_mus = np.array(rounded_mus)
+    sorted_mus = rounded_mus
+    
     v_total = np.nanmean(pulsation)
-    fine_ref_spectrum = None
+    fine_ref_spectra_dict = None
     fine_ref_temperature = None
-    # fine_ref_mu = None
-
-    # total_cells = len(sorted_temperature)
-    # done = 0
+    
     num_skipped_nans_pulsation = (np.count_nonzero(~np.isnan(sorted_temperature)) -
                                   np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
     print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulsation! Probably at the pole!")
 
-    for temp, v_c_r, v_c_p, v_c_g, m in zip(sorted_temperature, sorted_v_c_rot, sorted_v_c_pulse, sorted_v_c_gran, sorted_mu):
+    for temp, v_c_r, v_c_p, v_c_g, m in zip(sorted_temperature, 
+                                            sorted_v_c_rot, 
+                                            sorted_v_c_pulse,
+                                            sorted_v_c_gran, 
+                                            sorted_mus):
         # print(f"Calc cell {done}/{total_cells}")
         # done += 1
         if np.isnan(temp):
@@ -243,20 +243,31 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
         if np.isnan(v_c_g):
             print(f"Skip a cell since granulation is NaN")
             continue
+        
+        # Let's make the fine_ref_spectrum a dictionary of all needed mu angles
+        
+        
+        
         # first check if you have a current ref spectrum
-        if fine_ref_spectrum is None or temp != fine_ref_temperature:
+        if fine_ref_spectra_dict is None or temp != fine_ref_temperature:
+            
+            # Calculate all mu angles that are needed
             # If not compute a current ref spectrum
             fine_ref_temperature = temp
+            needed_mus = np.unique(sorted_mus[sorted_temperature==fine_ref_temperature])
+            print(f"Needed mu angles for temperature {fine_ref_temperature}={needed_mus}")
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
             # This one will automatically be kept in memory until all cells with this temperature are completed
-            
-            # Ok so now we assume that the ref_spectra are correctly BIS reduced or not
-            _, fine_ref_spectrum, _ = get_interpolated_spectrum(temp,
-                                                                ref_wave=rest_wavelength,
-                                                                ref_spectra=ref_spectra,
-                                                                ref_headers=ref_headers)
+            # Ok so now we assume that the ref_spectra are correctly BIS reduced and added
+            # Or not if the user chooses not to
+            # We get a dictionary of {mu:spec} for each temperature
+            _, fine_ref_spectra_dict, _ = get_interpolated_spectrum(temp,
+                                                                    ref_wave=rest_wavelength,
+                                                                    ref_spectra=ref_spectra,
+                                                                    ref_headers=ref_headers,
+                                                                    mu_angles=needed_mus)
 
-        local_spectrum = fine_ref_spectrum.copy()
+        local_spectrum = fine_ref_spectra_dict[m].copy()
         # At this point adjust for the Convective Blueshift Bisector
 
         if not v_c_r and not v_c_p and not v_c_g:

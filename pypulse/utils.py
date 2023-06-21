@@ -8,8 +8,9 @@ from scipy.optimize import curve_fit
 import subprocess
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
-from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs
+from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials
 from physics import delta_relativistic_doppler
+import copy
 
 
 
@@ -442,7 +443,7 @@ def rebin(wold, sold, wnew):
     return snew
 
 def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
-                    spec_intensity=False, fit_and_remove_bis=False):
+                    spec_intensity=False, change_bis=False):
     """ Return a wavelength grid and a dict of phoenix spectra and a dict of
         pheonix headers.
 
@@ -485,15 +486,34 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
     ref_headers = {}
     if not spec_intensity:
         for T in T_unique:
+            # Create a new dictionary with the spectra for each mu
+            mu_dict = {}
             wave, spec, ref_headers[T] = phoenix_spectrum(
                 Teff=float(T), logg=logg, feh=feh,
                 wavelength_range=wavelength_range)
             # All waves are the same, so just return the last one
-            if fit_and_remove_bis:
+            if change_bis:
                 print("Fit and Remove the PHOENIX bisectors")
                 spec_corr, _, _, _, _, _ = remove_phoenix_bisector(wave, spec, T, logg, feh)
                 spec = spec_corr
-            ref_spectra[T] = spec
+                
+                # Now let's add in the bisectors
+                available_mus = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
+                bis_polynomial_dict = Zhao_bis_polynomials()
+                for mu in available_mus:
+                    spec_add, _, _, _, _ = add_bisector(wave, 
+                                            copy.deepcopy(spec_corr), 
+                                            bis_polynomial_dict[mu],
+                                            T, 
+                                            logg, 
+                                            feh, 
+                                            debug_plot=False)
+                    mu_dict[mu] = spec_add
+            else:
+                mu_dict[1.0] = spec
+            ref_spectra[T] = mu_dict
+                
+            # ref_spectra[T] = spec
 
         return wave, ref_spectra, ref_headers
     else:
@@ -680,7 +700,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     
     return poly_fit
 
-def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=5705.15):
+def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=5728.65):
     """ Fit and Remove the phoenix bisector."""
     poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True, save=True)
     
@@ -711,7 +731,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=
     
     return spec_corr, spec_corr_norm, spec_norm, poly_fit, delta_v, delta_wave
 
-def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, line=5705.15):
+def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, line=5728.65):
     """ Add in a bisector to the data.
     
         Ideally the wave and spec should be cleaned of any previous bisectors.

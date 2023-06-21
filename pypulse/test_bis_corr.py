@@ -12,7 +12,6 @@ def plot_bis_corr_oneline():
     
     
     # Create a BIS removed version
-    mu_bis_dict = Zhao_bis_polynomials()
     (spec_corr, 
      spec_corr_norm, 
      spec_norm, 
@@ -29,6 +28,7 @@ def plot_bis_corr_oneline():
     # exit()
     
     # Now let's try and add a Zhao bisector.
+    mu_bis_dict = Zhao_bis_polynomials()
     (spec_add, 
      spec_add_norm,
      _, 

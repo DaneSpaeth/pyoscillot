@@ -86,19 +86,32 @@ def get_interpolated_spectrum(T_local,
                               ref_wave=None,
                               ref_spectra=None,
                               ref_headers=None,
+                              mu_angles=None,
                               spec_intensity=False,
                               mu_local=1,
                               ref_mu=None):
     """ Return a potentially interpolated spectrum. Returns the same format as
         the phoenix spectrum.
-
-        At the moment:
-        logg=3.0, feh=0.0
+        
+        :param float T_local: local Temperature
+        :param np.array ref_wave: The wavelength array
+        :param dict ref_spectra: A nested dictionary of {T:{mu:spec}}, 
+                                 with spec being a np.array containing the spectral fluxes
+        :param dict ref_headers: A dictionary of {T:header}
+        :param np.array mu_angles: A np.array containing all mu_angles for which to compute
+                                   the interpolation
+        :param bool spec_intensity: Run in Spec intensity mode (Not Implemented anymore)
+        :param float mu_local: The local mu_angle (Needed in old implementation of the spec intensity)
+        :param list ref_mu: A list of mu angles available for the spec intensity calculation 
+        
+        
+        :returns: wave, mu_dict (dictionary of {mu:specs}), header 
     """
     assert ref_spectra is not None, "Please add a Reference Wavelength using the ref_spectra param"
     assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
     assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
     if spec_intensity:
+        raise NotImplementedError
         assert ref_mu is not None, "You have to provide mu if spec_intensity is True"
 
     T_close = int(round(T_local, -2))
@@ -106,22 +119,25 @@ def get_interpolated_spectrum(T_local,
     # Get closest spectrum
     wave = ref_wave
     header = ref_headers[T_close]
-    if not spec_intensity:
-        spec = ref_spectra[T_close]
-    else:
-        # The specific intensities are saved as a datacube
-        spec_int_cube = ref_spectra[T_close]
-        # Get the closest index of the mu
-        idx = np.abs(ref_mu - mu_local).argmin()
-        print(f"Closest mu to {mu_local} at idx={idx}")
-        spec = ref_spectra[T_close][idx]
+    mu_dict = {}
+    for mu in mu_angles:
+        if not spec_intensity:
+            spec = ref_spectra[T_close][mu]
+        else:
+            # The specific intensities are saved as a datacube
+            spec_int_cube = ref_spectra[T_close]
+            # Get the closest index of the mu
+            idx = np.abs(ref_mu - mu_local).argmin()
+            print(f"Closest mu to {mu_local} at idx={idx}")
+            spec = ref_spectra[T_close][idx]
+        
+        assert wave.shape == spec.shape
 
-    assert wave.shape == spec.shape
-
-    # Now interpolate with the contrast given by the Planck curves
-    if int(T_local) != T_close:
-        spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
-    return wave, spec, header
+        # Now interpolate with the contrast given by the Planck curves
+        if int(T_local) != T_close:
+            spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
+        mu_dict[mu] = spec
+    return wave, mu_dict, header
 
     
 def radiance_to_temperature(radiance):
