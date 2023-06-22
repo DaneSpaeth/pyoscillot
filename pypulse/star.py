@@ -125,7 +125,8 @@ class GridSpectrumSimulator():
                                                                      rest_wavelength,
                                                                      ref_spectra,
                                                                      ref_headers,
-                                                                     T_precision_decimals)
+                                                                     T_precision_decimals,
+                                                                     change_bis=self.conv_blue)
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
@@ -175,7 +176,8 @@ class GridSpectrumSimulator():
         return self.flux
 
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
-                      rest_wavelength, ref_spectra, ref_headers, T_precision_decimals):
+                      rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
+                      change_bis=False):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -212,10 +214,15 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     sorted_temperature = np.round(sorted_temperature, decimals=T_precision_decimals)
     
     # The mu values that are available for the BIS calculations of convective_blueshift
-    available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
-    rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
-    rounded_mus = np.array(rounded_mus)
-    sorted_mus = rounded_mus
+    if change_bis:
+        # available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
+        available_mus = np.array(list(ref_spectra[sorted_temperature[0]].keys()))
+        print(f"Available mus = {available_mus}")
+        rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
+        rounded_mus = np.array(rounded_mus)
+        sorted_mus = rounded_mus
+    else:
+        sorted_mus = np.ones_like(sorted_temperature)
     
     v_total = np.nanmean(pulsation)
     fine_ref_spectra_dict = None
@@ -255,6 +262,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             # If not compute a current ref spectrum
             fine_ref_temperature = temp
             needed_mus = np.unique(sorted_mus[sorted_temperature==fine_ref_temperature])
+            
             print(f"Needed mu angles for temperature {fine_ref_temperature}={needed_mus}")
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
             # This one will automatically be kept in memory until all cells with this temperature are completed
@@ -292,7 +300,4 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    star = GridSpectrumSimulator(N_star=300, N_border=1, v_rot=3000, limb_darkening=False, inclination=60)
-    star.add_pulsation(l=1, m=1, T_var=20)
-    star.calc_spectrum()
+    

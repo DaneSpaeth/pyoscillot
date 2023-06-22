@@ -264,16 +264,22 @@ def delta_relativistic_doppler(wave, v=None, v_c=None):
     if v_c is None:
         v_c = v / C
     
-    wave_shifted = wave * np.sqrt((1 + v_c) / (1-v_c))
+    rel_wave_shift = np.sqrt((1 + v_c) / (1 - v_c))
+    wave_shifted = wave * rel_wave_shift
     
     delta_wave = wave_shifted - wave
     
     return delta_wave
 
 if __name__ == "__main__":
-    wave, spec, header = phoenix_spectrum()
+    wave, spec, header = phoenix_spectrum(wavelength_range=(5010, 5030))
+    
+    v = 10000
+    wave_pos = wave + delta_relativistic_doppler(wave, v)
+    wave_neg = wave + delta_relativistic_doppler(wave, -v)
 
     fig, ax = plt.subplots(1, figsize=(16, 9))
-    ax.plot(wave, spec)
-    ax.plot(wave, planck(wave*1e-10, 4800)*4*np.pi, color="red")
-    plt.show()
+    ax.plot(wave, spec, color="tab:green")
+    ax.plot(wave_pos, spec, color="tab:red")
+    ax.plot(wave_neg, spec,color="tab:blue")
+    plt.savefig("dbug.png")

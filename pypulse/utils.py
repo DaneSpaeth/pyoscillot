@@ -133,7 +133,7 @@ def bisector_new(wave, spec, skip=2):
 def _gauss_continuum(x, mu, sigma, amplitude, continuum):
     return continuum - (amplitude * np.exp(-(x - mu) ** 2 / 2 / sigma ** 2))
 
-def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1, continuum=1.0):
+def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1, continuum=1.0, cutoff_high=0.97):
     """ Calculate the bisector of a line centered around line_center with width width.
 
         :param np.array wave: Array of wavelengths. Same unit as line_center and outlier_clip
@@ -151,13 +151,15 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     mask = np.logical_and(wave >= line_center - num_widths * np.abs(width),
                           wave <= line_center + num_widths * np.abs(width))
 
-    mask_sp = spec < 0.9
+    mask_sp = spec < cutoff_high
     mask = np.logical_and(mask, mask_sp)
     
 
-    wave_line = wave#[mask]
-    spec_line = spec#[mask]
+    wave_line = copy.deepcopy(wave)#[mask]
+    spec_line = copy.deepcopy(spec)#[mask]
     
+    # print(wave_line)
+    # print(spec_line)
     # Let's fit the minimum again to cut off the lower 10%
     # Try to only fit the very center of the line
     cutoff = 0.2
@@ -172,7 +174,7 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
         center = params[0]
     except RuntimeError:
         min_flux = np.min(spec_line)
-        center = line_center
+    center = line_center
     
 
     # Amount of datapoints to skip from the bottom
@@ -193,12 +195,17 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     # And stricly increasing from right to left for the left
     incr_mask = np.diff(np.flip(left_spec)) > 0
     if not incr_mask.all():
-        max_true_idx = np.argmin(incr_mask)
+        min_true_idx = np.argmax(incr_mask)
+        # For the case that the first element is False and all others are True
+        max_true_idx = np.argmin(incr_mask[min_true_idx:]) + min_true_idx
+        if max_true_idx == min_true_idx:
+            max_true_idx = -1
         incr_mask[max_true_idx:] = False
             
     incr_mask = np.append(incr_mask, False)
     left_spec = left_spec[np.flip(incr_mask)]
     left_wave = left_wave[np.flip(incr_mask)]
+
 
 
     left_cs = interp1d(np.flip(left_spec), np.flip(left_wave), fill_value="extrapolate")
@@ -309,7 +316,7 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     # Find stddev of Gaussian kernel for smoothing
     R_grid = (w_log[1:-1] + w_log[0:-2]) / (w_log[1:-1] - w_log[0:-2]) / 2
     sigma = np.median(R_grid) / R
-    print(sigma)
+    # print(sigma)
     if sigma < 1:
         sigma = 1
 
@@ -499,6 +506,9 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                 
                 # Now let's add in the bisectors
                 available_mus = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
+                # TODO remove
+                # available_mus = [1.0]
+                
                 bis_polynomial_dict = Zhao_bis_polynomials()
                 for mu in available_mus:
                     spec_add, _, _, _, _ = add_bisector(wave, 
@@ -508,6 +518,8 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                                             logg, 
                                             feh, 
                                             debug_plot=False)
+                    # TODO remove
+                    # spec_add = spec_corr
                     mu_dict[mu] = spec_add
             else:
                 mu_dict[1.0] = spec
@@ -722,6 +734,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=
         
         # ax[1].plot(wave[mask], delta_v[mask])
         plt.savefig("dbug.png", dpi=300)
+        plt.close()
     
     # Interpolate back on original wavelength grid?
     spec_corr = np.interp(wave, wave_corr, spec)
@@ -745,27 +758,35 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
     _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
     
     delta_v = bis_polynomial(spec_norm)
+    # delta_v *= 5
     delta_wave = delta_relativistic_doppler(wave, v=delta_v)
     wave_corr = wave + delta_wave
     
-    # FOR DEBUGGING
-    if debug_plot:
-        interval = 0.25
-        mask = np.logical_and(wave >= line - interval, wave <= line + interval)
-        
-        fig, ax = plt.subplots(1,2, figsize=(30,9))
-        ax[0].plot(wave[mask], spec_norm[mask], color="tab:red")
-        ax[1].plot(delta_v[mask], spec[mask])
-        
-        # ax[1].plot(wave[mask], delta_v[mask])
-        plt.savefig("dbug.png", dpi=300)
-        
     # Interpolate back on original wavelength grid?
     spec_corr = np.interp(wave, wave_corr, spec)
     
     # Also make a normalized version for debugging
     spec_corr_norm = np.interp(wave, wave_corr, spec_norm)
     
+    # FOR DEBUGGING
+    if debug_plot:
+        interval = 0.25
+        mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+        
+        fig, ax = plt.subplots(1,3, figsize=(30,9))
+        ax[0].plot(wave[mask], spec[mask], color="tab:blue", marker="o", label="Original Line")
+        ax[0].plot(wave_corr[mask], spec[mask], color="tab:red", marker="o", label="Wavelength array shifted")
+        ax[0].plot(wave[mask], spec_corr[mask], color="black", marker="o", label="Interpolated back on original array")
+        ax[1].plot(delta_v[mask], spec_norm[mask])
+        ax[2].plot(delta_wave[mask], spec_norm[mask])
+        
+        # ax[1].plot(wave[mask], delta_v[mask])
+        ax[0].legend()
+        fig.set_tight_layout(True)
+        
+        plt.savefig("dbug.png", dpi=300)
+        plt.close()
+        
     return spec_corr, spec_corr_norm, spec_norm, delta_v, delta_wave
 
 
