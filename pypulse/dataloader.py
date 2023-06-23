@@ -12,7 +12,7 @@ global_dict = parse_global_ini()
 DATAROOT = global_dict["datapath"]
 
 
-def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000)):
+def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000), return_filepath=False):
     """Return phenix spectrum and header."""
     Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
 
@@ -43,8 +43,11 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
 
     wavelength = wavelength.astype("float64")
     spectrum = spectrum.astype("float64")
-
-    return wavelength, spectrum, header
+    
+    if not return_filepath:
+        return wavelength, spectrum, header
+    else:
+        return wavelength, spectrum, header, file
 
 
 def _check_and_prepare_for_phoenix(Teff, logg, feh):

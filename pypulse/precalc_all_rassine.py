@@ -13,6 +13,19 @@ for file in all_phoenix:
     
 # Now again
 all_phoenix = sorted(list(Path("/home/dspaeth/pypulse/data/phoenix_spectra").glob("lte*.fits")))
+
+
+
+# Create here only the models that you need
+all_phoenix = []
+_,_,_, filepath = phoenix_spectrum(Teff=5700, logg=4.5, feh=0.0, return_filepath=True)
+all_phoenix.append(filepath)
+_,_,_, filepath = phoenix_spectrum(Teff=5600, logg=4.5, feh=0.0, return_filepath=True)
+all_phoenix.append(filepath)
+_,_,_, filepath = phoenix_spectrum(Teff=5800, logg=4.5, feh=0.0, return_filepath=True)
+all_phoenix.append(filepath)
+
+
 for file in all_phoenix:
     name = file.name
     
@@ -30,7 +43,7 @@ for file in all_phoenix:
     # Now load the full spectra
     wave, spec, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(3500, 7200))
     
-    _, spec_norm, continuum_interp = normalize_phoenix_spectrum(wave, spec)
+    _, spec_norm, continuum_interp = normalize_phoenix_spectrum(wave, spec,Teff, logg, feh, run=True)
     file_out = Path("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
     out_root = Path("/home/dspaeth/pypulse/data/Rassine_dataframes_for_phoenix")
     new_file = out_root / (file.stem + ".p") 
