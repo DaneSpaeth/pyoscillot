@@ -26,7 +26,6 @@ class SimulationController():
         self.determine_simulation_params(ticketpath)
         self.saver = DataSaver(self.conf["name"])
 
-
         self.create_rv_series()
 
     def determine_simulation_params(self, ticketpath):

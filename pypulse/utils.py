@@ -8,10 +8,11 @@ from scipy.optimize import curve_fit
 import subprocess
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
+from pathlib import Path
+import cfg
 from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials
 from physics import delta_relativistic_doppler
 import copy
-
 
 
 import matplotlib as mpl
@@ -657,10 +658,13 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     
     if debug_plot:
         fig.set_tight_layout(True)
-        out_root = "/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug"
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
         savename = f"{Teff}K_{logg}_{FeH}_debug.png"
         print(f"Save debug plot to {out_root}/{savename}")
-        plt.savefig(f"{out_root}/{savename}", dpi=300)
+        plt.savefig(out_root / savename, dpi=300)
         plt.close()
 
     bis_vs = np.array(bis_vs)
