@@ -522,6 +522,7 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                     # spec_add = spec_corr
                     mu_dict[mu] = spec_add
             else:
+                print("DO NOT CHANGE THE BIS")
                 mu_dict[1.0] = spec
             ref_spectra[T] = mu_dict
                 

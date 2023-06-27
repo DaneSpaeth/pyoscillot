@@ -18,11 +18,13 @@ all_phoenix = sorted(list(Path("/home/dspaeth/pypulse/data/phoenix_spectra").glo
 
 # Create here only the models that you need
 all_phoenix = []
-_,_,_, filepath = phoenix_spectrum(Teff=5700, logg=4.5, feh=0.0, return_filepath=True)
-all_phoenix.append(filepath)
-_,_,_, filepath = phoenix_spectrum(Teff=5600, logg=4.5, feh=0.0, return_filepath=True)
-all_phoenix.append(filepath)
-_,_,_, filepath = phoenix_spectrum(Teff=5800, logg=4.5, feh=0.0, return_filepath=True)
+# _,_,_, filepath = phoenix_spectrum(Teff=5700, logg=4.5, feh=0.0, return_filepath=True)
+# all_phoenix.append(filepath)
+# _,_,_, filepath = phoenix_spectrum(Teff=5600, logg=4.5, feh=0.0, return_filepath=True)
+# all_phoenix.append(filepath)
+# _,_,_, filepath = phoenix_spectrum(Teff=5800, logg=4.5, feh=0.0, return_filepath=True)
+# all_phoenix.append(filepath)
+_,_,_, filepath = phoenix_spectrum(Teff=5900, logg=4.5, feh=0.0, return_filepath=True)
 all_phoenix.append(filepath)
 
 

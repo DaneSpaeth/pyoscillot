@@ -300,4 +300,4 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    
+    pass
