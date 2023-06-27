@@ -224,7 +224,7 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     bisector_waves[~outlier_mask] = np.nan
     bisector_flux[~outlier_mask] = np.nan
     
-    mask = np.logical_and(bisector_flux >= min_flux + (continuum - min_flux) * 0.1, bisector_flux < 0.9 * continuum)
+    mask = np.logical_and(bisector_flux >= min_flux +  0.03, bisector_flux < 0.9 * continuum)
     bisector_waves[~mask] = np.nan
     bisector_waves[~mask] = np.nan
 
@@ -518,7 +518,8 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                                             T, 
                                             logg, 
                                             feh, 
-                                            debug_plot=False)
+                                            debug_plot=True,
+                                            mu=mu)
                     # TODO remove
                     # spec_add = spec_corr
                     mu_dict[mu] = spec_add
@@ -548,14 +549,15 @@ def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right
 
     ax.plot(bis_wave, bis, marker="o", markersize=5)
     
-    ax.plot(wv, _gauss_continuum(wv, *gauss_params), marker="None", color="pink")
+    # ax.plot(wv, _gauss_continuum(wv, *gauss_params), marker="None", color="pink")
     ylims = ax.get_ylim()
     ax.vlines(line, ylims[0], ylims[1], color="tab:red", linestyle="dashed")
     ax.set_ylim(ylims)
     ax.set_ylim(0, 1)
     ax.set_xlabel(r"Wavelength [$\AA$]")
-    ax.set_ylabel("Flux")
+    ax.set_ylabel("Normalized Flux")
     ax.set_title(rf"FeI {line}$\AA$")
+    ax.ticklabel_format(useOffset=False)
     
     return ax
 
@@ -597,7 +599,7 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False):
     
     return wave, spec_norm, continuum_interp
 
-def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None, save=False):
+def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None):
     """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
     
         :returns: numpy.Polynomial fit results to easily apply to every line depth
@@ -611,7 +613,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
-        fig, debug_ax = plt.subplots(2,3)
+        fig, debug_ax = plt.subplots(2,3, figsize=(7.16, 4.0275))
     # Compute the individual bisectors per line
     bis_vs = []
     biss = []
@@ -657,14 +659,15 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
         
     
     if debug_plot:
+        fig.delaxes(debug_ax[-1,-1])
         fig.set_tight_layout(True)
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
             out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
-        savename = f"{Teff}K_{logg}_{FeH}_debug.png"
+        savename = f"{Teff}K_{logg}_{FeH}_Fe_lines.png"
         print(f"Save debug plot to {out_root}/{savename}")
-        plt.savefig(out_root / savename, dpi=300)
+        plt.savefig(out_root / savename, dpi=600)
         plt.close()
 
     bis_vs = np.array(bis_vs)
@@ -695,31 +698,33 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     if bis_plot:
         if ax is None:
             _ax = None
-            fig, ax = plt.subplots(1, dpi=300)
+            fig, ax = plt.subplots(1, figsize=(7.16, 4.0275), dpi=600)
         colors = ["green", "cyan", "purple", "orange", "yellow"]
         for bis_v, bis, color, line in zip(bis_vs, biss, colors, Fe_lines): 
             ax.plot(bis_v, bis, color=color, marker="o", markersize=5, label=rf"FeI {line}$\AA$")
         ax.plot(avg_v, avg_bis, color="red", marker="o", markersize=7, linestyle="None")
 
-        ax.plot(poly_v, lin_bis, color="blue", linewidth=8)
+        ax.plot(poly_v, lin_bis, color="blue", linewidth=8, alpha=0.7)
         
         ax.set_ylim(0, 1)
         ax.set_xlim(-200, 200)
         ax.set_xlabel("Velocity [m/s]")
-        ax.set_ylabel("Flux")
+        ax.set_ylabel("Normalized Flux")
 
-        if save:
-            fig.set_tight_layout(True)
-            ax.legend()
-            out_root = "/home/dspaeth/pypulse/data/plots/phoenix_bisectors/"
-            savename = f"{Teff}K_{logg}_{FeH}_bis.png"
-            plt.savefig(f"{out_root}/{savename}", dpi=300)
+        fig.set_tight_layout(True)
+        ax.legend()
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+        savename = f"{Teff}K_{logg}_{FeH}_bis_fit.png"
+        plt.savefig(f"{out_root}/{savename}", dpi=600)
     
     return poly_fit
 
-def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=5728.65):
+def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5728.65):
     """ Fit and Remove the phoenix bisector."""
-    poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True, save=True)
+    poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True)
     
     # Now also normalize the full PHOENIX Spectrum
     # Check the normalization
@@ -728,28 +733,85 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, line=
     delta_v = poly_fit(spec_norm)
     delta_wave = delta_relativistic_doppler(wave, v=delta_v)
     wave_corr = wave - delta_wave
-    # FOR DEBUGGING
-    if debug_plot:
-        interval = 0.25
-        mask = np.logical_and(wave >= line - interval, wave <= line + interval)
-        
-        fig, ax = plt.subplots(1,2, figsize=(30,9))
-        ax[0].plot(wave[mask], spec_norm[mask], color="tab:red")
-        ax[1].plot(delta_v[mask], spec[mask])
-        
-        # ax[1].plot(wave[mask], delta_v[mask])
-        plt.savefig("dbug.png", dpi=300)
-        plt.close()
     
     # Interpolate back on original wavelength grid?
     spec_corr = np.interp(wave, wave_corr, spec)
     
     # Also make a normalized version for debugging
     spec_corr_norm = np.interp(wave, wave_corr, spec_norm)
+    # FOR DEBUGGING
+    if debug_plot:
+        interval = 0.25
+        mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+        
+        fig, ax = plt.subplots(1, 2, figsize=(7.16, 4.0275))
+        ax[0].plot(wave[mask], spec_norm[mask], color="tab:blue",marker="o", label="Original PHOENIX spectrum")
+        ax[0].plot(wave[mask], spec_corr_norm[mask], color="tab:red",marker="o", label="Removed Bisector")
+        ax[0].legend()
+        ax[0].set_xlabel(r"Wavelength [$\AA$]")
+        ax[0].set_ylabel("Normalized Flux")
+        ax[0].set_title(rf"{line}$\AA$")
+        ax[0].ticklabel_format(useOffset=False)
+        
+        # Fit the bisectors for both lines
+        mean_bis_v = None
+        for sp, color in zip((spec_norm[mask], spec_corr_norm[mask]), ("tab:blue", "tab:red")):
+            # Fit the width and center for an inital guess
+            expected = (line, 0.05, 0.9, 1.0)
+            try:
+                params, cov = curve_fit(_gauss_continuum, wave[mask], sp, expected)
+                width = params[1]
+                continuum = params[-1]
+
+            except:
+                width = 0.05
+                continuum = 1.0
+                
+        
+        
+            try:
+                bis_wave, bis, left_wv, left_sp, right_wv, right_sp = bisector_on_line(wave[mask], 
+                                                                                    sp, 
+                                                                                    line,
+                                                                                    width=width,
+                                                                                    outlier_clip=0.1,
+                                                                                    continuum=continuum)
+            
+                # Convert to velocities
+                bis_v = (bis_wave - line) / bis_wave * 3e8
+                
+                if mean_bis_v is None:
+                    mean_bis_v = np.nanmean(bis_v)
+                ax[0].plot(bis_wave, bis, color=color, marker="o")
+                ax[1].plot(bis_v - mean_bis_v, bis, color=color, marker="o")
+            except Exception as e:
+                pass
+        
+        
+        
+        # ax[1].plot(wave[mask], delta_v[mask])
+        ax[0].legend(loc="lower left")
+        
+        # Add the BIS polynomial
+        lin_spec = np.linspace(0, 1, 100)
+        ax[1].plot(poly_fit(lin_spec), lin_spec, color="black", alpha=0.7, label=f"Fitted Mean Bisector")
+        ax[1].legend(loc="lower left")
+        
+        
+        
+        # ax[1].plot(wave[mask], delta_v[mask])
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+        savename = f"{Teff}K_{logg}_{FeH}_bis_removed.png"
+        fig.set_tight_layout(True)
+        plt.savefig(f"{out_root}/{savename}", dpi=600)
+        plt.close()
     
     return spec_corr, spec_corr_norm, spec_norm, poly_fit, delta_v, delta_wave
 
-def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, line=5728.65):
+def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, line=5728.65, mu=None):
     """ Add in a bisector to the data.
     
         Ideally the wave and spec should be cleaned of any previous bisectors.
@@ -778,18 +840,71 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         interval = 0.25
         mask = np.logical_and(wave >= line - interval, wave <= line + interval)
         
-        fig, ax = plt.subplots(1,3, figsize=(30,9))
-        ax[0].plot(wave[mask], spec[mask], color="tab:blue", marker="o", label="Original Line")
-        ax[0].plot(wave_corr[mask], spec[mask], color="tab:red", marker="o", label="Wavelength array shifted")
-        ax[0].plot(wave[mask], spec_corr[mask], color="black", marker="o", label="Interpolated back on original array")
-        ax[1].plot(delta_v[mask], spec_norm[mask])
-        ax[2].plot(delta_wave[mask], spec_norm[mask])
+        fig, ax = plt.subplots(1,2, figsize=(7.16, 4.0275))
+        ax[0].plot(wave[mask], spec_norm[mask], color="tab:blue", marker="o", label="Bisector removed PHOENIX spectrum")
+        # ax[0].plot(wave_corr[mask], spec[mask], color="tab:red", marker="o", label="Added Bisector")
+        ax[0].plot(wave[mask], spec_corr_norm[mask], color="tab:red", marker="o", label="Added Bisector")
+        ax[0].ticklabel_format(useOffset=False)
+        # ax[1].plot(delta_v[mask], spec_norm[mask])
+        
+        
+        # Fit the bisectors for both lines
+        mean_bis_v = None
+        for sp, color in zip((spec_norm[mask], spec_corr_norm[mask]), ("tab:blue", "tab:red")):
+            # Fit the width and center for an inital guess
+            expected = (line, 0.05, 0.9, 1.0)
+            try:
+                params, cov = curve_fit(_gauss_continuum, wave[mask], sp, expected)
+                width = params[1]
+                continuum = params[-1]
+
+            except:
+                width = 0.05
+                continuum = 1.0
+                
+        
+        
+            try:
+                bis_wave, bis, left_wv, left_sp, right_wv, right_sp = bisector_on_line(wave[mask], 
+                                                                                    sp, 
+                                                                                    line,
+                                                                                    width=width,
+                                                                                    outlier_clip=0.1,
+                                                                                    continuum=continuum)
+            
+                # Convert to velocities
+                bis_v = (bis_wave - line) / bis_wave * 3e8
+                
+                if mean_bis_v is None:
+                    mean_bis_v = np.nanmean(bis_v)
+                ax[0].plot(bis_wave, bis, color=color, marker="o")
+                ax[1].plot(bis_v - mean_bis_v, bis, color=color, marker="o")
+            except Exception as e:
+                pass
+        
+        
+        
         
         # ax[1].plot(wave[mask], delta_v[mask])
-        ax[0].legend()
-        fig.set_tight_layout(True)
+        ax[0].legend(loc="lower left")
         
-        plt.savefig("dbug.png", dpi=300)
+        ax[0].set_xlabel(r"Wavelength [$\AA$]")
+        ax[0].set_ylabel("Normalized Flux")
+        ax[0].set_title(rf"{line}$\AA$, $\mu$={mu}")
+        ax[1].set_xlabel("Velocity [m/s]")
+        ax[1].set_ylabel("Normalized Flux")
+        
+        # Add the BIS polynomial
+        lin_spec = np.linspace(0, 1, 100)
+        ax[1].plot(bis_polynomial(lin_spec), lin_spec, color="black", alpha=0.7, label=f"Convective Blueshift Model (µ={mu})")
+        ax[1].legend(loc="lower left")
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+        savename = f"{Teff}K_{logg}_{FeH}_mu{mu}_bis_added.png"
+        fig.set_tight_layout(True)
+        plt.savefig(f"{out_root}/{savename}", dpi=600)
         plt.close()
         
     return spec_corr, spec_corr_norm, spec_norm, delta_v, delta_wave

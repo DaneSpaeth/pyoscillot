@@ -1,5 +1,6 @@
 import configparser
 from pathlib import Path
+import matplotlib
 
 
 def parse_global_ini():
@@ -68,6 +69,9 @@ def parse_ticket(ticketpath):
                 conf_dict[sim][key] = conf[key]
 
     return conf_dict
+
+# Global configs
+matplotlib.rcParams.update({'font.size': 8})
 
 # singleton for debug dir
 debug_dir = None
