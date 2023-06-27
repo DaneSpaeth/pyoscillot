@@ -9,7 +9,7 @@ from dataloader import phoenix_spectrum, phoenix_spec_intensity
 from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from pathlib import Path
-from parse_ini import parse_ticket, parse_global_ini
+import cfg
 from time_sampling import sample_phase, load_presampled_phase
 import carmenes_simulator as carmenes
 import harps_simulator as harps
@@ -26,11 +26,12 @@ class SimulationController():
         self.determine_simulation_params(ticketpath)
         self.saver = DataSaver(self.conf["name"])
 
+
         self.create_rv_series()
 
     def determine_simulation_params(self, ticketpath):
         """ Read in the simulation params from the ini file."""
-        config_dict = parse_ticket(ticketpath)
+        config_dict = cfg.parse_ticket(ticketpath)
         simulation_keys = config_dict["simulations"]
 
         # if len(simulation_keys) != 1:
@@ -73,7 +74,7 @@ class SimulationController():
             except ValueError:
                 star = self.conf["hip"]
 
-            global_dict = parse_global_ini()
+            global_dict = cfg.parse_global_ini()
             template_directory = Path(
                 global_dict["datapath"]) / "CARMENES_VIS_templates"
             fits_template = template_directory / \
@@ -86,7 +87,7 @@ class SimulationController():
             # TODO REMOVE
             # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
 
-            global_dict = parse_global_ini()
+            global_dict = cfg.parse_global_ini()
             snr_directory = Path(
                 global_dict["datapath"]) / "CARMENES_VIS_SNR_profiles"
             snr_file = snr_directory / f"{star}.npy"
@@ -130,7 +131,7 @@ class SimulationController():
             except ValueError:
                 star = self.conf["hip"]
 
-            global_dict = parse_global_ini()
+            global_dict = cfg.parse_global_ini()
             template_directory = Path(
                 global_dict["datapath"]) / "CARMENES_NIR_templates"
             fits_template = template_directory / \
@@ -143,7 +144,7 @@ class SimulationController():
             # TODO REMOVE
             # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
 
-            # global_dict = parse_global_ini()
+            # global_dict = cfg.parse_global_ini()
             # snr_directory = Path(
             #     global_dict["datapath"]) / "CARMENES_NIR_SNR_profiles"
             # snr_file = snr_directory / f"{star}.npy"

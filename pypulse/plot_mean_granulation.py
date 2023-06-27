@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from dataloader import granulation_map
-from parse_ini import parse_global_ini
+from cfg import parse_global_ini
 from physics import radiance_to_temperature, calc_granulation_velocity_phi_theta
 import cv2
 from pathlib import Path

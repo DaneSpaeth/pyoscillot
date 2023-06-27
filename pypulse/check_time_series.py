@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import plapy.rv.dataloader as load
-from parse_ini import parse_global_ini
+from cfg import parse_global_ini
 from plapy.rv.plotter import plot_rv, plot_activity, plot_activity_rv
 from pathlib import Path
 

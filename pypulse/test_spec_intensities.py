@@ -5,7 +5,7 @@ from utils import interpolate_to_restframe
 from pathlib import Path
 from scipy.optimize import least_squares, curve_fit
 from scipy.ndimage import gaussian_filter1d
-from parse_ini import parse_global_ini
+from cfg import parse_global_ini
 import time
 
 

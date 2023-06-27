@@ -1,5 +1,5 @@
 from simulation_controller import SimulationController
-from parse_ini import parse_global_ini, parse_ticket
+from cfg import parse_global_ini, parse_ticket
 from datasaver import DataSaver
 from animation_pulsation_new import create_high_res_arrays
 

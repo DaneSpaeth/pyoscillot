@@ -1,6 +1,6 @@
 import subprocess
 from simulation_controller import SimulationController
-from parse_ini import parse_global_ini, parse_ticket
+from cfg import parse_global_ini, parse_ticket
 from datasaver import DataSaver
 import socket
 from datetime import datetime
@@ -169,7 +169,7 @@ if __name__ == "__main__":
 
     # rot_dir = Path(root / "NGC4349_TestRot")
     # tickets = [rot_dir / "test67.ini"]
-    for i in range(107, 108):
+    for i in range(108, 109):
         ticket = root / "NGC4349_TestBIS" / f"test{i}.ini"
         tickets.append(ticket)
 

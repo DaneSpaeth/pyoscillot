@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from parse_ini import parse_ticket, parse_global_ini
+from cfg import parse_ticket, parse_global_ini
 from three_dim_star import ThreeDimStar, TwoDimProjector
 import plapy.rv.dataloader as load
 import matplotlib.animation as animation

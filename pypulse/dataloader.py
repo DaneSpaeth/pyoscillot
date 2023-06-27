@@ -5,7 +5,7 @@ import numpy as np
 from numpy.polynomial import Polynomial
 import wget
 import pandas as pd
-from parse_ini import parse_global_ini
+from cfg import parse_global_ini
 # import idlsave
 
 global_dict = parse_global_ini()

@@ -1,7 +1,7 @@
 import numpy as np
 from dataloader import carmenes_template
 from pathlib import Path
-from parse_ini import parse_global_ini
+from cfg import parse_global_ini
 from shutil import copytree
 from astropy.io import fits
 

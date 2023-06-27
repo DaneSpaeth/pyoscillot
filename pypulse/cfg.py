@@ -16,7 +16,7 @@ def parse_global_ini():
             conf_dict[key] = Path(conf[key])
         else:
             conf_dict[key] = conf[key]
-
+            
     return conf_dict
 
 
@@ -69,7 +69,10 @@ def parse_ticket(ticketpath):
 
     return conf_dict
 
+# singleton for debug dir
+debug_dir = None
+
 
 if __name__ == "__main__":
-    conf_dict = parse_ticket("example_ticket.ini")
+    conf_dict = parse_global_ini()
     print(conf_dict)

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, date
 import random
 import numpy as np
-from parse_ini import parse_global_ini
+from cfg import parse_global_ini
 
 
 def sample_phase(sample_P, N_global=30, N_periods=1,

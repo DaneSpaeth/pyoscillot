@@ -3,7 +3,7 @@ from pathlib import Path
 from shutil import copy2
 import tarfile
 import numpy as np
-from parse_ini import parse_global_ini
+import cfg
 import socket
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
@@ -16,12 +16,16 @@ class DataSaver():
 
             :param str simulation_name: Name of simulation to use for folders
         """
-        self.global_dict = parse_global_ini()
+        self.global_dict = cfg.parse_global_ini()
         if not laptop:
             self.dataroot = self.global_dict["datapath"]
         else:
             self.dataroot = self.global_dict["datapath_laptop"]
         self.simulation_name = simulation_name
+        self.debug_dir = self._create_folder("plots")
+        
+        # Change the singleton in the parse_ini module
+        cfg.debug_dir = self.debug_dir
 
     def save_spectrum(self, spectrum, new_header, name,
                       CARMENES_template=None,
