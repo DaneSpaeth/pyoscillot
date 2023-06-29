@@ -909,15 +909,34 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         
     return spec_corr, spec_corr_norm, spec_norm, delta_v, delta_wave
 
+def add_limb_darkening(wave, spec, mu):
+    """ Add the limb darkening law based on Hestroffer & Magnan 1998."""
+    u = 1
+    print(mu)
+    
+    alpha = np.zeros_like(wave)
+    mask_UV = np.logical_and(wave >= 3033, wave <= 3570)
+    mask_VIS = np.logical_and(wave >= 4160, wave <= 10990)
+    
+    # wave has to be given in µm but it currently in Angstroms
+    # hence the factor 1e4
+    alpha[mask_UV] = -0.507 + 0.441 * (1 / (wave[mask_UV] / 1e4))
+    alpha[mask_VIS] = -0.023 + 0.292 * (1 / (wave[mask_VIS] / 1e4)) 
+    intensity = 1 - u * (1 - mu**alpha)
+    # intensity is now an array with the dimension of wave
+    # i.e. going along the wavelength giving a multiplication factor
+    
+    # plt.plot(1 / wave, alpha)
+    # plt.savefig("dbug.png")
+    # exit()
+    # Since u = 1 this reduces to mu**alpha 
+    # print(intensity)
+    # return spec_limb
+    
+    return intensity
+
 
 if __name__ == "__main__":
+    pass
     
-    exit()
-    wave_rassine, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec)
-    # assert (wave == wave_rassine).all()
-    # ax.plot
-    
-    
-    # wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 10000))
-    # remove_phoenix_bisector(wave, spec, Teff, logg, FeH)
 
