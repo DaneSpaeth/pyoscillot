@@ -216,7 +216,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     # The mu values that are available for the BIS calculations of convective_blueshift
     if change_bis:
         # available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
-        available_mus = np.array(list(ref_spectra[sorted_temperature[0]].keys()))
+        available_mus = np.array(list(ref_spectra[list(ref_spectra.keys())[0]].keys()))
         print(f"Available mus = {available_mus}")
         rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
         rounded_mus = np.array(rounded_mus)
