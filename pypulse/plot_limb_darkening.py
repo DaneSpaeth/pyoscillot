@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from utils import add_limb_darkening
 from dataloader import phoenix_spectrum
+from star import GridSpectrumSimulator
 
 def plot_stellar_disk_comparison():
     star = ThreeDimStar()
@@ -80,24 +81,24 @@ def plot_mu_comparison():
     plt.savefig("limb_dark_comparison.png", dpi=600)
     
 def plot_spectral_change():
-    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4200, 7700))
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4200, 10000))
     
     norm = np.nanmax(spec)
     
     fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7.16, 4.0275))
     lw = 0.25
-    ax[0].plot(wave, spec/norm, color="blue", label="Original PHOENIX", lw=lw)
+    ax[0].plot(wave, spec/norm, color="tab:blue", label="Original PHOENIX", lw=lw)
     mu = 1
     _, spec_limb = add_limb_darkening(wave, spec, mu)
-    ax[0].plot(wave, spec_limb/norm, color="red", alpha=0.7, label=f"Adjusted for Limb Darkening at µ={mu}", lw=lw)
+    ax[0].plot(wave, spec_limb/norm, color="tab:red", alpha=0.7, label=f"Adjusted for Limb Darkening at µ={mu}", lw=lw)
     mu = 0.2
     _, spec_limb = add_limb_darkening(wave, spec, mu)
-    ax[1].plot(wave, spec/norm, color="blue", label="Original PHOENIX", lw=lw)
-    ax[1].plot(wave, spec_limb/norm, color="red", alpha=0.7, label=f"Adjusted for Limb Darkening at µ={mu}", lw=lw)
+    ax[1].plot(wave, spec/norm, color="tab:blue", label="Original PHOENIX", lw=lw)
+    ax[1].plot(wave, spec_limb/norm, color="tab:red", alpha=0.7, label=f"Adjusted for Limb Darkening at µ={mu}", lw=lw)
     
     ax[1].set_xlabel(r"Wavelength [$\AA$]")
-    ax[0].set_ylabel("Flux [arb. units]")
-    ax[1].set_ylabel("Flux [arb. units]")
+    ax[0].set_ylabel("Normalized Flux")
+    ax[1].set_ylabel("Normalized Flux")
     ax[0].legend()
     ax[1].legend()
     
@@ -108,5 +109,27 @@ def plot_spectral_change():
     
     plt.savefig("limb_dark_spec.png", dpi=600)
     
+def plot_summed_spectral_change():
+    fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False)
+    min_wave = 4200
+    max_wave = 10000
+    wave, spec, v = star.calc_spectrum(min_wave=min_wave, max_wave=max_wave)
+    
+    norm = np.nanmax(spec)
+    
+    ax.plot(wave, spec/norm, color="tab:blue", label="No Limb Darkening Correction", lw=0.25)
+    
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=True)
+    wave, spec, v = star.calc_spectrum(min_wave=min_wave, max_wave=max_wave)
+    ax.plot(wave, spec/norm, color="tab:red", label="Limb Darkening Correction", lw=0.25, alpha=0.7)
+    
+    ax.set_xlabel(r"Wavelength [$\AA$]")
+    ax.set_ylabel("Normalized Flux")
+    fig.set_tight_layout(True)
+    plt.savefig("limb_dark_summed_spec.png", dpi=600)
+    
+    
 if __name__ == "__main__":
     plot_spectral_change()
+    plot_summed_spectral_change()
