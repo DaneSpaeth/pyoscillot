@@ -28,7 +28,7 @@ def plot_stellar_disk_comparison():
 
     intensities_at_waves = np.zeros((mu.shape[0], mu.shape[1], len(wave_idxs)))
     for (row, col), m in np.ndenumerate(mu):
-        int_mu = add_limb_darkening(wave, spec, m)
+        int_mu = add_limb_darkening(wave, spec, m)[0]
         print(row, col)
         for idx, wv_idx in enumerate(wave_idxs):
             # print(idx)
@@ -71,7 +71,7 @@ def plot_mu_comparison():
     
     for idx, (wavelength, color) in enumerate(zip(wavelengths, colors )):
         
-        ax.plot(mu, [add_limb_darkening(wavelengths, None, m)[idx] for m in mu], color=color, label=f"{int(wavelength/10)}nm", lw=5)
+        ax.plot(mu, [add_limb_darkening(wavelengths, None, m)[0][idx] for m in mu], color=color, label=f"{int(wavelength/10)}nm", lw=5)
     ax.set_xlabel("µ")
     ax.set_ylabel("Relative Intensity")
     ax.legend()
@@ -79,5 +79,34 @@ def plot_mu_comparison():
     fig.set_tight_layout(True)
     plt.savefig("limb_dark_comparison.png", dpi=600)
     
+def plot_spectral_change():
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4200, 7700))
+    
+    norm = np.nanmax(spec)
+    
+    fig, ax = plt.subplots(2, 1, sharex=True, figsize=(7.16, 4.0275))
+    lw = 0.25
+    ax[0].plot(wave, spec/norm, color="blue", label="Original PHOENIX", lw=lw)
+    mu = 1
+    _, spec_limb = add_limb_darkening(wave, spec, mu)
+    ax[0].plot(wave, spec_limb/norm, color="red", alpha=0.7, label=f"Adjusted for Limb Darkening at µ={mu}", lw=lw)
+    mu = 0.2
+    _, spec_limb = add_limb_darkening(wave, spec, mu)
+    ax[1].plot(wave, spec/norm, color="blue", label="Original PHOENIX", lw=lw)
+    ax[1].plot(wave, spec_limb/norm, color="red", alpha=0.7, label=f"Adjusted for Limb Darkening at µ={mu}", lw=lw)
+    
+    ax[1].set_xlabel(r"Wavelength [$\AA$]")
+    ax[0].set_ylabel("Flux [arb. units]")
+    ax[1].set_ylabel("Flux [arb. units]")
+    ax[0].legend()
+    ax[1].legend()
+    
+    ax[0].set_ylim(0, 1.05)
+    ax[1].set_ylim(0, 1.05)
+    
+    fig.subplots_adjust(left=0.07, right=0.99, top=0.99, bottom=0.12, hspace=0)
+    
+    plt.savefig("limb_dark_spec.png", dpi=600)
+    
 if __name__ == "__main__":
-    plot_mu_comparison()
+    plot_spectral_change()
