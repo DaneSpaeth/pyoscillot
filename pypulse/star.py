@@ -1,5 +1,5 @@
 import numpy as np
-from utils import gaussian, get_ref_spectra, add_bisector 
+from utils import gaussian, get_ref_spectra, add_bisector, add_limb_darkening
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
@@ -30,12 +30,13 @@ class GridSpectrumSimulator():
                                          border=N_border,
                                          inclination=inclination,
                                          line_of_sight=True,
-                                         limb_darkening=limb_darkening)
+                                         limb_darkening=False)
         self.logg = logg
         self.feh = feh
         self.spectrum = None
         self.flux = None
         self.conv_blue = convective_blueshift
+        self.limb_dark = limb_darkening
 
     def add_spot(self, phase=0.25, theta_pos=90, radius=25, T_spot=4300):
         """ Add a circular starspot at position x,y.
@@ -126,7 +127,8 @@ class GridSpectrumSimulator():
                                                                      ref_spectra,
                                                                      ref_headers,
                                                                      T_precision_decimals,
-                                                                     change_bis=self.conv_blue)
+                                                                     change_bis=self.conv_blue,
+                                                                     limb_dark=self.limb_dark)
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
@@ -177,7 +179,7 @@ class GridSpectrumSimulator():
 
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
-                      change_bis=False):
+                      change_bis=False, limb_dark=False):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -220,9 +222,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
         print(f"Available mus = {available_mus}")
         rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
         rounded_mus = np.array(rounded_mus)
-        sorted_mus = rounded_mus
     else:
-        sorted_mus = np.ones_like(sorted_temperature)
+        rounded_mus = np.ones_like(sorted_temperature)
     
     v_total = np.nanmean(pulsation)
     fine_ref_spectra_dict = None
@@ -232,10 +233,11 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                   np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
     print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulsation! Probably at the pole!")
 
-    for temp, v_c_r, v_c_p, v_c_g, m in zip(sorted_temperature, 
+    for temp, v_c_r, v_c_p, v_c_g, rounded_mu, mu in zip(sorted_temperature, 
                                             sorted_v_c_rot, 
                                             sorted_v_c_pulse,
-                                            sorted_v_c_gran, 
+                                            sorted_v_c_gran,
+                                            rounded_mus,
                                             sorted_mus):
         # print(f"Calc cell {done}/{total_cells}")
         # done += 1
@@ -261,7 +263,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             # Calculate all mu angles that are needed
             # If not compute a current ref spectrum
             fine_ref_temperature = temp
-            needed_mus = np.unique(sorted_mus[sorted_temperature==fine_ref_temperature])
+            needed_mus = np.unique(rounded_mus[sorted_temperature==fine_ref_temperature])
             
             print(f"Needed mu angles for temperature {fine_ref_temperature}={needed_mus}")
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
@@ -274,8 +276,14 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                     ref_spectra=ref_spectra,
                                                                     ref_headers=ref_headers,
                                                                     mu_angles=needed_mus)
+            
+            
 
-        local_spectrum = fine_ref_spectra_dict[m].copy()
+        local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
+        
+        if limb_dark:
+            print(f"Add limb_dark")
+            _, local_spectrum = add_limb_darkening(rest_wavelength, local_spectrum, mu)
         # At this point adjust for the Convective Blueshift Bisector
 
         if not v_c_r and not v_c_p and not v_c_g:
@@ -300,4 +308,5 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    pass
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False)
+    wave, spec, v = star.calc_spectrum()

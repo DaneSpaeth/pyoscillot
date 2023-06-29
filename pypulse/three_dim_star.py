@@ -274,7 +274,7 @@ class TwoDimProjector():
     """ Project a 3D star onto a 2D plane."""
 
     def __init__(self, star, N=1000, border=10, inclination=90, azimuth=0,
-                 line_of_sight=True, limb_darkening=True):
+                 line_of_sight=True, limb_darkening=False):
         """ Construct Projector object.
 
             :param star: Instance of 3D star to project
@@ -323,6 +323,7 @@ class TwoDimProjector():
         """ Add a limb darkening. For the moment simply add onto the
             temperature.
         """
+        raise NotImplementedError
         # Try to be clever
         # Create an array with ones of the same shape as the 3D star
         unit_array = np.ones(self.star.phi.shape)
