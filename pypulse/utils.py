@@ -912,11 +912,14 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
 def add_limb_darkening(wave, spec, mu):
     """ Add the limb darkening law based on Hestroffer & Magnan 1998."""
     u = 1
-    print(mu)
+    spec = copy.deepcopy(spec)
     
     alpha = np.zeros_like(wave)
     mask_UV = np.logical_and(wave >= 3033, wave <= 3570)
-    mask_VIS = np.logical_and(wave >= 4160, wave <= 10990)
+    
+    real_limit = 4160
+    test_limit = 3570
+    mask_VIS = np.logical_and(wave >= test_limit, wave <= 10990)
     
     # wave has to be given in µm but it currently in Angstroms
     # hence the factor 1e4
@@ -925,18 +928,12 @@ def add_limb_darkening(wave, spec, mu):
     intensity = 1 - u * (1 - mu**alpha)
     # intensity is now an array with the dimension of wave
     # i.e. going along the wavelength giving a multiplication factor
+    # the intensity array should be propely normalized
     
-    # plt.plot(1 / wave, alpha)
-    # plt.savefig("dbug.png")
-    # exit()
-    # Since u = 1 this reduces to mu**alpha 
-    # print(intensity)
-    # return spec_limb
+    spec_limb = spec * intensity
     
-    return intensity
+    return intensity, spec_limb
 
 
 if __name__ == "__main__":
     pass
-    
-
