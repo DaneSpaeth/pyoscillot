@@ -281,12 +281,11 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
         
-        if limb_dark:
-            print(f"Add limb_dark")
-            _, local_spectrum = add_limb_darkening(rest_wavelength, local_spectrum, mu)
         # At this point adjust for the Convective Blueshift Bisector
 
         if not v_c_r and not v_c_p and not v_c_g:
+            if limb_dark:
+                _, local_spectrum = add_limb_darkening(rest_wavelength, local_spectrum, mu)
             # print(f"Skip Star Element {row, col}")
             total_spectrum += local_spectrum
         else:
@@ -301,7 +300,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
             # Interpolate the spectrum to the same rest wavelength grid
             interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
-
+            if limb_dark:
+                _, interpol_spectrum = add_limb_darkening(rest_wavelength, interpol_spectrum, mu)
             total_spectrum += interpol_spectrum
 
     return rest_wavelength, total_spectrum, v_total
