@@ -38,7 +38,7 @@ def plot_stellar_disk_comparison():
 
     colors = ["tab:blue", "tab:green", "yellow", "tab:red"]
 
-    fig, ax = plt.subplots(2,2, figsize=(7.16, 7.16))
+    fig, ax = plt.subplots(1,4, figsize=(7.16, 4.0275/2))
 
     # print(len(wavelengths))
     # print(len(colors))
@@ -51,7 +51,7 @@ def plot_stellar_disk_comparison():
         a.imshow(intensities_at_waves[:,:,idx], vmin=0.0, vmax=1.0, cmap="inferno")
         
         y_offset = int(intensities_at_waves.shape[1]/2)
-        a.plot(y_offset - 100*intensities_at_waves[:, y_offset, idx], color=color, label=f"{int(wavelength/10)}nm", lw=5)
+        # a.plot(y_offset - 100*intensities_at_waves[:, y_offset, idx], color=color, label=f"{int(wavelength/10)}nm", lw=5)
         a.set_title(f"{int(wavelength/10)}nm")
         a.set_xticks([])
         a.set_yticks([])
@@ -60,7 +60,7 @@ def plot_stellar_disk_comparison():
     # ax.legend()
     # ax.set_ylabel("Normalized Intensity")
     fig.set_tight_layout(True)
-    plt.savefig("limb_dark_3D.png", dpi=600)
+    plt.savefig("limb_dark_3D_1x4.png", dpi=600)
     plt.close()
     
 def plot_mu_comparison():
@@ -131,5 +131,6 @@ def plot_summed_spectral_change():
     
     
 if __name__ == "__main__":
-    plot_spectral_change()
-    plot_summed_spectral_change()
+    # plot_spectral_change()
+    # plot_summed_spectral_change()
+    plot_stellar_disk_comparison()

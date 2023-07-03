@@ -308,5 +308,5 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False)
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=True)
     wave, spec, v = star.calc_spectrum()

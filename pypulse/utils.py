@@ -562,7 +562,7 @@ def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right
     return ax
 
 
-def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False):
+def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plot=True):
     """ Normalize a PHOENIX Spectrum using Rassine.
     
         All results are linearly interpolated back onto the original wavelength grid.
@@ -597,6 +597,24 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False):
     
     spec_norm = spec / continuum_interp
     
+    if debug_plot:
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
+        savename = f"{Teff}K_{logg}_{feh}_norm.png"
+        out_file = out_root / savename
+        if not out_file.is_file(): 
+            fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
+            ax.plot(wave, spec, lw=0.25, color="tab:blue")
+            ax.plot(wave, continuum_interp, lw=0.5, color="tab:red")
+            ax.set_xlabel(r"Wavelength [$\AA$]")
+            ax.set_ylabel("Flux [arb. units]")
+            print(f"Save debug plot to {out_root}/{savename}")
+            fig.set_tight_layout(True)
+            plt.savefig(out_file, dpi=600)
+            plt.close()
+    
     return wave, spec_norm, continuum_interp
 
 def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None):
@@ -609,7 +627,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
 
     
-    wave_rassine, spec, _ = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
+    wave_rassine, spec, _ = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH, debug_plot=False)
     wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
