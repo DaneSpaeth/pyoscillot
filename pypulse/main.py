@@ -169,8 +169,8 @@ if __name__ == "__main__":
 
     # rot_dir = Path(root / "NGC4349_TestRot")
     # tickets = [rot_dir / "test67.ini"]
-    for i in range(116, 117):
-        ticket = root / "NGC4349_TestConvBlue" / f"test{i}.ini"
+    for i in range(119, 120):
+        ticket = root / "NGC4349_TestResolution" / f"test{i}.ini"
         tickets.append(ticket)
 
 

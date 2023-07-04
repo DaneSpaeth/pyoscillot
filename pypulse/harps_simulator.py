@@ -1,10 +1,11 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+from scipy.signal import deconvolve
 import matplotlib.pyplot as plt
 from astropy.time import Time
 from dataloader import harps_template
-from utils import adjust_resolution, _gauss_continuum, bisector_on_line
+from utils import adjust_resolution, adjust_resolution_dane, _gauss_continuum, bisector_on_line
 import cfg
 
 
@@ -35,7 +36,7 @@ def interpolate(spectrum, wavelength):
 
         # Adjust the resolution per order
         # This will use one kernel per order
-        local_spectrum_HARPS = adjust_resolution(local_wavelength, local_spectrum, R=R_real, w_sample=20)
+        local_spectrum_HARPS = adjust_resolution_dane(local_wavelength, local_spectrum, R=R_real)
         # DEBUG PLOT
         debug_line = 5728.65
         if debug_line > local_wavelength[0] and debug_line < local_wavelength[-1]:

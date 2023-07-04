@@ -12,13 +12,13 @@ wave_air = wave / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 wave = wave_air
 
 
-# wave = np.linspace(4999, 5001, 10000)
-# spec = _gauss_continuum(wave, 5000, 0.01, 0.9, 1.0)
+wave = np.linspace(6301, 6302, 100000)
+spec = _gauss_continuum(wave, 6301.5, 0.001, 0.9, 1.0)
 
 
 
 spec_res = adjust_resolution(wave, spec, R=100000, w_sample=100)
-spec_res_dane  = adjust_resolution_dane(wave, spec, R=499999)
+spec_res_dane  = adjust_resolution_dane(wave, spec, R=100000)
 
 
 line = 6301.5
