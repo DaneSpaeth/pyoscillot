@@ -1,5 +1,5 @@
 import numpy as np
-from utils import gaussian, get_ref_spectra, add_bisector, add_limb_darkening
+from utils import gaussian, get_ref_spectra, add_limb_darkening
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler

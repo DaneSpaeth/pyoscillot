@@ -13,6 +13,7 @@ import cfg
 from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials
 from physics import delta_relativistic_doppler
 import copy
+from create_Pollux_CB_model import simple_Pollux_CB_model
 
 
 import matplotlib as mpl
@@ -208,10 +209,15 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     left_wave = left_wave[np.flip(incr_mask)]
 
 
-
-    left_cs = interp1d(np.flip(left_spec), np.flip(left_wave), fill_value="extrapolate")
-    right_cs = interp1d(right_spec, right_wave, fill_value="extrapolate")
+    interpolation="linear"
+    if interpolation == "cubic_spline":
+        left_cs = CubicSpline(np.flip(left_spec), np.flip(left_wave), extrapolate=True)
+        right_cs = CubicSpline(right_spec, right_wave, extrapolate=True)
+    elif interpolation == "linear":
+        left_cs = interp1d(np.flip(left_spec), np.flip(left_wave), fill_value="extrapolate")
+        right_cs = interp1d(right_spec, right_wave, fill_value="extrapolate")
     lin_sp = np.linspace(np.min(spec_line), np.max(spec_line), 75)
+    # lin_sp = np.flip(left_wave)
 
     left = left_cs(lin_sp)
     right = right_cs(lin_sp)
@@ -506,20 +512,23 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                 spec = spec_corr
                 
                 # Now let's add in the bisectors
-                available_mus = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
+                # available_mus = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
                 # TODO remove
                 # available_mus = [1.0]
                 
-                bis_polynomial_dict = Zhao_bis_polynomials()
-                for mu in available_mus:
+                # bis_polynomial_dict = Zhao_bis_polynomials()
+                # Test out the Pollux bisectors
+                bis_polynomial_dict = simple_Pollux_CB_model()
+                
+                for mu in bis_polynomial_dict.keys():
                     spec_add, _, _, _, _ = add_bisector(wave, 
-                                            copy.deepcopy(spec_corr), 
-                                            bis_polynomial_dict[mu],
-                                            T, 
-                                            logg, 
-                                            feh, 
-                                            debug_plot=True,
-                                            mu=mu)
+                                                        copy.deepcopy(spec_corr), 
+                                                        bis_polynomial_dict[mu],
+                                                        T, 
+                                                        logg, 
+                                                        feh, 
+                                                        debug_plot=True,
+                                                        mu=mu)
                     # TODO remove
                     # spec_add = spec_corr
                     mu_dict[mu] = spec_add
