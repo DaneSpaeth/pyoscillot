@@ -1,8 +1,12 @@
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
 from astropy.time import Time
 from dataloader import harps_template
-from utils import adjust_resolution
+from utils import adjust_resolution, _gauss_continuum, bisector_on_line
+import cfg
+
 
 
 def interpolate(spectrum, wavelength):
@@ -27,13 +31,21 @@ def interpolate(spectrum, wavelength):
 
         local_wavelength = wavelength[local_wave_mask]
         local_spectrum = spectrum[local_wave_mask]
+        
 
         # Adjust the resolution per order
         # This will use one kernel per order
-        local_spectrum = adjust_resolution(local_wavelength, local_spectrum, R=R_real, w_sample=20)
+        local_spectrum_HARPS = adjust_resolution(local_wavelength, local_spectrum, R=R_real, w_sample=20)
+        # DEBUG PLOT
+        debug_line = 5728.65
+        if debug_line > local_wavelength[0] and debug_line < local_wavelength[-1]:
+            debug_plot(local_wavelength.copy(), 
+                       local_spectrum.copy(), 
+                       local_spectrum_HARPS.copy(), 
+                       debug_line)
 
         # Interpolate the calculated spectra onto the tmpl_wave grid
-        func = interp1d(local_wavelength, local_spectrum, kind="linear")
+        func = interp1d(local_wavelength, local_spectrum_HARPS, kind="linear")
         order_spec = func(tmpl_wave[order])
 
         # Adjust for the blaze
@@ -47,6 +59,85 @@ def interpolate(spectrum, wavelength):
     interpol_spec = np.array(interpol_spec)
 
     return interpol_spec, tmpl_wave
+
+def debug_plot(wave, spec, spec_HARPS, line):
+    """ Create a debug plot."""
+    interval = 0.25
+    mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+    
+    wave = wave[mask]
+    spec = spec[mask]
+    spec_HARPS = spec_HARPS[mask]
+    
+    # Rough normalization
+    spec_norm = spec / np.max(spec)
+    spec_HARPS_norm = spec_HARPS / np.max(spec_HARPS)
+    
+    fig, ax = plt.subplots(1, 2, figsize=(7.16, 4.0275))
+    ax[0].plot(wave, spec_norm, color="tab:blue",marker="o", label="Combined PHOENIX Spectrum")
+    ax[0].plot(wave, spec_HARPS_norm, color="tab:red",marker="o", label="HARPS Resolution")
+    ax[0].legend()
+    ax[0].set_xlabel(r"Wavelength [$\AA$]")
+    ax[0].set_ylabel("Normalized Flux")
+    ax[0].set_title(rf"{line}$\AA$")
+    ax[0].ticklabel_format(useOffset=False)
+    
+    # Fit the bisectors for both lines
+    mean_bis_v = None
+    for sp, color in zip((spec_norm, spec_HARPS_norm), ("tab:blue", "tab:red")):
+        # Fit the width and center for an inital guess
+        expected = (line, 0.05, 0.9, 1.0)
+        try:
+            params, cov = curve_fit(_gauss_continuum, wave, sp, expected)
+            width = params[1]
+            continuum = params[-1]
+
+        except:
+            width = 0.05
+            continuum = 1.0
+            
+    
+    
+        try:
+            bis_wave, bis, left_wv, left_sp, right_wv, right_sp = bisector_on_line(wave, 
+                                                                                   sp, 
+                                                                                   line,
+                                                                                   width=width,
+                                                                                   outlier_clip=0.1,
+                                                                                   continuum=continuum)
+        
+            # Convert to velocities
+            bis_v = (bis_wave - line) / bis_wave * 3e8
+            
+            if mean_bis_v is None:
+                mean_bis_v = np.nanmean(bis_v)
+            ax[0].plot(bis_wave, bis, color=color, marker="o")
+            ax[1].plot(bis_v - mean_bis_v, bis, color=color, marker="o")
+        except Exception as e:
+            pass
+    
+    
+    
+    # ax[1].plot(wave[mask], delta_v[mask])
+    ax[0].legend(loc="lower left")
+    
+    # Add the BIS polynomial
+    lin_spec = np.linspace(0, 1, 100)
+    # ax[1].plot(poly_fit(lin_spec), lin_spec, color="black", alpha=0.7, label=f"Fitted Mean Bisector")
+    ax[1].legend(loc="lower left")
+    
+    
+    
+    # ax[1].plot(wave[mask], delta_v[mask])
+    if cfg.debug_dir is not None:
+        out_root = cfg.debug_dir
+    else:
+        out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+    savename = f"bis_HARPS.png"
+    fig.set_tight_layout(True)
+    plt.savefig(f"{out_root}/{savename}", dpi=600)
+    plt.close()
+
 
 
 def get_new_header(time, bc=None, bjd=None):
