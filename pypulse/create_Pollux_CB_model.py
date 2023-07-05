@@ -30,7 +30,7 @@ def simple_Pollux_CB_model():
     # exit()
     
 
-    pfit = np.polynomial.Polynomial.fit(flux, bis, w=1/bise, deg=4)
+    pfit = np.polynomial.Polynomial.fit(flux, bis, w=1/bise, deg=4) * 3
 
 
     lin_flux = np.linspace(0, 1, 100)
@@ -43,6 +43,49 @@ def simple_Pollux_CB_model():
     ax.set_ylabel("Relative Flux")
     fig.set_tight_layout(True)
     plt.savefig("CB_Pollux_fit.png", dpi=600)
+    
+    
+    mu_dict = {1.0:pfit}
+    return mu_dict
+
+def simple_alpha_boo_CB_model():
+    flux = np.arange(0.9, 0.18, -0.02)
+    bis = np.array([201, 196, 185, 171, 146,
+                    140, 124, 109, 95, 81,
+                    69, 57, 46, 37, 28,
+                    19, 12, 5, -1, -7,
+                    -11, -15, -18, -21, -23,
+                    -23, -23, -22, -19, -14,
+                    -7, 3, 16, 37, 48,
+                    32])
+    
+    bise = np.array([3, 2, 2, 2, 2,
+                     1, 1, 1, 1, 1,
+                     1, 1, 1, 1, 0.5,
+                     0.5, 0.5, 0.5, 0.5, 0.5,
+                     0.5, 0.5, 0.5, 0.5, 0.5,
+                     0.5, 1, 1, 1, 1,
+                     1, 1, 1, 1, 2, 
+                     23])
+    assert len(flux) == len(bise)
+    assert len(flux) == len(bis)
+    # print(flux)
+    # exit()
+    
+
+    pfit = np.polynomial.Polynomial.fit(flux, bis, w=1/bise, deg=4)
+
+
+    lin_flux = np.linspace(0, 1, 100)
+
+    fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
+
+    ax.errorbar(bis, flux, xerr=bise, linestyle="None", marker=".", color="tab:blue")
+    ax.plot(pfit(lin_flux), lin_flux, color="tab:red")
+    ax.set_xlabel("Velocity [m/s]")
+    ax.set_ylabel("Relative Flux")
+    fig.set_tight_layout(True)
+    plt.savefig("CB_alpha_boo_fit.png", dpi=600)
     
     
     mu_dict = {1.0:pfit}
@@ -120,4 +163,4 @@ def deconvolved_Pollux_CB_model():
     
 
 if __name__ == "__main__":
-    simple_Pollux_CB_model()
+    simple_alpha_boo_CB_model()

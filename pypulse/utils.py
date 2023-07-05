@@ -13,7 +13,7 @@ import cfg
 from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials
 from physics import delta_relativistic_doppler
 import copy
-from create_Pollux_CB_model import simple_Pollux_CB_model
+from create_Pollux_CB_model import simple_Pollux_CB_model, simple_alpha_boo_CB_model
 
 
 import matplotlib as mpl
@@ -556,7 +556,7 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                 
                 # bis_polynomial_dict = Zhao_bis_polynomials()
                 # Test out the Pollux bisectors
-                bis_polynomial_dict = simple_Pollux_CB_model()
+                bis_polynomial_dict = simple_alpha_boo_CB_model()
                 
                 for mu in bis_polynomial_dict.keys():
                     spec_add, _, _, _, _ = add_bisector(wave, 
