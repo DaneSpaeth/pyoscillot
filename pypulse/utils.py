@@ -50,6 +50,14 @@ def gaussian(x, mu=0, sigma=0.001):
     """
     return 1 / (np.sqrt(2 * np.pi) * sigma) * np.exp(-np.square(x - mu) / (2 * sigma**2))
 
+def neg_gaussian(x, mu=0, sigma=0.001):
+    """ Return a negative gaussian at position x.
+
+        :param float or array x: Position or array of positions at which to
+                                 evaluate the Gaussian.
+    """
+    return 1 - gaussian(x, mu, sigma)
+
 
 def bisector(wavelength, spectrum):
     """ Calculate the bisector of the line.
@@ -342,10 +350,10 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     return f_sm
 
 
-def adjust_resolution_dane(wave, spec, R=100000):
+def adjust_resolution_dane(wave, spec, R=100000, R_phoenix = 500000):
     mid_px = int(len(wave)/2)
     center = wave[mid_px]
-    R_phoenix = 500000
+    # R_phoenix = 1e100
     
     # For the calculation of the kernel width:
     # convolution is associative: (f*g)*h = f*(g*h)
