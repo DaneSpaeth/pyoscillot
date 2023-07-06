@@ -1,54 +1,51 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import adjust_resolution, adjust_resolution_dane, _gauss_continuum
+from utils import adjust_resolution, adjust_resolution_dane, _gauss_continuum, neg_gaussian
 from dataloader import phoenix_spectrum
 from scipy.optimize import curve_fit
 from astropy.convolution import Gaussian1DKernel
 from scipy.signal import deconvolve
-
-wave, spec, header = phoenix_spectrum(5800, 4.5, 0.0, wavelength_range=(6000, 6500))
-
-wave_air = wave / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
-wave = wave_air
-
-
-wave = np.linspace(6301, 6302, 100000)
-spec = _gauss_continuum(wave, 6301.5, 0.001, 0.9, 1.0)
+import pandas as pd
+from pathlib import Path
+from scipy.interpolate import CubicSpline, interp1d
+plt.rcParams['axes.formatter.useoffset'] = False
 
 
+LB_root = Path("/home/dspaeth/pypulse/data/resolution_tests")
+df = pd.read_csv(LB_root / "LB_R700000.csv")
 
-spec_res = adjust_resolution(wave, spec, R=100000, w_sample=100)
-spec_res_dane  = adjust_resolution_dane(wave, spec, R=100000)
+wave_LB_700000 = np.array(df["x"])
+spec_LB_700000 = np.array(df[" y"])
 
+df = pd.read_csv(LB_root / "LB_R100000.csv")
 
-line = 6301.5
-interval = 0.2
-mask = np.logical_and(wave > line - interval, wave < line + interval)
-wave = wave[mask]
-spec = spec[mask]
-spec_res = spec_res[mask]
-spec_res_dane = spec_res_dane[mask]
+wave_LB_100000 = np.array(df["x"])
+spec_LB_100000 = np.array(df[" y"])
 
-norm = np.max(spec)
-spec /= norm
-spec_res /= norm
-spec_res_dane /= norm
+fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
 
+lin_wave = np.linspace(wave_LB_700000.min(), wave_LB_700000.max(), 1000)
 
-for sp in (spec, spec_res, spec_res_dane):
-    params, cov = curve_fit(_gauss_continuum, wave, sp, p0=(line, 0.25, 0.3, 1.0))
-    center = params[0]
-    sigma = params[1]
-    fwhm = 2*np.sqrt(2*np.log(2))*sigma
-    
-    R = center / fwhm
-    print(R)
+cs_700000 = interp1d(wave_LB_700000[np.argsort(wave_LB_700000)], spec_LB_700000[np.argsort(wave_LB_700000)])
+
+ax.plot(lin_wave, cs_700000(lin_wave), color="black", lw=1, label="R=700000 (Löhner-Böttcher et al. 2018)")
+
+ax.plot(wave_LB_100000, spec_LB_100000, color="tab:blue", lw=1, label="R=100000 (Löhner-Böttcher et al. 2018)")
 
 
-plt.plot(wave, spec)
-plt.plot(wave, spec_res)
-# plt.plot(wave, _gauss_continuum(wave, *params), color="black")
-plt.plot(wave, spec_res_dane)
 
 
-plt.savefig("dbug.png")
+lin_spec_70000 = cs_700000(lin_wave)
+
+
+spec_res_dane  = adjust_resolution_dane(lin_wave, lin_spec_70000, R=100000, R_phoenix=700000)
+ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pypulse)")
+
+ax.legend()
+ax.set_ylabel("Normalized Intensity")
+ax.set_xlabel(r"Air wavelength [$\AA$]")
+ax.set_xlim(6301.35, 6301.67)
+print(np.min(lin_spec_70000))
+print(np.min(spec_res_dane))
+fig.set_tight_layout(True)
+plt.savefig("resolution_test_LB.png", dpi=600)
