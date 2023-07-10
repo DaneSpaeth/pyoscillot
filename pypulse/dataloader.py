@@ -280,14 +280,8 @@ def telluric_mask():
 
 if __name__ == "__main__":
 
-    # file = "/home/dane/Documents/PhD/pyCARM/data/by_hip/HIP46457/car-20220210T22h04m27s-sci-gtoc-vis_A.fits"
-
-    (spec, wave, blaze) = harps_template()
-    fig, ax = plt.subplots(1, figsize=(16, 9))
-    order = 10
-
-    print(wave[order])
-    print(wave[71])
-    # ax.plot(wave[order], spec[order])
-    # ax.set_xlabel("Wavbelength [A]")
-    # plt.show()
+    wave, spec, header = phoenix_spectrum()
+    
+    
+    mid_idx = int(len(wave) / 2)
+    print(wave[mid_idx] / (wave[mid_idx] - wave[mid_idx - 1]))
