@@ -350,7 +350,7 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     return f_sm
 
 
-def adjust_resolution_dane(wave, spec, R=100000, R_phoenix = 500000):
+def adjust_resolution_dane(wave, spec, R=100000, R_phoenix = 1e99):
     mid_px = int(len(wave)/2)
     center = wave[mid_px]
     # R_phoenix = 1e100
@@ -372,10 +372,13 @@ def adjust_resolution_dane(wave, spec, R=100000, R_phoenix = 500000):
     # sigma_prime = sqrt(sigma_inst**2 - sigma_phoenix**2)
     
     sigma_phoenix = center / (2*np.sqrt(2*np.log(2)) * R_phoenix)
+    print(sigma_phoenix)
 
     sigma_inst = center / (2*np.sqrt(2*np.log(2)) * R)
+    print(sigma_inst)
 
     sigma_prime = np.sqrt(sigma_inst**2 - sigma_phoenix**2)
+    print(sigma_prime)
     
     # convert that to pixel
     pixel_scale = wave[mid_px] - wave[mid_px - 1]
@@ -1007,6 +1010,12 @@ def add_limb_darkening(wave, spec, mu):
     
     return intensity, spec_limb
 
+def add_convective_broadening(wave, spec, v_macro):
+    """ Add the effect of macroturbulence, i.e. convective broadening, via convolution."""
+    
+    
+
 
 if __name__ == "__main__":
-    pass
+    wave, spec, header = phoenix_spectrum()
+    adjust_resolution_dane(wave, spec)
