@@ -420,6 +420,7 @@ class SimulationController():
         limb_darkening = bool(int(self.conf["limb_darkening"]))
         # For backwards compatibility: Get the conv blueshift param, default = False
         convective_blueshift = bool(int(self.conf.get("convective_blueshift", 0)))
+        v_macro = float(self.conf.get("v_macro", 0))
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
@@ -432,7 +433,8 @@ class SimulationController():
             feh=float(self.conf["feh"]),
             v_rot=v_rot, inclination=inclination,
             limb_darkening=limb_darkening,
-            convective_blueshift=convective_blueshift)
+            convective_blueshift=convective_blueshift,
+            v_macro=v_macro)
 
         # Add all specified pulsations
         for sim in self.simulation_keys:

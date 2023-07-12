@@ -1,5 +1,5 @@
 import numpy as np
-from utils import gaussian, get_ref_spectra, add_limb_darkening
+from utils import gaussian, get_ref_spectra, add_limb_darkening, add_isotropic_convective_broadening
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
@@ -10,7 +10,7 @@ class GridSpectrumSimulator():
 
     def __init__(self, N_star=500, N_border=5, Teff=4800, logg=3.0, feh=0.0,
                  v_rot=3000, inclination=90, limb_darkening=True,
-                 convective_blueshift=False):
+                 convective_blueshift=False, v_macro=0):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -21,6 +21,7 @@ class GridSpectrumSimulator():
             :param int Teff: Effective Temperature [K] (must be available)
             :param int v_rot: V*sin(i) [m/s]
             :param bool convective_blueshift: Add in the conv blueshift Bisectors
+            :param int v_macro: (Isotropic) macroturbulent velocity [m/s]
         """
         self.three_dim_star = ThreeDimStar(Teff=Teff, v_rot=v_rot)
         self.three_dim_star.create_rotation(v_rot)
@@ -37,6 +38,7 @@ class GridSpectrumSimulator():
         self.flux = None
         self.conv_blue = convective_blueshift
         self.limb_dark = limb_darkening
+        self.v_macro = v_macro
 
     def add_spot(self, phase=0.25, theta_pos=90, radius=25, T_spot=4300):
         """ Add a circular starspot at position x,y.
@@ -128,7 +130,8 @@ class GridSpectrumSimulator():
                                                                      ref_headers,
                                                                      T_precision_decimals,
                                                                      change_bis=self.conv_blue,
-                                                                     limb_dark=self.limb_dark)
+                                                                     limb_dark=self.limb_dark,
+                                                                     v_macro=self.v_macro)
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
@@ -179,7 +182,7 @@ class GridSpectrumSimulator():
 
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
-                      change_bis=False, limb_dark=False):
+                      change_bis=False, limb_dark=False, v_macro=0):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -276,12 +279,13 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                     ref_spectra=ref_spectra,
                                                                     ref_headers=ref_headers,
                                                                     mu_angles=needed_mus)
-            
+            if v_macro:
+                for mu, spec in fine_ref_spectra_dict.items():
+                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True)
             
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
         
-        # At this point adjust for the Convective Blueshift Bisector
 
         if not v_c_r and not v_c_p and not v_c_g:
             if limb_dark:
@@ -308,5 +312,5 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=True)
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=False, v_macro=5000)
     wave, spec, v = star.calc_spectrum()

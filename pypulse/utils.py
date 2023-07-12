@@ -1010,12 +1010,94 @@ def add_limb_darkening(wave, spec, mu):
     
     return intensity, spec_limb
 
-def add_convective_broadening(wave, spec, v_macro):
-    """ Add the effect of macroturbulence, i.e. convective broadening, via convolution."""
+def add_isotropic_convective_broadening(wave, spec, v_macro, debug_plot=False):
+    """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
+    
+        This function assumes an isotropic broadening term, i.e. a constant
+        convolution kernel across the stellar disk.
+        
+        :param np.array wave: Wavelength array in Angstrom
+        :param np.array spec: Spectrum array 
+        :param float v_macro: Macroturbulent velocity (eta) in m/s
+    """
+    print("Add isotropic macroturbulence")
+    center_idx = int(len(wave) / 2)
+    delta_wave = delta_relativistic_doppler(wave[center_idx], v_macro)
+    # this corresponds to the FWHM of the Gaussian kernel, so we need the conversion factor
+    delta_wave /= 2*np.sqrt(2*np.log(2))
+    pixel_scale = wave[center_idx] - wave[center_idx - 1]
+    
+    sigma_px = delta_wave / pixel_scale
+    kernel = Gaussian1DKernel(stddev=sigma_px)
+    spec_conv = convolve_fft(spec, kernel)
+    
+    if debug_plot:
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/macroturbulence/")
+        savename = f"macroturbulence.png"
+        outfile = out_root / savename
+        # Only save one debug plot (otherwise you would have that for every cell)
+        if not outfile.is_file():    
+            fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+            ax.plot(wave, spec, label="Simulated Spectrum")
+            ax.plot(wave, spec_conv, label=f"Broadend Spectrum by v_macro={v_macro}m/s")
+            ax.set_xlim(wave[center_idx]-5, wave[center_idx]+5)
+            ax.set_xlabel(r"Wavelength $[\AA]$")
+            ax.set_ylabel("Flux [erg/s/cm^2/cm]")
+            ax.legend()
+            fig.set_tight_layout(True)
+            plt.savefig(f"{out_root}/{savename}", dpi=600)
+        
+        
+        plt.close()
+    
+    return spec_conv
+    
+    ################################
+    # That would be an approach to make the kernel wavelength dependent
+    
+    # conv_area_px = 25
+    # for idx, dw in enumerate(delta_wave):
+    #     if idx < conv_area_px:
+    #         continue
+    #     if idx >= len(delta_wave -  conv_area_px):
+    #         continue
+        
+    #     print(idx, len(sp_conv))
+        
+    #     sp_local = spec[idx - conv_area_px : idx + conv_area_px + 1]
+    #     wv_local = wave[idx - conv_area_px : idx + conv_area_px + 1]
+        
+    #     assert len(sp_local) == conv_area_px * 2 + 1, print(len(spec))
+        
+    #     mid_px = conv_area_px
+    #     pixel_scale = wv_local[mid_px] - wv_local[mid_px - 1]
+    #     sigma_px = dw / pixel_scale
+    #     kernel = Gaussian1DKernel(stddev=sigma_px)
+        
+    #     # print(sigma_px)
+    #     sp_conv_local = convolve_fft(sp_local, kernel)
+        
+    #     sp_conv[idx] = sp_conv_local[conv_area_px+1]
+    ########################################################
+
+    
+    
+    
     
     
 
 
 if __name__ == "__main__":
     wave, spec, header = phoenix_spectrum()
-    adjust_resolution_dane(wave, spec)
+    spec_macro = add_isotropic_convective_broadening(wave, spec, v_macro=6000)
+    
+    fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+    ax.plot(wave, spec)
+    ax.plot(wave, spec_macro)
+    
+    ax.set_xlim(6500, 6505)
+    
+    plt.savefig("dbug.png", dpi=300)
