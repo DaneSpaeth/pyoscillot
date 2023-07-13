@@ -83,7 +83,7 @@ def precompute_second_derivative_grid(logg=2.0, feh=0.0):
     
     
     directory = "phoenix_second_derivatives"
-    filename = f"logg{logg}_feh{feh}.npy"
+    filename = f"logg{logg:.1f}_feh{feh:.1f}.npy"
     np.save(out_root / directory / filename, second_derivatives)
     
 def cubic_spline_interpolation(T, 
@@ -118,7 +118,7 @@ def interpolate_on_temperature(T, ref_wave, ref_spectra, logg, feh, mu=1.0):
     global_dict = parse_global_ini()
     root = global_dict["datapath"]
     directory = "phoenix_second_derivatives"
-    filename = f"logg{logg}_feh{feh}.npy"
+    filename = f"logg{logg:.1f}_feh{feh}.npy"
     second_derivatives = np.load(root / directory / filename)
     
     # determine the adjacent temperatures in the phoenix grid

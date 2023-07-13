@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import plapy.constants as const
 from plapy.constants import C
 from dataloader import phoenix_spectrum
+from spline_interpolation import interpolate_on_temperature
 
 DIVIDING_TEMP = 5100
 
@@ -89,7 +90,10 @@ def get_interpolated_spectrum(T_local,
                               mu_angles=None,
                               spec_intensity=False,
                               mu_local=1,
-                              ref_mu=None):
+                              ref_mu=None,
+                              logg=None,
+                              feh=None,
+                              interpolation_mode="cubic_spline"):
     """ Return a potentially interpolated spectrum. Returns the same format as
         the phoenix spectrum.
         
@@ -134,8 +138,13 @@ def get_interpolated_spectrum(T_local,
         assert wave.shape == spec.shape
 
         # Now interpolate with the contrast given by the Planck curves
-        if int(T_local) != T_close:
-            spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
+        if interpolation_mode == "planck_ratio":
+            if int(T_local) != T_close:
+                spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
+        elif interpolation_mode == "cubic_spline":
+            interpolate_on_temperature(T_local, wave, ref_spectra, logg=logg, feh=feh, mu=mu)
+        else:
+            raise NotImplementedError(f"interpolation_mode={interpolation_mode} is not implemented")
         mu_dict[mu] = spec
     return wave, mu_dict, header
 

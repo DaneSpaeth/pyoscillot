@@ -129,6 +129,8 @@ class GridSpectrumSimulator():
                                                                      ref_spectra,
                                                                      ref_headers,
                                                                      T_precision_decimals,
+                                                                     self.logg, 
+                                                                     self.feh,
                                                                      change_bis=self.conv_blue,
                                                                      limb_dark=self.limb_dark,
                                                                      v_macro=self.v_macro)
@@ -182,7 +184,8 @@ class GridSpectrumSimulator():
 
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
-                      change_bis=False, limb_dark=False, v_macro=0):
+                      logg, feh, 
+                      change_bis=False, limb_dark=False, v_macro=0,):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -278,7 +281,10 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                     ref_wave=rest_wavelength,
                                                                     ref_spectra=ref_spectra,
                                                                     ref_headers=ref_headers,
-                                                                    mu_angles=needed_mus)
+                                                                    mu_angles=needed_mus,
+                                                                    logg=logg,
+                                                                    feh=feh,
+                                                                    interpolation_mode="cubic_spline")
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
                     fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True)
@@ -312,5 +318,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=False, v_macro=5000)
+    star = GridSpectrumSimulator(N_star=100, Teff=4550, logg=2, limb_darkening=False, convective_blueshift=False, v_macro=5000)
     wave, spec, v = star.calc_spectrum()
+    
+    
