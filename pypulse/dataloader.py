@@ -30,10 +30,11 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
         header = hdul[0].header
         spectrum = hdul[0].data
 
-    wavelength_file = folder / "WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+    # wavelength_file = folder / "WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
 
-    with fits.open(wavelength_file) as hdul:
-        wavelength = hdul[0].data
+    # with fits.open(wavelength_file) as hdul:
+    #     wavelength = hdul[0].data
+    wavelength = phoenix_wave()
 
     if wavelength_range:
         wavelength_mask = np.logical_and(wavelength >= wavelength_range[0],
@@ -48,6 +49,15 @@ def phoenix_spectrum(Teff=4800, logg=3.0, feh=-0.5, wavelength_range=(3000, 7000
         return wavelength, spectrum, header
     else:
         return wavelength, spectrum, header, file
+    
+def phoenix_wave():
+    """ Only load the phoenix wave grid"""
+    folder = DATAROOT / "phoenix_spectra"
+    wavelength_file = folder / "WAVE_PHOENIX-ACES-AGSS-COND-2011.fits"
+
+    with fits.open(wavelength_file) as hdul:
+        wavelength = hdul[0].data
+    return wavelength
 
 
 def _check_and_prepare_for_phoenix(Teff, logg, feh):
