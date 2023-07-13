@@ -142,7 +142,7 @@ def get_interpolated_spectrum(T_local,
             if int(T_local) != T_close:
                 spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
         elif interpolation_mode == "cubic_spline":
-            interpolate_on_temperature(T_local, wave, ref_spectra, logg=logg, feh=feh, mu=mu)
+            spec = interpolate_on_temperature(T_local, wave, ref_spectra, logg=logg, feh=feh, mu=mu)
         else:
             raise NotImplementedError(f"interpolation_mode={interpolation_mode} is not implemented")
         mu_dict[mu] = spec
