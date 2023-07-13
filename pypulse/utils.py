@@ -372,13 +372,10 @@ def adjust_resolution_dane(wave, spec, R=100000, R_phoenix = 1e99):
     # sigma_prime = sqrt(sigma_inst**2 - sigma_phoenix**2)
     
     sigma_phoenix = center / (2*np.sqrt(2*np.log(2)) * R_phoenix)
-    print(sigma_phoenix)
 
     sigma_inst = center / (2*np.sqrt(2*np.log(2)) * R)
-    print(sigma_inst)
 
     sigma_prime = np.sqrt(sigma_inst**2 - sigma_phoenix**2)
-    print(sigma_prime)
     
     # convert that to pixel
     pixel_scale = wave[mid_px] - wave[mid_px - 1]
