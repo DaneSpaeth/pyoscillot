@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 from cfg import parse_global_ini
-from dataloader import phoenix_spectrum
+from dataloader import phoenix_spectrum, phoenix_wave
 
 
 def calc_2nd_derivs_spline(x: list, y: list, yp1=np.inf, ypn=np.inf):
@@ -85,6 +85,91 @@ def precompute_second_derivative_grid(logg=2.0, feh=0.0):
     directory = "phoenix_second_derivatives"
     filename = f"logg{logg}_feh{feh}.npy"
     np.save(out_root / directory / filename, second_derivatives)
+    
+def cubic_spline_interpolation(T, 
+                               T_low, 
+                               T_high, 
+                               spec_low,
+                               spec_high,
+                               second_deriv_low,
+                               second_deriv_high):
+    """ Cubic spline interpolation following Press 2007 
+    
+        (and Husser+2016 but they have slightly weird parameters,
+        Husser+2012 has the same params as Press
+    """
+    A = (T_high - T) / (T_high - T_low)
+    B = 1 - A
+    C = 1 / 6 * (A**3 - A) * (T_high - T_low)**2
+    D = 1 / 6 * (B**3 - B) * (T_high - T_low)**2 
+    
+    spec_interpol = (A * spec_low +
+                     B * spec_high +
+                     C * second_deriv_low +
+                     D * second_deriv_high)
+    
+    return spec_interpol
 
 
-        
+def interpolate_on_temperature(T, ref_wave, ref_spectra, logg, feh, mu=1.0):
+    """ Interpolate on a temperature grid"""
+    print("Run cubic spline interpolation")
+    # First load the second derivatives
+    global_dict = parse_global_ini()
+    root = global_dict["datapath"]
+    directory = "phoenix_second_derivatives"
+    filename = f"logg{logg}_feh{feh}.npy"
+    second_derivatives = np.load(root / directory / filename)
+    
+    # determine the adjacent temperatures in the phoenix grid
+    T_low = int(np.floor(T/100)*100)
+    T_high = int(np.ceil(T/100)*100)
+    
+    # get the spectra
+    spec_low = ref_spectra[T_low][mu]
+    spec_high = ref_spectra[T_high][mu]
+    
+    # Now get the second derivatives
+    idx_low = np.argmax(np.array(range(2300, 7100, 100)) == T_low)
+    second_derivative_low = second_derivatives[idx_low, :] 
+    idx_high = np.argmax(np.array(range(2300, 7100, 100)) == T_high)
+    second_derivative_high = second_derivatives[idx_high, :]
+    
+    # Now we still need to cut the second_derivate_array to the same wave
+    # regime as the waves given by the ref wave
+    # For that first load another PHOENIX spectrum only for the wave
+    ph_wave = phoenix_wave()
+    wave_min = ref_wave[0]
+    wave_max = ref_wave[-1]
+    mask = np.logical_and(ph_wave >= wave_min, ph_wave <= wave_max)
+    ph_wave = ph_wave[mask]
+    # The two wave arrays should npw be identical
+    assert (ph_wave == ref_wave).all()
+    
+    second_derivative_low = second_derivative_low[mask]
+    second_derivative_high = second_derivative_high[mask]
+    
+    # Now we can run the actual interpolation
+    spec_interpol = cubic_spline_interpolation(T, 
+                                               T_low, 
+                                               T_high,
+                                               spec_low,
+                                               spec_high,
+                                               second_derivative_low,
+                                               second_derivative_high)
+    return spec_interpol
+    
+if __name__ == "__main__":
+    from utils import get_ref_spectra
+    import matplotlib.pyplot as plt
+    wave, ref_spectra, ref_headers = get_ref_spectra(np.array([4550]), 2.0, 0.0)
+    spec_interpol = interpolate_on_temperature(4550, wave, ref_spectra, 2.0, 0.0, 1.0)
+    
+    fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+    markersize = 3
+    ax.plot(wave, ref_spectra[4500][1.0], marker="^", markersize=markersize)
+    ax.plot(wave, ref_spectra[4600][1.0], alpha=0.7, marker="v", markersize=markersize)
+    ax.plot(wave, spec_interpol, alpha=0.7, marker="o", markersize=markersize)
+    ax.set_xlim(5500, 5510)
+    fig.set_tight_layout(True)
+    plt.savefig("dbug.png", dpi=300)
