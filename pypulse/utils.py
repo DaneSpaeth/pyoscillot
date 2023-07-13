@@ -660,7 +660,7 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plo
         savename = f"{Teff}K_{logg}_{feh}_norm.png"
         out_file = out_root / savename
         if not out_file.is_file(): 
-            fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
+            fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
             ax.plot(wave, spec, lw=0.25, color="tab:blue")
             ax.plot(wave, continuum_interp, lw=0.5, color="tab:red")
             ax.set_xlabel(r"Wavelength [$\AA$]")
@@ -686,7 +686,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
-        fig, debug_ax = plt.subplots(2,3, figsize=(7.16, 4.0275))
+        fig, debug_ax = plt.subplots(2,3, figsize=(6.35, 3.5))
     # Compute the individual bisectors per line
     bis_vs = []
     biss = []
@@ -771,7 +771,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     if bis_plot:
         if ax is None:
             _ax = None
-            fig, ax = plt.subplots(1, figsize=(7.16, 4.0275), dpi=600)
+            fig, ax = plt.subplots(1, figsize=(6.35, 3.5), dpi=600)
         colors = ["green", "cyan", "purple", "orange", "yellow"]
         for bis_v, bis, color, line in zip(bis_vs, biss, colors, Fe_lines): 
             ax.plot(bis_v, bis, color=color, marker="o", markersize=5, label=rf"FeI {line}$\AA$")
@@ -817,7 +817,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5
         interval = 0.25
         mask = np.logical_and(wave >= line - interval, wave <= line + interval)
         
-        fig, ax = plt.subplots(1, 2, figsize=(7.16, 4.0275))
+        fig, ax = plt.subplots(1, 2, figsize=(6.35, 3.5))
         ax[0].plot(wave[mask], spec_norm[mask], color="tab:blue",marker="o", label="Original PHOENIX spectrum")
         ax[0].plot(wave[mask], spec_corr_norm[mask], color="tab:red",marker="o", label="Removed Bisector")
         ax[0].legend()
@@ -913,7 +913,7 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         interval = 0.25
         mask = np.logical_and(wave >= line - interval, wave <= line + interval)
         
-        fig, ax = plt.subplots(1,2, figsize=(7.16, 4.0275))
+        fig, ax = plt.subplots(1,2, figsize=(6.35, 3.5))
         ax[0].plot(wave[mask], spec_norm[mask], color="tab:blue", marker="o", label="Bisector removed PHOENIX spectrum")
         # ax[0].plot(wave_corr[mask], spec[mask], color="tab:red", marker="o", label="Added Bisector")
         ax[0].plot(wave[mask], spec_corr_norm[mask], color="tab:red", marker="o", label="Added Bisector")
