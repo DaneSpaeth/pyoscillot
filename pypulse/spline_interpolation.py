@@ -121,9 +121,16 @@ def interpolate_on_temperature(T, ref_wave, ref_spectra, logg, feh, mu=1.0):
     filename = f"logg{logg:.1f}_feh{feh}.npy"
     second_derivatives = np.load(root / directory / filename)
     
+    if T in ref_spectra.keys():
+        return ref_spectra[T][mu]
+    
     # determine the adjacent temperatures in the phoenix grid
     T_low = int(np.floor(T/100)*100)
     T_high = int(np.ceil(T/100)*100)
+    
+    # In case you are very close to a full 100
+    if T_high == T_low:
+        T_high += 100
     
     # get the spectra
     spec_low = ref_spectra[T_low][mu]
