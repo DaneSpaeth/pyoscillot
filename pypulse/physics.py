@@ -20,6 +20,8 @@ def planck(wav, T):
         :param T: Temperature in K
 
         :returns intensity: in J/s sr-1 m⁻2 m⁻1
+        
+        erg/s/cm^2/cm'
     """
     a = 2.0 * const.H * const.C**2
     b = const.H * const.C / (wav * const.K_b * T)

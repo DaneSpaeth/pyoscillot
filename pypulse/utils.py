@@ -640,12 +640,15 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plo
         rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
     else:
         rassine_df = Rassine_outputs(Teff, logg, feh)
-    continuum = rassine_df["output"]["continuum_cubic"]
+    continuum = rassine_df["output"]["continuum_linear"]
     
     wave_rassine = rassine_df["wave"]
+    print(np.array(wave_rassine))
+    print(wave)
     print(f"Wavelength Range from Rassine: {wave_rassine[0]}:{wave_rassine[-1]}")
-    assert wave[0] >= wave_rassine[0], f"Your wavelength array starts below the Rassine array limit {wave[0]} < {wave_rassine[0]}" 
-    assert wave[-1] <= wave_rassine[-1], f"Your wavelength array ends above the Rassine array limit {wave[-1]} > {wave_rassine[1]}" 
+    if not run:
+        assert wave[0] > wave_rassine[0], f"Your wavelength array starts below the Rassine array limit {wave[0]} < {wave_rassine[0]}" 
+        assert wave[-1] < wave_rassine[-1], f"Your wavelength array ends above the Rassine array limit {wave[-1]} > {wave_rassine[-1]}" 
     
     # Normalize
     continuum_interp = np.interp(wave, wave_rassine, continuum)
