@@ -1,20 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from dataloader import phoenix_spectrum
-from physics import planck
+from dataloader import phoenix_spectrum, continuum
 
 
+def plot_normalization():
+    Teff = 4500
+    logg = 2.0
+    feh = 0.0
+    wave, spec, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(3500, 17500))
+    wave_cont, cont = continuum(Teff, logg, feh, wavelength_range=(3500, 17500))
+    
+    assert (wave == wave_cont).all()
+    
+    fig, ax = plt.subplots(2, 1, figsize=(6.35, 3.5), sharex=True)
+    ax[0].plot(wave, spec, lw=0.5)
+    ax[0].plot(wave, cont, lw=2, color="tab:red")
+    
+    ax[1].plot(wave, spec/cont, lw=0.5)
+    ax[1].set_xlabel(r"Wavelength [$\AA$]")
+    ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    ax[1].set_ylabel("Normalued Flux")
+    fig.subplots_adjust(hspace=0, left=0.1, right=.99, top=0.99, bottom=0.12)
+    ax[1].set_xlim(3500, 17500)
+    
+    plt.savefig(f"{Teff}K_{logg}_{feh}_norm.png", dpi=500)
+    
+    
+def interpolate_continuum(T, logg, feh):
+    """ Interpolate a Continuum"""
+    pass
 
-T = 5800
-wave, spec, header = phoenix_spectrum(T, 4.5, 0.0, wavelength_range=None)
+if __name__ == "__main__":
+    interpolate_continuum()
 
-fig, ax = plt.subplots(2, 1, figsize=(6.35, 3.5), sharex="col")
-ax[0].plot(wave, spec,  lw=0.2)
-ax[0].plot(wave, planck(wave*1e-10, T=T)*10*np.pi)
-
-print(wave.shape)
-ax[0].set_xlim(0, 25000)
-ax[0].set_ylim(0, ax[0].get_ylim()[1])
-
-fig.set_tight_layout(True)
-plt.savefig("dbug.png", dpi=600)
