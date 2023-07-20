@@ -288,10 +288,31 @@ def telluric_mask():
     return data
 
 
-if __name__ == "__main__":
+def continuum(Teff, logg, feh, wavelength_range=None):
+    folder = DATAROOT / "continuum_fits"
+    
+    Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
 
-    wave, spec, header = phoenix_spectrum()
+    filestem = f"lte{int(Teff):05d}-{logg:.2f}{feh:+.1f}.PHOENIX-ACES-AGSS-COND-2011-HiRes"
+    wave_file = folder / (filestem + "_wave.npy")
+    cont_file = folder / (filestem + "_cont.npy")
     
+    if not wave_file.is_file():
+        raise FileNotFoundError(f"{wave_file} does not yet exist! You need to precompute!")
     
-    mid_idx = int(len(wave) / 2)
-    print(wave[mid_idx] / (wave[mid_idx] - wave[mid_idx - 1]))
+    wave = np.load(wave_file)
+    cont = np.load(cont_file)
+    
+    if wavelength_range:
+        wavelength_mask = np.logical_and(wave >= wavelength_range[0],
+                                         wave <= wavelength_range[1],)
+        cont = cont[wavelength_mask]
+        wave = wave[wavelength_mask]
+    
+    return wave, cont
+
+
+if __name__ == "__main__":
+    wave, cont = continuum(4500, 2.0, 0.0)
+    
+    print(wave, cont)
