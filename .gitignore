@@ -159,3 +159,6 @@ theoretical_data/
 *.png
 pypulse/phoenix_spec_rassine.p
 pypulse/RASSINE_phoenix_spec_rassine.p
+spec_conv_no_wave.npy
+spec_conv_wave_px.npy
+spec_conv_wave.npy
