@@ -304,6 +304,8 @@ def continuum(Teff, logg, feh, wavelength_range=None):
     wave_file = folder / "wave.npy"
     cont_file = folder / subfolder / (filestem + "_cont.npy")
     
+    print(f"Load continuum file {cont_file}")
+    
     if not wave_file.is_file():
         raise FileNotFoundError(f"{wave_file} does not yet exist! You need to precompute!")
     

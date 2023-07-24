@@ -73,7 +73,7 @@ for Teff in range(4541, 4549, 1):
         mask = np.logical_and(wave >= start_wave, wave <= end_wave)
         wave_local = wave[mask]
         spec_local = spec[mask]
-        _, spec_norm, continuum_interp = normalize_phoenix_spectrum(wave_local, spec_local, Teff, logg, feh, run=True)
+        _, spec_norm, continuum_interp = normalize_phoenix_spectrum_Rassine(wave_local, spec_local, Teff, logg, feh, run=True)
         
         # Plot the raw spectrum and the Rassine Continuum
         ax.plot(wave_local, spec_local, color="tab:blue")

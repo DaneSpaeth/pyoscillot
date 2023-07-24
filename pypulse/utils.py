@@ -10,7 +10,7 @@ import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from pathlib import Path
 import cfg
-from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials
+from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials, continuum
 from physics import delta_relativistic_doppler
 import copy
 from create_Pollux_CB_model import simple_Pollux_CB_model, simple_alpha_boo_CB_model
@@ -552,35 +552,35 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
                 Teff=float(T), logg=logg, feh=feh,
                 wavelength_range=wavelength_range)
             # All waves are the same, so just return the last one
-            if change_bis:
-                print("Fit and Remove the PHOENIX bisectors")
-                spec_corr, _, _, _, _, _ = remove_phoenix_bisector(wave, spec, T, logg, feh)
-                spec = spec_corr
+            # if change_bis:
+            #     print("Fit and Remove the PHOENIX bisectors")
+            #     spec_corr, _, _, _, _, _ = remove_phoenix_bisector(wave, spec, T, logg, feh)
+            #     spec = spec_corr
                 
-                # Now let's add in the bisectors
-                # available_mus = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
-                # TODO remove
-                # available_mus = [1.0]
+            #     # Now let's add in the bisectors
+            #     # available_mus = [0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00]
+            #     # TODO remove
+            #     # available_mus = [1.0]
                 
-                # bis_polynomial_dict = Zhao_bis_polynomials()
-                # Test out the Pollux bisectors
-                bis_polynomial_dict = simple_alpha_boo_CB_model()
+            #     # bis_polynomial_dict = Zhao_bis_polynomials()
+            #     # Test out the Pollux bisectors
+            #     bis_polynomial_dict = simple_alpha_boo_CB_model()
                 
-                for mu in bis_polynomial_dict.keys():
-                    spec_add, _, _, _, _ = add_bisector(wave, 
-                                                        copy.deepcopy(spec_corr), 
-                                                        bis_polynomial_dict[mu],
-                                                        T, 
-                                                        logg, 
-                                                        feh, 
-                                                        debug_plot=True,
-                                                        mu=mu)
-                    # TODO remove
-                    # spec_add = spec_corr
-                    mu_dict[mu] = spec_add
-            else:
-                print("DO NOT CHANGE THE BIS")
-                mu_dict[1.0] = spec
+            #     for mu in bis_polynomial_dict.keys():
+            #         spec_add, _, _, _, _ = add_bisector(wave, 
+            #                                             copy.deepcopy(spec_corr), 
+            #                                             bis_polynomial_dict[mu],
+            #                                             T, 
+            #                                             logg, 
+            #                                             feh, 
+            #                                             debug_plot=True,
+            #                                             mu=mu)
+            #         # TODO remove
+            #         # spec_add = spec_corr
+            #         mu_dict[mu] = spec_add
+            # else:
+            print("DO NOT CHANGE THE BIS")
+            mu_dict[1.0] = spec
             ref_spectra[T] = mu_dict
                 
             # ref_spectra[T] = spec
@@ -617,7 +617,7 @@ def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right
     return ax
 
 
-def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plot=True):
+def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, debug_plot=True):
     """ Normalize a PHOENIX Spectrum using Rassine.
     
         All results are linearly interpolated back onto the original wavelength grid.
@@ -635,7 +635,8 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plo
         spec_df.to_pickle(pickle_path)
         subprocess.run(["python3",
                     "/home/dspaeth/Rassine_public/Rassine.py",
-                    pickle_path])
+                    pickle_path],
+                    timeout=60)
 
         rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
     else:
@@ -665,13 +666,57 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plo
             ax.plot(wave, spec, lw=0.25, color="tab:blue")
             ax.plot(wave, continuum_interp, lw=0.5, color="tab:red")
             ax.set_xlabel(r"Wavelength [$\AA$]")
-            ax.set_ylabel("Flux [arb. units]")
+            ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
             print(f"Save debug plot to {out_root}/{savename}")
             fig.set_tight_layout(True)
             plt.savefig(out_file, dpi=600)
             plt.close()
     
     return wave, spec_norm, continuum_interp
+
+
+def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, debug_plot=True):
+    """ Normalize a PHOENIX Spectrum using a precomupted continuum.
+    
+        All results are linearly interpolated back onto the original wavelength grid.
+    
+        :param np.array wave_vac: Wavelength in Angstrom
+        :param np.array spec: Unnormalized Spectrum
+        
+        :returns: np.array wave_norm, normalized wavelength
+        :returns np.array continuum, The saved continuum
+    """
+    # Now create the Rassine fit
+    wave_cont, cont = continuum(Teff, logg, feh, wavelength_range=(wave[0], wave[-1]))
+    
+    
+    assert wave[0] >= wave_cont[0], f"Your wavelength array starts below the Rassine array limit {wave[0]} < {wave_cont[0]}" 
+    assert wave[-1] <= wave_cont[-1], f"Your wavelength array ends above the Rassine array limit {wave[-1]} > {wave_cont[-1]}" 
+    
+    # Normalize
+    # continuum_interp = np.interp(wave, wave_rassine, continuum)
+    
+    spec_norm = spec / cont
+    
+    if debug_plot:
+        if cfg.debug_dir is not None:
+            out_root = cfg.debug_dir
+        else:
+            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
+        savename = f"{Teff}K_{logg}_{feh}_norm.png"
+        out_file = out_root / savename
+        if not out_file.is_file(): 
+            fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+            ax.plot(wave, spec, lw=0.25, color="tab:blue")
+            ax.plot(wave, cont, lw=0.5, color="tab:red")
+            ax.set_xlabel(r"Wavelength [$\AA$]")
+            ax.set_ylabel("Flux [arb. units]")
+            print(f"Save debug plot to {out_root}/{savename}")
+            fig.set_tight_layout(True)
+            plt.savefig(out_file, dpi=600)
+            plt.close()
+    
+    return wave, spec_norm, cont
 
 def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None):
     """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
@@ -683,7 +728,7 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
     Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
 
     
-    wave_rassine, spec, _ = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH, debug_plot=False)
+    wave_rassine, spec, _ = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH, debug_plot=False)
     wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
@@ -800,9 +845,8 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5
     """ Fit and Remove the phoenix bisector."""
     poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True)
     
-    # Now also normalize the full PHOENIX Spectrum
-    # Check the normalization
-    _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
+    # First normalize the spectrum
+    _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH)
     
     delta_v = poly_fit(spec_norm)
     delta_wave = delta_relativistic_doppler(wave, v=delta_v)
@@ -896,7 +940,7 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         
         :returns: Corrected Spectrum, normalized corrected spectrum
     """
-    _, spec_norm, continuum = normalize_phoenix_spectrum(wave, spec, Teff, logg, FeH)
+    _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH)
     
     delta_v = bis_polynomial(spec_norm)
     # delta_v *= 5
@@ -1043,7 +1087,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, debug_plot=False):
             ax.plot(wave, spec_conv, label=f"Broadend Spectrum by v_macro={v_macro}m/s")
             ax.set_xlim(wave[center_idx]-5, wave[center_idx]+5)
             ax.set_xlabel(r"Wavelength $[\AA]$")
-            ax.set_ylabel("Flux [erg/s/cm^2/cm]")
+            ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
             ax.legend()
             fig.set_tight_layout(True)
             plt.savefig(f"{out_root}/{savename}", dpi=600)

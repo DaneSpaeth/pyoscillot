@@ -4,6 +4,9 @@ from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
 from dataloader import Zhao_bis_polynomials
+from utils import remove_phoenix_bisector, add_bisector
+from create_Pollux_CB_model import simple_Pollux_CB_model, simple_alpha_boo_CB_model
+import copy
 
 class GridSpectrumSimulator():
     """ Simulate a spectrum of a star with a grid."""
@@ -285,6 +288,27 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                     logg=logg,
                                                                     feh=feh,
                                                                     interpolation_mode="cubic_spline")
+            
+            if change_bis:
+                # First remove the PHOENIX bisector
+                spec_corr, _, _, _, _, _ = remove_phoenix_bisector(rest_wavelength,
+                                                                   fine_ref_spectra_dict[rounded_mu],
+                                                                   fine_ref_temperature,
+                                                                   logg,
+                                                                   feh)
+                bis_polynomial_dict = simple_alpha_boo_CB_model()
+                
+                for mu in fine_ref_spectra_dict.keys():
+                    spec_add, _, _, _, _ = add_bisector(rest_wavelength, 
+                                                        copy.deepcopy(spec_corr), 
+                                                        bis_polynomial_dict[mu],
+                                                        fine_ref_temperature, 
+                                                        logg, 
+                                                        feh, 
+                                                        debug_plot=True,
+                                                        mu=rounded_mu)
+                    
+                    fine_ref_spectra_dict[rounded_mu] = spec_add
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
                     fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True)
@@ -318,9 +342,12 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=False, v_macro=0)
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=True, v_macro=0)
     wave, spec, v = star.calc_spectrum()
     
-    print(spec)
+    import matplotlib.pyplot as plt
+    plt.close()
+    plt.plot(wave, spec)
+    plt.savefig("dbug.png")
     
     
