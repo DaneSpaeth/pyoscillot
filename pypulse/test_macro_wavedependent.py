@@ -7,7 +7,7 @@ from astropy.convolution import convolve_fft
 import cfg
 import time
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=1.0):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -38,23 +38,26 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         delta_wave /= 2*np.sqrt(2*np.log(2))
         pixel_scale = wave[1:] - wave[:-1]
         pixel_scale = np.append(pixel_scale, pixel_scale[-1])
+        
+        # The pixel scale is contant bus has jumps at 5000, 10000 and 15000 A
         sigma_px = delta_wave / pixel_scale
         
-        print(sigma_px)
+        spec_conv = np.zeros_like(spec)
+        
+        # mask = np.logical_and(wave>4999, wave<5001)
         
         
-        dpx = 30
-        spec_conv =np.zeros_like(spec)
-        
-        # print(sigma_px[1000:1100])
-        # exit()
-        for i in range(300, len(wave) - 300, 100):
+        # px_step = 100
+        max_sigma = np.max(sigma_px)
+        # Should be around 
+        px_over = int(round(10*max_sigma, -1))
+        for i in range((px_step+px_over), len(wave) - (px_step+px_over), px_step):
             print(i, len(spec_conv))
-            spec_local = spec[i - 130:i + 130 + 1]
+            spec_local = spec[i - (px_step+px_over):i + (px_step+px_over) + 1]
             print(len(spec_local))
             kernel = Gaussian1DKernel(stddev=sigma_px[i])
             spec_conv_local = convolve_fft(spec_local, kernel)
-            spec_conv[i-100:i+100] = spec_conv_local[30:-31]    
+            spec_conv[i-px_step:i+px_step] = spec_conv_local[px_over:-(px_over+1)]    
             
             
     
@@ -72,7 +75,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             ax.plot(wave, spec_conv, label=f"Broadend Spectrum by v_macro={v_macro}m/s")
             ax.set_xlim(wave[center_idx]-5, wave[center_idx]+5)
             ax.set_xlabel(r"Wavelength $[\AA]$")
-            ax.set_ylabel("Flux [erg/s/cm^2/cm]")
+            ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
             ax.legend()
             fig.set_tight_layout(True)
             plt.savefig(f"{out_root}/{savename}", dpi=600)
@@ -83,14 +86,41 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
     return spec_conv
 
 if __name__ == "__main__":
-    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3550, 7500))
-    start = time.time()
-    spec_conv = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=False)
-    stop = time.time()
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3500, 17500))
     
-    print(round(stop- start, 3))
-    fig, ax = plt.subplots(1, figsize=(30, 9))
-    ax.plot(wave, spec, lw=0.5)
-    ax.plot(wave, spec_conv, lw=0.5)
-    fig.set_tight_layout(True)
-    plt.savefig("dbug.png")
+    # spec_conv_no_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=False)
+    # np.save("spec_conv_no_wave.npy", spec_conv_no_wave)
+    spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True)
+    np.save("spec_conv_wave.npy", spec_conv_wave)
+    # spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, px_step=1)
+    # np.save("spec_conv_wave_px.npy", spec_conv_wave_px)
+    
+    spec_conv_no_wave = np.load("spec_conv_no_wave.npy")
+    spec_conv_wave = np.load("spec_conv_wave.npy")
+    spec_conv_wave_px = np.load("spec_conv_wave_px.npy")
+    
+
+    fig, ax = plt.subplots(2, 1, figsize=(6.35, 3.5), sharex=True)
+    ax[0].plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum")
+    # ax[0].plot(wave, spec_conv_no_wave, color="tab:orange")
+    ax[0].plot(wave, spec_conv_wave, marker="*", color="tab:blue", label="100 pixel bins")
+    ax[0].plot(wave, spec_conv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="1 pixel bins")
+    ax[0].legend(loc="lower left")
+    
+    
+    mask = np.logical_and(wave >= 6000, wave < 6010)
+    max_in_range = np.max(spec_conv_wave[mask])
+    ax[1].plot(wave,(spec_conv_wave-spec_conv_wave_px)/max_in_range, color="tab:red")
+    ax[1].set_ylim(-0.0001, 0.0001)
+    ax[1].set_xlim(4990, 5010)
+    ax[0].set_ylim(bottom=0)
+    
+    ax[1].set_xlabel(r"Wavelength $[\AA]$")
+    ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    ax[1].set_ylabel("Relative Difference")
+    ax[1].set_yticks([-0.0001, -0.00005, 0.0, 0.00005])
+    figsize=(6.35, 3.5)
+    # fig.set_tight_layout(True)
+    fig.subplots_adjust(left=0.15, top=0.95, right=0.99, bottom=0.15, hspace=0)
+    fig.align_ylabels()
+    plt.savefig("dbug.png",dpi=500)
