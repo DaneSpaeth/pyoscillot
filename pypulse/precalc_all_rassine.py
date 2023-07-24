@@ -25,7 +25,7 @@ max_T = 4600
 
 wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
 
-for Teff in range(4541, 4550, 1):
+for Teff in range(4541, 4549, 1):
     # To get the right sign for PHOENIX
     if feh == 0.0:
         feh_str = -0.0000001
@@ -90,7 +90,7 @@ for Teff in range(4541, 4550, 1):
         if idx == 0:
             poly_order_local = 5
             weights = continuum_interp
-            HARPS_mask = wave_local > 3780
+            HARPS_mask = wave_local > 4000
             poly_fit = Polynomial.fit(wave_local[HARPS_mask], continuum_interp[HARPS_mask], poly_order_local, w=weights[HARPS_mask])
         elif idx == (len(split_waves) - 1):
             poly_order_local = poly_order + 2
@@ -178,10 +178,12 @@ for Teff in range(4541, 4550, 1):
     np.save(out_dir / f"{out_str}_cont.npy", cont_combined)
     
     # And another debug plot
-    # folder = out_dir / "norm_plots"
-    # if not folder.is_dir():
-    #     folder.mkdir()
-    # plot_normalization(wave_combined, spec, cont_combined, Teff, logg, feh, folder)
+    folder = out_dir / "norm_plots"
+    if not folder.is_dir():
+        folder.mkdir()
+    spec = spec[cutoff_px:-cutoff_px]
+    plot_normalization(wave_combined, spec, cont_combined, Teff, logg, feh, folder)
+    plt.close()
     
     
     
