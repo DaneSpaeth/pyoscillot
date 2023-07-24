@@ -3,178 +3,185 @@ from utils import normalize_phoenix_spectrum
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from physics import planck
 from numpy.polynomial import Polynomial
 from scipy.interpolate import CubicSpline
+from continuum_normalization import plot_normalization
+from spline_interpolation import interpolate_on_temperature
+from utils import get_ref_spectra
 
-# First get rid of duplicates
-all_phoenix = sorted(list(Path("/home/dspaeth/pypulse/data/phoenix_spectra").glob("*.fits")))
-for file in all_phoenix:
-    if "(1).fits" in file.name:
-        new_file = file.parent / "duplicates" / file.name
-        print(f"Move {file} to {new_file}")
-        file.rename(new_file)
     
-# Now again
-all_phoenix = sorted(list(Path("/home/dspaeth/pypulse/data/phoenix_spectra").glob("lte*.fits")))
+out_root = Path("/home/dspaeth/pypulse/data/continuum_fits")
+WAVE_START = 3550
+WAVE_STOP = 17550
+cutoff_px = 200
+poly_order = 3
 
-
-
-# Create here only the models that you need
-all_phoenix = []
-# _,_,_, filepath = phoenix_spectrum(Teff=5700, logg=4.5, feh=0.0, return_filepath=True)
-# all_phoenix.append(filepath)
-# _,_,_, filepath = phoenix_spectrum(Teff=5600, logg=4.5, feh=0.0, return_filepath=True)
-# all_phoenix.append(filepath)
-# _,_,_, filepath = phoenix_spectrum(Teff=5800, logg=4.5, feh=0.0, return_filepath=True)
-# all_phoenix.append(filepath)
-
-Teff=4500
-_,_,_, filepath = phoenix_spectrum(Teff=Teff, logg=2.0, feh=0.0, return_filepath=True)
-all_phoenix.append(filepath)
-
+# Define stellar parameters
 logg = 2.0
 feh = 0.0
-for Teff in range(4600, 4700, 100):
+
+min_T = 4400
+max_T = 4600
+
+wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
+
+for Teff in range(4541, 4550, 1):
+    # To get the right sign for PHOENIX
+    if feh == 0.0:
+        feh_str = -0.0000001
+    else:
+        feh_str = feh
+    # Now take care of the folder
+    T_round = int(np.floor(Teff/100)*100)
+    out_dir = out_root / f"{T_round:05d}K_{logg:.2f}_{feh_str:+.1f}"
     
-    _,_,_, file = phoenix_spectrum(Teff=Teff, logg=logg, feh=feh, return_filepath=True)
-    name = file.name
-    
-    # Get Teff, logg, feh from the filenames
-    value_str = name.split("lte")[-1].split(".PHOENIX")[0]
-    Teff = int(value_str.split("-")[0])
-    logg_feh_str = value_str[6:]
-    feh_sign = value_str[-4]
-    logg = float(logg_feh_str.split(feh_sign)[0])
-    feh = float(logg_feh_str.split(feh_sign)[1]) * int(feh_sign+"1")
-    
-    if Teff < 4000:
-        continue
-    
-    # Now load the full spectra
-    wien_wave = 2.898e-3/Teff *1e10
-    
-    # print(wien_wave)
-    wien_wave -= 1000
-    
-    
-    # print(wien_wave)
-    # exit()
-    # wave, spec, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(6000, 15000))
-    wave_low, spec_low, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(3400, wien_wave-500))
-    wave_mid, spec_mid, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(wien_wave-1000, wien_wave+5000))
-    wave_high, spec_high, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(wien_wave+4500, 17600))
-    #wave, spec, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(4500, 5500))
-    
-    _, spec_norm_low, continuum_interp_low = normalize_phoenix_spectrum(wave_low, spec_low, Teff, logg, feh, run=True)
-    # file_out = Path("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
-    out_root = Path("/home/dspaeth/pypulse/data/continuum_fits")
-    # new_file = out_root / (file.stem + ".p") 
-    
-    
-    # file_out.rename(new_file)
-    _, spec_norm_mid, continuum_interp_mid = normalize_phoenix_spectrum(wave_mid, spec_mid, Teff, logg, feh, run=True)
-    _, spec_norm_high, continuum_interp_high = normalize_phoenix_spectrum(wave_high, spec_high, Teff, logg, feh, run=True)
-    
+    if not out_dir.is_dir():
+        out_dir.mkdir() 
     # Make a debug plot
+    print(f"START RUN FOR TEFF={Teff}")
     fig, ax = plt.subplots(1, figsize=(30,9))
-    ax.plot(wave_low, spec_low, color="tab:blue")
-    ax.plot(wave_mid, spec_mid, color="tab:blue")
-    ax.plot(wave_high, spec_high, color="tab:blue")
-    
-    ax.plot(wave_low, continuum_interp_low, color="tab:green")
-    ax.plot(wave_mid, continuum_interp_mid, color="tab:green")
-    ax.plot(wave_high, continuum_interp_high, color="tab:green")
-    
-    cutoff_px = 2000
-    wave_low = wave_low[cutoff_px:-cutoff_px]
-    wave_mid = wave_mid[cutoff_px:-cutoff_px]
-    wave_high = wave_high[cutoff_px:-cutoff_px]
-    continuum_interp_low = continuum_interp_low[cutoff_px:-cutoff_px]
-    continuum_interp_mid = continuum_interp_mid[cutoff_px:-cutoff_px]
-    continuum_interp_high = continuum_interp_high[cutoff_px:-cutoff_px]
-    
-    poly_fit_low = Polynomial.fit(wave_low, continuum_interp_low, 8)
-    ax.plot(wave_low, poly_fit_low(wave_low), color="tab:orange")
-    
-    poly_fit_mid = Polynomial.fit(wave_mid, continuum_interp_mid, 8)
-    ax.plot(wave_mid, poly_fit_mid(wave_mid), color="tab:orange")
-    
-    poly_fit_high = Polynomial.fit(wave_high, continuum_interp_high, 8)
-    ax.plot(wave_high, poly_fit_high(wave_high), color="tab:orange")
-    
-    continuum_low = poly_fit_low(wave_low)
-    continuum_mid = poly_fit_mid(wave_mid)
-    continuum_high = poly_fit_high(wave_high)
-    
-    transition_mask_wave_low = wave_low >= wave_mid[0]
-    transition_mask_wave_mid_low = wave_mid <= wave_low[-1]
-    
-    transition_wave_low_low = wave_low[transition_mask_wave_low]
-    transition_cont_low_low = continuum_low[transition_mask_wave_low]
-    transition_wave_low_mid = wave_mid[transition_mask_wave_mid_low]
-    transition_cont_low_mid = continuum_mid[transition_mask_wave_mid_low]
     
     
-    assert (transition_wave_low_low == transition_wave_low_mid).all()
-    N_over = len(transition_wave_low_low)
-    indices = np.linspace(0, N_over-1, N_over, dtype=float)
-    assert len(indices) == N_over, f"{len(indices)}!={N_over}"
-    transition_continuum = (transition_cont_low_low * ((N_over - indices)/N_over) +
-                            transition_cont_low_mid * (indices/N_over))
-    print(indices)
-    # indices = indices.astype(float)
+    out_str = f"{int(Teff):05d}K-{logg:.2f}{feh_str:+.1f}"
     
-    assert (((N_over - indices)/N_over + indices/N_over) == 1.0).all(), (N_over - indices)/N_over + ((indices)/N_over)[(N_over - indices)/N_over + ((indices)/N_over) != 1.0]
+    # wave, spec,_, file = phoenix_spectrum(Teff=Teff, logg=logg, feh=feh, return_filepath=True, wavelength_range=(WAVE_START,WAVE_STOP))
+    spec = interpolate_on_temperature(Teff, wave, ref_spectra, logg, feh)
+    # Calculate the simple Wien wavelength
+    wien_wave = 2.898e-3 / Teff * 1e10
     
-    wave_combined = wave_low
-    continuum_combined = np.append(continuum_low[np.logical_not(transition_mask_wave_low)], transition_continuum)
+    # if Teff < 5300:
+    #     lower_split = wien_wave - 500
+    # else:
+    #     lower_split = wien_wave + 500
     
+    max_wave = wave[np.argmax(spec)]
+    lower_split = max_wave + 500
+    # lower_split = wave[np.argmax(spec)] 
+    split_waves = [lower_split, lower_split + 3000, 15000, WAVE_STOP]
+    overlap = 500
     
-    # Do the same for the high range
-    transition_mask_wave_mid_high = wave_mid >= wave_high[0]
-    transition_mask_wave_high = wave_high <= wave_mid[-1]
+    start_wave = WAVE_START
     
-    transition_wave_high_low = wave_mid[transition_mask_wave_mid_high]
-    transition_cont_high_low = continuum_mid[transition_mask_wave_mid_high]
-    transition_wave_high_mid = wave_high[transition_mask_wave_high]
-    transition_cont_high_mid = continuum_high[transition_mask_wave_high]
+    waves = []
+    specs = []
+    conts = []
+    for idx, split_wave in enumerate(split_waves):
+        end_wave = split_wave
+        if not end_wave == WAVE_STOP:
+            end_wave += overlap
+        # wave, spec, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(start_wave, end_wave))
+        mask = np.logical_and(wave >= start_wave, wave <= end_wave)
+        wave_local = wave[mask]
+        spec_local = spec[mask]
+        _, spec_norm, continuum_interp = normalize_phoenix_spectrum(wave_local, spec_local, Teff, logg, feh, run=True)
+        
+        # Plot the raw spectrum and the Rassine Continuum
+        ax.plot(wave_local, spec_local, color="tab:blue")
+        ax.plot(wave_local, continuum_interp, color="tab:green")
+        
+        # Now cut the array
+        wave_local = wave_local[cutoff_px:-cutoff_px]
+        continuum_interp = continuum_interp[cutoff_px:-cutoff_px]
+        
+        # Small adjustment for the first part
+        # if idx == 0:
+        #     border = max_wave
+        #     continuum_interp[wave < border] += continuum_interp[wave < border] * (np.abs(wave[wave < border] - border)/(border - wave[0]) * 0.05) 
+        if idx == 0:
+            poly_order_local = 5
+            weights = continuum_interp
+            HARPS_mask = wave_local > 3780
+            poly_fit = Polynomial.fit(wave_local[HARPS_mask], continuum_interp[HARPS_mask], poly_order_local, w=weights[HARPS_mask])
+        elif idx == (len(split_waves) - 1):
+            poly_order_local = poly_order + 2
+            weights = np.ones_like(wave_local)
+            poly_fit = Polynomial.fit(wave_local, continuum_interp, poly_order_local, w=weights)
+        else:
+            poly_order_local = poly_order
+            weights = np.ones_like(wave_local)
+            poly_fit = Polynomial.fit(wave_local, continuum_interp, poly_order_local, w=weights)
+        
+        ax.plot(wave_local, poly_fit(wave_local), color="tab:orange")
+        
+        waves.append(wave_local)
+        specs.append(spec_local)
+        conts.append(poly_fit(wave_local))
     
+        start_wave = split_wave - overlap 
+        
+    # Now calculate the transition regions
+    wave_combined = np.array([])
+    cont_combined = np.array([])
     
-    assert (transition_wave_high_low == transition_wave_high_mid).all()
-    N_over = len(transition_wave_high_low)
-    indices = np.linspace(0, N_over+1, N_over, dtype=int)
-    assert len(indices) == N_over, f"{len(indices)}!={N_over}"
-    transition_continuum = (transition_cont_high_low * ((N_over - indices)/N_over) +
-                            transition_cont_high_mid * (indices/N_over))
+    LAST_MASK = None
+    for idx in range(len(waves)-1):
+        # For both the current arrays and the next calculate a mask
+        # that defines where the arrays overlap
+        transition_mask_low = waves[idx] >= waves[idx + 1][0]
+        transition_mask_high = waves[idx + 1] <= waves[idx][-1]
+        
+        transition_wave_low = waves[idx][transition_mask_low]
+        transition_cont_low = conts[idx][transition_mask_low]
+        transition_wave_high = waves[idx + 1][transition_mask_high]
+        transition_cont_high = conts[idx + 1][transition_mask_high]
+        
+        assert (transition_wave_low == transition_wave_high).all()
+        N_over = len(transition_wave_low)
+        indices = np.linspace(0, N_over-1, N_over, dtype=float)
+        transition_continuum = (transition_cont_low * ((N_over - indices)/N_over) +
+                                transition_cont_high * (indices/N_over))
+        assert (((N_over - indices)/N_over + indices/N_over) == 1.0).all(), (N_over - indices)/N_over + ((indices)/N_over)[(N_over - indices)/N_over + ((indices)/N_over) != 1.0]
+        
+        # Now combine the waves and conts
+        # Add in the overlap
+        if LAST_MASK is None:
+            wave_combined = np.append(wave_combined, waves[idx])
+            cont_combined = np.append(cont_combined, conts[idx][~transition_mask_low])
+        else:
+            # Take care that you do not add the beginning again that was already added in from the last loop
+            wave_combined = np.append(wave_combined, waves[idx][~LAST_MASK])
+            cont_combined = np.append(cont_combined, conts[idx][np.logical_and(~transition_mask_low, ~LAST_MASK)])
+        cont_combined = np.append(cont_combined, transition_continuum)
+        # So now we have already covered the full first wave array including the continuum region
+        # Keep track of the last mask for the next loop
+        # So that you do not add them in again
+        LAST_MASK = transition_mask_high
+        
+    # We finally need to add in the final part
+    idx = len(waves) - 1
+    wave_combined = np.append(wave_combined, waves[idx][~LAST_MASK])
+    cont_combined = np.append(cont_combined, conts[idx][~LAST_MASK])
     
-    assert ((((N_over - indices)/N_over) + indices/N_over) == 1).all(), (N_over - indices)/N_over + ((indices)/N_over)
+    ax.plot(wave_combined, cont_combined, color="tab:red", lw=2)
     
-    
-    normal_mid_mask = np.logical_and(np.logical_not(transition_mask_wave_mid_low), np.logical_not(transition_mask_wave_mid_high))
-    continuum_combined = np.append(continuum_combined, continuum_mid[normal_mid_mask])
-    
-    
-    continuum_combined = np.append(continuum_combined, transition_continuum)
-    continuum_combined = np.append(continuum_combined, continuum_high[np.logical_not(transition_mask_wave_high)])
-    
-    
-    wave_combined = np.append(wave_combined, wave_mid[normal_mid_mask])
-    wave_combined = np.append(wave_combined, wave_high)
-    
-    
-    # poly_fit_comb =  Polynomial.fit(wave_combined, continuum_combined, 16)
-    ax.plot(wave_combined, continuum_combined, color="tab:red", lw=2)
     ax.set_xlabel(r"Wavelength [$\AA]")
-    ax.set_ylabel("Flux")
-    # ax.plot(wave, planck(wave*1e-10, T=4500)*10*np.pi)
-    ax.set_title(file.stem)
+    ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    ax.set_title(out_str)
     ax.set_xlim(3500, 17500)
+    
+    ylims = ax.get_ylim()
+    ax.vlines(3780, ylims[0], ylims[1], linestyle="dashed", color="black")
+    ax.vlines(6910, ylims[0], ylims[1], linestyle="dashed", color="black")
+    ax.set_ylim(ylims)
+    ax.text((6910+3780)/2, ylims[1]*0.97, "HARPS wavelength range", horizontalalignment="center", color="black")
     fig.set_tight_layout(True)
-    plt.savefig(out_root  / "plots" / (file.stem + ".png"), dpi=500)
+    folder = out_dir / "plots"
+    if not folder.is_dir():
+        folder.mkdir()
+    plt.savefig(folder / (out_str + ".png"), dpi=500)
     plt.close()
     
     # Now also save the arrays
-    np.save(out_root / f"{file.stem}_wave.npy", wave_combined)
-    np.save(out_root / f"{file.stem}_cont.npy", continuum_combined)
+    wave_out = out_root / "wave.npy"
+    if not wave_out.is_file():
+        np.save(wave_out, wave_combined)
+    np.save(out_dir / f"{out_str}_cont.npy", cont_combined)
+    
+    # And another debug plot
+    # folder = out_dir / "norm_plots"
+    # if not folder.is_dir():
+    #     folder.mkdir()
+    # plot_normalization(wave_combined, spec, cont_combined, Teff, logg, feh, folder)
+    
+    
     

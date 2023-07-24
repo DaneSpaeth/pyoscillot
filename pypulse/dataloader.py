@@ -291,11 +291,18 @@ def telluric_mask():
 def continuum(Teff, logg, feh, wavelength_range=None):
     folder = DATAROOT / "continuum_fits"
     
-    Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
+    # Teff, logg, feh = _check_and_prepare_for_phoenix(Teff, logg, feh)
+    
+    # Give feh=0 a small negative number such that the sign operation
+    # in the string formatting gives a minus (this is how it works for PHOENIX)
+    if feh == 0.0:
+        feh = -0.0000001
 
-    filestem = f"lte{int(Teff):05d}-{logg:.2f}{feh:+.1f}.PHOENIX-ACES-AGSS-COND-2011-HiRes"
-    wave_file = folder / (filestem + "_wave.npy")
-    cont_file = folder / (filestem + "_cont.npy")
+    filestem = f"{int(Teff):05d}K-{logg:.2f}{feh:+.1f}"
+    T_round = int(np.floor(Teff/100)*100)
+    subfolder = f"{T_round:05d}K_{logg:.2f}_{feh:+.1f}"
+    wave_file = folder / "wave.npy"
+    cont_file = folder / subfolder / (filestem + "_cont.npy")
     
     if not wave_file.is_file():
         raise FileNotFoundError(f"{wave_file} does not yet exist! You need to precompute!")

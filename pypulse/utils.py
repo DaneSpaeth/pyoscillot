@@ -643,8 +643,6 @@ def normalize_phoenix_spectrum(wave, spec, Teff, logg, feh, run=False, debug_plo
     continuum = rassine_df["output"]["continuum_linear"]
     
     wave_rassine = rassine_df["wave"]
-    print(np.array(wave_rassine))
-    print(wave)
     print(f"Wavelength Range from Rassine: {wave_rassine[0]}:{wave_rassine[-1]}")
     if not run:
         assert wave[0] > wave_rassine[0], f"Your wavelength array starts below the Rassine array limit {wave[0]} < {wave_rassine[0]}" 
