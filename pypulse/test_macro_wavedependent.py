@@ -7,7 +7,7 @@ from astropy.convolution import convolve_fft
 import cfg
 import time
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=1.0):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -39,25 +39,219 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         pixel_scale = wave[1:] - wave[:-1]
         pixel_scale = np.append(pixel_scale, pixel_scale[-1])
         
-        # The pixel scale is contant bus has jumps at 5000, 10000 and 15000 A
         sigma_px = delta_wave / pixel_scale
+        # The pixel scale is constant but has jumps at 5000, 10000 and 15000 A
+        scale_jumps = [0, 5000, 10000, 15000, 20000]
+        scale_jumps = [sj for sj in scale_jumps if sj < wave[-1] + 5000]
+        print(scale_jumps)
+        # exit()
+        scale_jump_px = [(np.abs(wave-sj)).argmin() for sj in scale_jumps]
         
-        spec_conv = np.zeros_like(spec)
+        
+        # scale_jump_px[0] -= 1
+        last_idx = 0
+        
+        # print(wave[scale_jump_px[1]-10:scale_jump_px[1]+10 ])
+        # exit()
+        
+        spec_conv = np.zeros_like(wave)
+        for jump_interval, idx in enumerate(scale_jump_px):
+            # Make arrays that run exactly to the jump but do not include it
+            if jump_interval == 0:
+                continue
+            wave_local = wave[last_idx:idx]
+            spec_local = spec[last_idx:idx]
+            pixel_scale_local = pixel_scale[last_idx:idx]
+            delta_wave_local = delta_wave[last_idx:idx]
+            sigma_px_local = sigma_px[last_idx:idx]
+            
+            # assert np.all(np.isclose(pixel_scale_local, pixel_scale_local[0]))
+            pixel_scale_local = pixel_scale_local[0]
+            
+            # Let's first calculate the largest width in the current segment
+            max_dw = np.max(delta_wave_local)
+            # Convert it to pixel
+            max_dpx = max_dw / pixel_scale_local
+            # And define 10 times as a overhead
+            px_over = int(np.ceil(max_dpx*10))
+            px_step = int(wave_step / pixel_scale_local / 2) 
+            
+            spec_conv_local = np.zeros_like(wave_local)
+            
+            # px_step = 101
+            # print(px_over)
+            # exit()
+            
+            # for i in range((px_over+int(px_step/2)), len(wave_local) - (int(px_step/2)+px_over), px_step):
+            #     spec_loop = spec_local[i - (int(px_step/2)+px_over):i + (int(px_step/2)+px_over) + 1]
+            #     assert len(spec_loop) == 2 * px_over + px_step, (f"{len(spec_loop)}!={2 * px_over + px_step}")
+            #     kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
+            #     spec_conv_loop = convolve_fft(spec_loop, kernel)
+                
+            #     print(sigma_px_local[i])
+                
+                
+            #     spec_conv_local[i-int(px_step/2):i+int(px_step/2)] = spec_conv_loop[px_over:-(px_over+1)]
+            # if jump_interval == 1:
+            #     for i in range(px_step+px_over, len(wave_local) - (px_step+px_over), 2*px_step):
+            #         spec_loop = spec_local[i - (px_step+px_over):i + (px_step+px_over) + 1]
+                
+            #         kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
+            #         spec_conv_loop = convolve_fft(spec_loop, kernel)
+            #         spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:-(px_over)]
+            #         print(len(spec_loop))
+            # else:
+            for i in range(px_step, len(wave_local), px_step):
+                di_low = 0
+                di_high = 0
+                if (i - px_step - px_over) < 0:
+                    if jump_interval == 1:
+                        # Cannot interpolate
+                        continue
+                    print(jump_interval)
+                    di = i - px_step - px_over
+                    # We have to interpolate into the last range
+                    prev_interval_wave = wave[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                    prev_interval_spec = spec[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                    
+                    lin_wave = np.linspace(wave_local[0] - np.abs(di)*pixel_scale_local,
+                                            wave_local[0],
+                                            np.abs(di))
+                    interp_spec = np.interp(lin_wave, prev_interval_wave, prev_interval_spec)
+                    # Now you have the interpolated spectrum in the new sampling range
+                    # Now stitch together
+                    spec_loop = interp_spec
+                    spec_loop = np.append(spec_loop, spec_local[:i+px_step+px_over+1])
+                    di_low = di
+                elif (i + px_step + px_over) > len(wave_local):
+                    if not len(scale_jump_px) > jump_interval + 1:
+                        # Cannot interpolate
+                        continue
+                    
+                    print("HERE")
+                        
+                    di = i + px_step + px_over - len(wave_local) + 1
+                    print(len(wave_local))
+                    print(i)
+                    print(px_step)
+                    print(px_over)
+                    print(f"di={di}")
+                    # We have to interpolate into the last range
+                    next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                    next_interval_spec = spec[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                    
+                    lin_wave = np.linspace(wave_local[-1] + pixel_scale_local,
+                                            wave_local[-1] + np.abs(di)*pixel_scale_local, np.abs(di))
+                    interp_spec = np.interp(lin_wave, next_interval_wave, next_interval_spec)
+                    # Now you have the interpolated spectrum in the new sampling range
+                    # Now stitch together
+                    spec_loop = spec_local[i - px_step - px_over:]
+                    spec_loop = np.append(spec_loop, interp_spec)
+                    # print(spec_loop)
+                    print(len(spec_loop))
+                    di_high = di - px_over
+                    print(f"di_high={di_high}")
+                    
+                else:
+                    spec_loop = spec_local[i - (px_step+px_over):i + (px_step+px_over) + 1]
+                    print(len(spec_loop))
+                    
+                kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
+                spec_conv_loop = convolve_fft(spec_loop, kernel)
+                
+                if di_high > 0:
+                    spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1-di_high]
+                else:
+                    spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1]
+            # That will now leave us some pixels below the limit that we set ourselves
+             
+            # Now check if the last wave in your array is adjacent to a jump
+            # (since you could finish earlier)
+            # if np.abs(scale_jumps[jump_interval] - wave_local[-1]) < 0.1:
+                
+            #     # You can have more than one of these intervals missing in case px_over is much larger
+            #     # than px_step
+            #     # zero_is = np.where(spec_conv_local[px_over+px_step:]==0.)
+                
+            #     # last_is = [zero_is[0] + px_step]
+                
+            #     # while 
+                
+            #     # create one final interval that is always 
+            #     # edging to the last pixel and overlaps into the next region
+            #     last_i = len(wave_local) - px_step - 1
+                
+            #     # Now already get the next spec and wave
+            #     print(wave_local)
+            #     next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+            #     next_interval_spec = spec[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                
+            #     lin_wave = np.linspace(wave_local[-1]+pixel_scale_local,
+            #                            wave_local[-1] + px_over*pixel_scale_local, px_over)
+            #     interp_spec = np.interp(lin_wave, next_interval_wave, next_interval_spec)
+            #     # Now you have the interpolated spectrum in the new sampling range
+            #     # Now stitch together
+            #     spec_border = spec_local[last_i - px_step - px_over:]
+            #     spec_border = np.append(spec_border, interp_spec)
+            #     kernel = Gaussian1DKernel(stddev=sigma_px_local[last_i])
+            #     spec_conv_loop = convolve_fft(spec_border, kernel)
+            #     spec_conv_local[last_i-px_step:last_i+px_step+1] = spec_conv_loop[px_over:-(px_over)]
+                
+            # Now check if you are at a lower border as well
+            # print(wave_local[0], scale_jumps[jump_interval-1])
+            # if wave_local[0] == scale_jumps[jump_interval-1]:
+            #     # create one final interval that is always 
+            #     # edging to the first pixel and overlaps into the last region
+            #     first_i = px_step
+                
+            #     # Now already get the next spec and wave
+            #     prev_interval_wave = wave[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+            #     prev_interval_spec = spec[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                
+            #     lin_wave = np.linspace(wave_local[0] - px_over*pixel_scale_local,
+            #                            wave_local[0],
+            #                            px_over)
+            #     interp_spec = np.interp(lin_wave, prev_interval_wave, prev_interval_spec)
+            #     # Now you have the interpolated spectrum in the new sampling range
+            #     # Now stitch together
+            #     spec_border = interp_spec
+            #     spec_border = np.append(spec_border, spec_local[:first_i+px_step+px_over+1])
+            #     print(len(spec_border))
+            #     kernel = Gaussian1DKernel(stddev=sigma_px_local[first_i])
+            #     spec_conv_loop = convolve_fft(spec_border, kernel)
+            #     spec_conv_local[:first_i+px_step+1] = spec_conv_loop[px_over:-(px_over)]
+                
+            #     print(len(spec_border))
+                
+            # print(spec_conv_local[:200])
+
+            
+            spec_conv[last_idx:idx] = spec_conv_local
+            last_idx = idx
+            
+ 
+         
         
         # mask = np.logical_and(wave>4999, wave<5001)
         
+    # else:
+    #     delta_wave = delta_relativistic_doppler(wave, v_macro)
+    #     delta_wave /= 2*np.sqrt(2*np.log(2))
+    #     pixel_scale = wave[1:] - wave[:-1]
+    #     pixel_scale = np.append(pixel_scale, pixel_scale[-1])
         
-        # px_step = 100
-        max_sigma = np.max(sigma_px)
-        # Should be around 
-        px_over = int(round(10*max_sigma, -1))
-        for i in range((px_step+px_over), len(wave) - (px_step+px_over), px_step):
-            print(i, len(spec_conv))
-            spec_local = spec[i - (px_step+px_over):i + (px_step+px_over) + 1]
-            print(len(spec_local))
-            kernel = Gaussian1DKernel(stddev=sigma_px[i])
-            spec_conv_local = convolve_fft(spec_local, kernel)
-            spec_conv[i-px_step:i+px_step] = spec_conv_local[px_over:-(px_over+1)]    
+    #     sigma_px = delta_wave / pixel_scale
+    #     px_step = 100
+    #     max_sigma = np.max(sigma_px)
+    #     spec_conv = np.zeros_like(spec)
+    #     px_over = int(round(10*max_sigma, -1))
+    #     for i in range((px_step+px_over), len(wave) - (px_step+px_over), px_step):
+    #         print(i, len(spec_conv))
+    #         spec_local = spec[i - (px_step+px_over):i + (px_step+px_over) + 1]
+    #         print(len(spec_local))
+    #         kernel = Gaussian1DKernel(stddev=sigma_px[i])
+    #         spec_conv_local = convolve_fft(spec_local, kernel)
+    #         spec_conv[i-px_step:i+px_step] = spec_conv_local[px_over:-(px_over+1)]    
             
             
     
@@ -86,41 +280,44 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
     return spec_conv
 
 if __name__ == "__main__":
-    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3500, 17500))
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3500, 7500))
     
     # spec_conv_no_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=False)
     # np.save("spec_conv_no_wave.npy", spec_conv_no_wave)
-    spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True)
-    np.save("spec_conv_wave.npy", spec_conv_wave)
+    # spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True)
+    # np.save("spec_conv_wave_new.npy", spec_conv_wave)
     # spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, px_step=1)
     # np.save("spec_conv_wave_px.npy", spec_conv_wave_px)
     
-    spec_conv_no_wave = np.load("spec_conv_no_wave.npy")
-    spec_conv_wave = np.load("spec_conv_wave.npy")
+    # spec_conv_no_wave = np.load("spec_conv_no_wave.npy")
+    spec_conv_wave = np.load("spec_conv_wave_new.npy")
     spec_conv_wave_px = np.load("spec_conv_wave_px.npy")
+    
     
 
     fig, ax = plt.subplots(2, 1, figsize=(6.35, 3.5), sharex=True)
     ax[0].plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum")
     # ax[0].plot(wave, spec_conv_no_wave, color="tab:orange")
-    ax[0].plot(wave, spec_conv_wave, marker="*", color="tab:blue", label="100 pixel bins")
+    ax[0].plot(wave, spec_conv_wave, marker="*", color="tab:blue", label=r"1 $\AA$ bins")
     ax[0].plot(wave, spec_conv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="1 pixel bins")
     ax[0].legend(loc="lower left")
     
+    xlim_low = 3500
+    xlim_high = 7500
+    mask = np.logical_and(wave >= xlim_low, wave < xlim_high)
     
-    mask = np.logical_and(wave >= 6000, wave < 6010)
     max_in_range = np.max(spec_conv_wave[mask])
     ax[1].plot(wave,(spec_conv_wave-spec_conv_wave_px)/max_in_range, color="tab:red")
-    ax[1].set_ylim(-0.0001, 0.0001)
-    ax[1].set_xlim(4990, 5010)
+    ax[1].set_ylim(-0.00002, 0.00002)
+    ax[1].set_xlim(xlim_low, xlim_high)
     ax[0].set_ylim(bottom=0)
     
     ax[1].set_xlabel(r"Wavelength $[\AA]$")
     ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
     ax[1].set_ylabel("Relative Difference")
-    ax[1].set_yticks([-0.0001, -0.00005, 0.0, 0.00005])
+    ax[1].set_yticks([-0.000015, -0.00001, -0.000005, 0.0, 0.000005, 0.00001, 0.000015])
     figsize=(6.35, 3.5)
     # fig.set_tight_layout(True)
-    fig.subplots_adjust(left=0.15, top=0.95, right=0.99, bottom=0.15, hspace=0)
+    fig.subplots_adjust(left=0.11, top=0.95, right=0.97, bottom=0.13, hspace=0)
     fig.align_ylabels()
-    plt.savefig("dbug.png",dpi=500)
+    plt.savefig("macroturbulence_full.png",dpi=500)
