@@ -1053,7 +1053,7 @@ def add_limb_darkening(wave, spec, mu):
     
     return intensity, spec_limb
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, debug_plot=False):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -1064,15 +1064,119 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, debug_plot=False):
         :param float v_macro: Macroturbulent velocity (eta) in m/s
     """
     print("Add isotropic macroturbulence")
-    center_idx = int(len(wave) / 2)
-    delta_wave = delta_relativistic_doppler(wave[center_idx], v_macro)
-    # this corresponds to the FWHM of the Gaussian kernel, so we need the conversion factor
-    delta_wave /= 2*np.sqrt(2*np.log(2))
-    pixel_scale = wave[center_idx] - wave[center_idx - 1]
-    
-    sigma_px = delta_wave / pixel_scale
-    kernel = Gaussian1DKernel(stddev=sigma_px)
-    spec_conv = convolve_fft(spec, kernel)
+    if not wave_dependent:
+        center_idx = int(len(wave) / 2)
+        delta_wave = delta_relativistic_doppler(wave[center_idx], v_macro)
+        # this corresponds to the FWHM of the Gaussian kernel, so we need the conversion factor
+        delta_wave /= 2*np.sqrt(2*np.log(2))
+        pixel_scale = wave[center_idx] - wave[center_idx - 1]
+        
+        #TODO: check if pixel scale is constant
+        
+        
+        
+        sigma_px = delta_wave / pixel_scale
+        kernel = Gaussian1DKernel(stddev=sigma_px)
+        spec_conv = convolve_fft(spec, kernel)
+    else:
+        center_idx = int(len(wave) / 2)
+        delta_wave = delta_relativistic_doppler(wave, v_macro)
+        delta_wave /= 2*np.sqrt(2*np.log(2))
+        pixel_scale = wave[1:] - wave[:-1]
+        pixel_scale = np.append(pixel_scale, pixel_scale[-1])
+        
+        sigma_px = delta_wave / pixel_scale
+        # The pixel scale is constant but has jumps at 5000, 10000 and 15000 A
+        scale_jumps = [0, 5000, 10000, 15000, 20000]
+        scale_jumps = [sj for sj in scale_jumps if sj < wave[-1] + 5000]
+        print(scale_jumps)
+        # exit()
+        scale_jump_px = [(np.abs(wave-sj)).argmin() for sj in scale_jumps]
+        
+        
+        # scale_jump_px[0] -= 1
+        last_idx = 0
+        
+        # print(wave[scale_jump_px[1]-10:scale_jump_px[1]+10 ])
+        # exit()
+        
+        spec_conv = np.zeros_like(wave)
+        for jump_interval, idx in enumerate(scale_jump_px):
+            # Make arrays that run exactly to the jump but do not include it
+            if jump_interval == 0:
+                continue
+            wave_local = wave[last_idx:idx]
+            spec_local = spec[last_idx:idx]
+            pixel_scale_local = pixel_scale[last_idx:idx]
+            delta_wave_local = delta_wave[last_idx:idx]
+            sigma_px_local = sigma_px[last_idx:idx]
+            
+            # assert np.all(np.isclose(pixel_scale_local, pixel_scale_local[0]))
+            pixel_scale_local = pixel_scale_local[0]
+            
+            # Let's first calculate the largest width in the current segment
+            max_dw = np.max(delta_wave_local)
+            # Convert it to pixel
+            max_dpx = max_dw / pixel_scale_local
+            # And define 10 times as a overhead
+            px_over = int(np.ceil(max_dpx*10))
+            px_step = int(wave_step / pixel_scale_local / 2) 
+            
+            spec_conv_local = np.zeros_like(wave_local)
+            
+            for i in range(px_step, len(wave_local), px_step):
+                di_high = 0
+                if (i - px_step - px_over) < 0:
+                    if jump_interval == 1:
+                        # Cannot interpolate
+                        continue
+                    di = i - px_step - px_over
+                    # We have to interpolate into the last range
+                    prev_interval_wave = wave[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                    prev_interval_spec = spec[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                    
+                    lin_wave = np.linspace(wave_local[0] - np.abs(di)*pixel_scale_local,
+                                            wave_local[0],
+                                            np.abs(di))
+                    interp_spec = np.interp(lin_wave, prev_interval_wave, prev_interval_spec)
+                    # Now you have the interpolated spectrum in the new sampling range
+                    # Now stitch together
+                    spec_loop = interp_spec
+                    spec_loop = np.append(spec_loop, spec_local[:i+px_step+px_over+1])
+                elif (i + px_step + px_over) > len(wave_local):
+                    if not len(scale_jump_px) > jump_interval + 1:
+                        # Cannot interpolate
+                        continue
+                    
+                        
+                    di = i + px_step + px_over - len(wave_local) + 1
+                    # We have to interpolate into the last range
+                    next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                    next_interval_spec = spec[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                    
+                    lin_wave = np.linspace(wave_local[-1] + pixel_scale_local,
+                                            wave_local[-1] + np.abs(di)*pixel_scale_local, np.abs(di))
+                    interp_spec = np.interp(lin_wave, next_interval_wave, next_interval_spec)
+                    # Now you have the interpolated spectrum in the new sampling range
+                    # Now stitch together
+                    spec_loop = spec_local[i - px_step - px_over:]
+                    spec_loop = np.append(spec_loop, interp_spec)
+                    di_high = di - px_over
+                    
+                else:
+                    spec_loop = spec_local[i - (px_step+px_over):i + (px_step+px_over) + 1]
+                    
+                kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
+                spec_conv_loop = convolve_fft(spec_loop, kernel)
+                
+                if di_high > 0:
+                    spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1-di_high]
+                else:
+                    spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1]
+
+            
+            spec_conv[last_idx:idx] = spec_conv_local
+            last_idx = idx      
     
     if debug_plot:
         if cfg.debug_dir is not None:
@@ -1092,40 +1196,11 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, debug_plot=False):
             ax.legend()
             fig.set_tight_layout(True)
             plt.savefig(f"{out_root}/{savename}", dpi=600)
-            plt.close()
         
         
         plt.close()
     
     return spec_conv
-    
-    ################################
-    # That would be an approach to make the kernel wavelength dependent
-    
-    # conv_area_px = 25
-    # for idx, dw in enumerate(delta_wave):
-    #     if idx < conv_area_px:
-    #         continue
-    #     if idx >= len(delta_wave -  conv_area_px):
-    #         continue
-        
-    #     print(idx, len(sp_conv))
-        
-    #     sp_local = spec[idx - conv_area_px : idx + conv_area_px + 1]
-    #     wv_local = wave[idx - conv_area_px : idx + conv_area_px + 1]
-        
-    #     assert len(sp_local) == conv_area_px * 2 + 1, print(len(spec))
-        
-    #     mid_px = conv_area_px
-    #     pixel_scale = wv_local[mid_px] - wv_local[mid_px - 1]
-    #     sigma_px = dw / pixel_scale
-    #     kernel = Gaussian1DKernel(stddev=sigma_px)
-        
-    #     # print(sigma_px)
-    #     sp_conv_local = convolve_fft(sp_local, kernel)
-        
-    #     sp_conv[idx] = sp_conv_local[conv_area_px+1]
-    ########################################################
 
     
     
