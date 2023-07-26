@@ -1,5 +1,5 @@
 from dataloader import phoenix_spectrum
-from utils import normalize_phoenix_spectrum
+from utils import normalize_phoenix_spectrum_Rassine
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +25,7 @@ max_T = 4600
 
 wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
 
-for Teff in range(4541, 4549, 1):
+for Teff in range(4499, 4500, 1):
     # To get the right sign for PHOENIX
     if feh == 0.0:
         feh_str = -0.0000001
