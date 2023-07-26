@@ -155,6 +155,15 @@ def deconvolved_Pollux_CB_model():
     print(sigma)
     print(R_grid)
     
+def simple_ngc4349_CB_model():
+    """ Retunrn a simple 2nd order polynomial model for the ngc4349-127 CB"""
+    
+    # Values were fitted from mean BIS of NGC4349-127
+    poly_fit = Polynomial([-2.71849303, -275.15450218, 368.28014225])
+    
+    mu_dict = {1.0:poly_fit}
+    
+    return mu_dict
 
     
     
