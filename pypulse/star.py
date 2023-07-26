@@ -342,8 +342,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=True, v_macro=0)
-    star.add_pulsation(l=1, m=1, v_p=0.7, k=2439, T_var=34.0)
+    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=False, v_macro=5000)
+    # star.add_pulsation(l=1, m=1, v_p=0.7, k=2439, T_var=34.0)
     wave, spec, v = star.calc_spectrum()
     
     import matplotlib.pyplot as plt
