@@ -718,12 +718,12 @@ def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, debug_pl
     
     return wave, spec_norm, cont
 
-def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None):
+def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None):
     """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
     
         :returns: numpy.Polynomial fit results to easily apply to every line depth
     """
-    wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
+    # wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
 
     Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
 
@@ -838,12 +838,13 @@ def get_phoenix_bisector(Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=N
             out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
         savename = f"{Teff}K_{logg}_{FeH}_bis_fit.png"
         plt.savefig(f"{out_root}/{savename}", dpi=600)
+        plt.close()
     
     return poly_fit
 
 def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5728.65):
     """ Fit and Remove the phoenix bisector."""
-    poly_fit = get_phoenix_bisector(Teff, logg, FeH, debug_plot=True, bis_plot=True)
+    poly_fit = get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, bis_plot=True)
     
     # First normalize the spectrum
     _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH)
@@ -1091,6 +1092,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, debug_plot=False):
             ax.legend()
             fig.set_tight_layout(True)
             plt.savefig(f"{out_root}/{savename}", dpi=600)
+            plt.close()
         
         
         plt.close()
