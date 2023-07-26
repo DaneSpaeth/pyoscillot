@@ -296,7 +296,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                    fine_ref_temperature,
                                                                    logg,
                                                                    feh)
-                bis_polynomial_dict = simple_alpha_boo_CB_model()
+                bis_polynomial_dict = simple_ngc4349_CB_model()
                 
                 for mu in fine_ref_spectra_dict.keys():
                     spec_add, _, _, _, _ = add_bisector(rest_wavelength, 

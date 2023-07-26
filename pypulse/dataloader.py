@@ -306,8 +306,9 @@ def continuum(Teff, logg, feh, wavelength_range=None):
     
     print(f"Load continuum file {cont_file}")
     
-    if not wave_file.is_file():
-        raise FileNotFoundError(f"{wave_file} does not yet exist! You need to precompute!")
+    if not cont_file.is_file():
+        print(f"{cont_file} does not yet exist! You need to precompute!")
+        exit()
     
     wave = np.load(wave_file)
     cont = np.load(cont_file)

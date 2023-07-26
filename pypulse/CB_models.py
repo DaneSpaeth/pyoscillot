@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from numpy.polynomial import Polynomial
 
 def simple_Pollux_CB_model():
     """ Fit a simple Pollux model. There is no deconvolution applied yet."""
