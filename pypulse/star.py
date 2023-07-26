@@ -5,7 +5,7 @@ from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
 from dataloader import Zhao_bis_polynomials
 from utils import remove_phoenix_bisector, add_bisector
-from create_Pollux_CB_model import simple_Pollux_CB_model, simple_alpha_boo_CB_model
+from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model, simple_ngc4349_CB_model
 import copy
 
 class GridSpectrumSimulator():
