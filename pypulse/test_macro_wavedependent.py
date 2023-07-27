@@ -7,7 +7,7 @@ from astropy.convolution import convolve_fft
 import cfg
 import time
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -37,22 +37,16 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         delta_wave = delta_relativistic_doppler(wave, v_macro)
         delta_wave /= 2*np.sqrt(2*np.log(2))
         pixel_scale = wave[1:] - wave[:-1]
-        pixel_scale = np.append(pixel_scale, pixel_scale[-1])
+        pixel_scale = np.insert(pixel_scale, 0, pixel_scale[0])
         
-        sigma_px = delta_wave / pixel_scale
+        # sigma_px = delta_wave / pixel_scale
         # The pixel scale is constant but has jumps at 5000, 10000 and 15000 A
         scale_jumps = [0, 5000, 10000, 15000, 20000]
+        pixel_scales = [None, 0.006, 0.01, 0.03, None]
         scale_jumps = [sj for sj in scale_jumps if sj < wave[-1] + 5000]
-        print(scale_jumps)
-        # exit()
         scale_jump_px = [(np.abs(wave-sj)).argmin() for sj in scale_jumps]
         
-        
-        # scale_jump_px[0] -= 1
         last_idx = 0
-        
-        # print(wave[scale_jump_px[1]-10:scale_jump_px[1]+10 ])
-        # exit()
         
         spec_conv = np.zeros_like(wave)
         for jump_interval, idx in enumerate(scale_jump_px):
@@ -61,24 +55,28 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 continue
             wave_local = wave[last_idx:idx]
             spec_local = spec[last_idx:idx]
-            pixel_scale_local = pixel_scale[last_idx:idx]
+            # pixel_scale_local = pixel_scale[last_idx:idx]
+            pixel_scale_local = pixel_scales[jump_interval]
             delta_wave_local = delta_wave[last_idx:idx]
-            sigma_px_local = sigma_px[last_idx:idx]
+            sigma_px_local = delta_wave_local / pixel_scale_local
             
-            # assert np.all(np.isclose(pixel_scale_local, pixel_scale_local[0]))
-            pixel_scale_local = pixel_scale_local[0]
             
             # Let's first calculate the largest width in the current segment
             max_dw = np.max(delta_wave_local)
             # Convert it to pixel
             max_dpx = max_dw / pixel_scale_local
             # And define 10 times as a overhead
-            px_over = int(np.ceil(max_dpx*10))
-            px_step = int(wave_step / pixel_scale_local / 2) 
+            if not per_pixel:
+                px_step = int(wave_step / pixel_scale_local / 2) 
+                px_over = int(np.ceil(max_dpx*20))
+            else:
+                px_step = 0
+                px_over = int(np.ceil(max_dpx*20))
             
             spec_conv_local = np.zeros_like(wave_local)
             
-            for i in range(px_step, len(wave_local), px_step):
+            for i in range(px_step, len(wave_local), max(px_step,1)):
+                # print(f"\r{i}, {len(wave_local)}", end="")
                 di_high = 0
                 if (i - px_step - px_over) < 0:
                     if jump_interval == 1:
@@ -119,7 +117,8 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                     
                 else:
                     spec_loop = spec_local[i - (px_step+px_over):i + (px_step+px_over) + 1]
-                    
+                
+                
                 kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
                 spec_conv_loop = convolve_fft(spec_loop, kernel)
                 
@@ -127,6 +126,8 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                     spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1-di_high]
                 else:
                     spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1]
+                    
+                    
 
             
             spec_conv[last_idx:idx] = spec_conv_local
@@ -157,18 +158,26 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
     return spec_conv
 
 if __name__ == "__main__":
-    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3500, 7500))
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4900, 5100))
+    
     
     # spec_conv_no_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=False)
     # np.save("spec_conv_no_wave.npy", spec_conv_no_wave)
-    # spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 1000, wave_dependent=True)
-    # np.save("spec_conv_wave_new.npy", spec_conv_wave)
-    # spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, px_step=1)
+    import time
+    start = time.time()
+    spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True)
+    stop = time.time()
+    np.save("spec_conv_wave_new.npy", spec_conv_wave)
+    spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True)
+    stop2 = time.time()
+    print()
+    print(round(stop-start, 2))
+    print(round(stop2-stop, 2))
     # np.save("spec_conv_wave_px.npy", spec_conv_wave_px)
     
     # spec_conv_no_wave = np.load("spec_conv_no_wave.npy")
     spec_conv_wave = np.load("spec_conv_wave_new.npy")
-    spec_conv_wave_px = np.load("spec_conv_wave_px.npy")
+    # spec_conv_wave_px = np.load("spec_conv_wave_px.npy")
     
     
 
@@ -184,15 +193,17 @@ if __name__ == "__main__":
     mask = np.logical_and(wave >= xlim_low, wave < xlim_high)
     
     max_in_range = np.max(spec_conv_wave[mask])
-    ax[1].plot(wave,(spec_conv_wave-spec_conv_wave_px)/max_in_range, color="tab:red")
-    ax[1].set_ylim(-0.00002, 0.00002)
+    ax[1].plot(wave,(spec_conv_wave-spec_conv_wave_px)/max_in_range, color="tab:red", marker=".")
+    # ax[1].set_ylim(-0.02, 0.00002)
+    ax[1].set_ylim(-0.00001, 0.00001)
     ax[1].set_xlim(xlim_low, xlim_high)
     ax[0].set_ylim(bottom=0)
+    ax[0].vlines(5000.0, ax[0].get_ylim()[0], ax[0].get_ylim()[1])
     
     ax[1].set_xlabel(r"Wavelength $[\AA]$")
     ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
     ax[1].set_ylabel("Relative Difference")
-    ax[1].set_yticks([-0.000015, -0.00001, -0.000005, 0.0, 0.000005, 0.00001, 0.000015])
+    # ax[1].set_yticks([-0.000015, -0.00001, -0.000005, 0.0, 0.000005, 0.00001, 0.000015])
     figsize=(6.35, 3.5)
     # fig.set_tight_layout(True)
     fig.subplots_adjust(left=0.11, top=0.95, right=0.97, bottom=0.13, hspace=0)
