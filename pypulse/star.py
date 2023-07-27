@@ -296,7 +296,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                    fine_ref_temperature,
                                                                    logg,
                                                                    feh)
-                bis_polynomial_dict = simple_ngc4349_CB_model()
+                bis_polynomial_dict = simple_alpha_boo_CB_model()
+                # spec_corr = fine_ref_spectra_dict[rounded_mu]
                 
                 for mu in fine_ref_spectra_dict.keys():
                     spec_add, _, _, _, _ = add_bisector(rest_wavelength, 
@@ -311,7 +312,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     fine_ref_spectra_dict[rounded_mu] = spec_add
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
-                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True)
+                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=True)
             
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
@@ -349,6 +350,6 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     plt.close()
     plt.plot(wave, spec)
-    plt.savefig("dbug.png")
+    plt.savefig("dbug.png", dpi=500)
     
     
