@@ -87,6 +87,7 @@ def simple_alpha_boo_CB_model():
     ax.set_ylabel("Relative Flux")
     fig.set_tight_layout(True)
     plt.savefig("CB_alpha_boo_fit.png", dpi=600)
+    plt.close()
     
     
     mu_dict = {1.0:pfit}
