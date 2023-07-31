@@ -68,10 +68,10 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             # And define 10 times as a overhead
             if not per_pixel:
                 px_step = int(wave_step / pixel_scale_local / 2) 
-                px_over = int(np.ceil(max_dpx*20))
+                px_over = int(np.ceil(max_dpx*30))
             else:
                 px_step = 0
-                px_over = int(np.ceil(max_dpx*20))
+                px_over = int(np.ceil(max_dpx*30))
             
             spec_conv_local = np.zeros_like(wave_local)
             
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     # np.save("spec_conv_no_wave.npy", spec_conv_no_wave)
     import time
     start = time.time()
-    spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True)
+    spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, wave_step=0.1)
     stop = time.time()
     np.save("spec_conv_wave_new.npy", spec_conv_wave)
     spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True)

@@ -1111,13 +1111,13 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             max_dw = np.max(delta_wave_local)
             # Convert it to pixel
             max_dpx = max_dw / pixel_scale_local
-            # And define 10 times as a overhead
+            # And define 30 times as a overhead
             if not per_pixel:
                 px_step = int(wave_step / pixel_scale_local / 2) 
-                px_over = int(np.ceil(max_dpx*20))
+                px_over = int(np.ceil(max_dpx*30))
             else:
                 px_step = 0
-                px_over = int(np.ceil(max_dpx*20))
+                px_over = int(np.ceil(max_dpx*30))
             
             spec_conv_local = np.zeros_like(wave_local)
             
