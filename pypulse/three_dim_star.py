@@ -630,13 +630,18 @@ def plot_3d(x, y, z, value, scale_down=1):
 
 
 if __name__ == "__main__":
-    star = ThreeDimStar()
-    star.create_rotation()
-    star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
-    projector = TwoDimProjector(star, N=300, border=3, limb_darkening=False, inclination=90)
+    
+    import matplotlib.pyplot as plt
+    star = ThreeDimStar(N=1000)
+    # star.create_rotation()
+    # star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
+    projector = TwoDimProjector(star, N=500, border=3, limb_darkening=False, inclination=90)
 
-    print(np.count_nonzero(~np.isnan(projector.pulsation())))
-    print(np.count_nonzero(~np.isnan(projector.temperature())))
+    plt.imshow(projector.mu())
+    
+    print(projector.mu())
+    print(np.nanmean(projector.mu()))
+    plt.savefig("dbug.png", dpi=500)
 
 
 
