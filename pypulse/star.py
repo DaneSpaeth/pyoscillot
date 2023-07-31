@@ -312,7 +312,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     fine_ref_spectra_dict[rounded_mu] = spec_add
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
-                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=True)
+                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=False)
             
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
@@ -343,13 +343,33 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    star = GridSpectrumSimulator(N_star=100, Teff=4500, logg=2, limb_darkening=False, convective_blueshift=False, v_macro=5000)
-    # star.add_pulsation(l=1, m=1, v_p=0.7, k=2439, T_var=34.0)
-    wave, spec, v = star.calc_spectrum()
-    
     import matplotlib.pyplot as plt
-    plt.close()
-    plt.plot(wave, spec)
+    from utils import measure_bisector_on_line, normalize_phoenix_spectrum_precomputed
+    
+    
+    fig, ax = plt.subplots(1, 2)
+    PER_PIXEL = False
+    for v_macro, color, label, marker in zip([0, 5000], ("tab:blue", "tab:orange"), ("v_macro=0", "v_macro=5000"), ("x", "o")):
+        # PER_PIXEL = b
+        Teff = 4500
+        logg = 2
+        feh = 0.0
+        line = 5088.84
+        star = GridSpectrumSimulator(N_star=100, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=v_macro)
+        # star.add_pulsation(l=1, m=1, v_p=0.7, k=2439, T_var=34.0)
+        wave, spec, v = star.calc_spectrum(min_wave=4900, max_wave=5300)
+
+        mask = np.logical_and(wave>5088.7, wave<5089)
+        wave = wave[mask]
+        spec = spec[mask]
+        spec_norm = spec / np.max(spec)
+        bis_wave, bis_v, bis = measure_bisector_on_line(wave, spec_norm, line)
+        
+        ax[0].plot(wave, spec_norm, marker=marker, color=color, label=label)
+        ax[0].plot(bis_wave, bis, color=color)
+        
+        ax[1].plot(bis_v, bis, color=color)
+    ax[0].legend()
     plt.savefig("dbug.png", dpi=500)
     
     

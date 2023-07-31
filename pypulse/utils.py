@@ -579,7 +579,6 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
             #         # spec_add = spec_corr
             #         mu_dict[mu] = spec_add
             # else:
-            print("DO NOT CHANGE THE BIS")
             mu_dict[1.0] = spec
             ref_spectra[T] = mu_dict
                 
@@ -726,6 +725,8 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot
     # wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
 
     Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
+    # TODO REMOVE
+    Fe_lines = [5250.2084, 5250.6453]
 
     
     wave_rassine, spec, _ = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH, debug_plot=False)
@@ -941,6 +942,7 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         
         :returns: Corrected Spectrum, normalized corrected spectrum
     """
+    print(f"ADD IN BIS")
     _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH)
     
     delta_v = bis_polynomial(spec_norm)
@@ -1063,7 +1065,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         :param np.array spec: Spectrum array 
         :param float v_macro: Macroturbulent velocity (eta) in m/s
     """
-    print("Add isotropic macroturbulence")
+    print(f"Add isotropic macroturbulence, wave_dependent={wave_dependent}, per_pixel={per_pixel}")
     if not wave_dependent:
         center_idx = int(len(wave) / 2)
         delta_wave = delta_relativistic_doppler(wave[center_idx], v_macro)
@@ -1101,6 +1103,9 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 continue
             wave_local = wave[last_idx:idx]
             spec_local = spec[last_idx:idx]
+            
+            if not len(wave_local):
+                continue
             # pixel_scale_local = pixel_scale[last_idx:idx]
             pixel_scale_local = pixel_scales[jump_interval]
             delta_wave_local = delta_wave[last_idx:idx]
@@ -1114,10 +1119,10 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             # And define 30 times as a overhead
             if not per_pixel:
                 px_step = int(wave_step / pixel_scale_local / 2) 
-                px_over = int(np.ceil(max_dpx*30))
+                px_over = int(np.ceil(max_dpx*20))
             else:
                 px_step = 0
-                px_over = int(np.ceil(max_dpx*30))
+                px_over = int(np.ceil(max_dpx*20))
             
             spec_conv_local = np.zeros_like(wave_local)
             
@@ -1197,11 +1202,46 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             ax.legend()
             fig.set_tight_layout(True)
             plt.savefig(f"{out_root}/{savename}", dpi=600)
+            plt.close()
         
         
-        plt.close()
     
     return spec_conv
+
+def measure_bisector_on_line(wave, spec, line):
+    """ Convienience function to measure a bisector on a line."""
+    # Choose an interval around the theoretical line center to look at
+    interval = 0.25
+    mask = np.logical_and(wave >= line - interval, wave <= line + interval)
+
+    wv = wave[mask]
+    sp = spec[mask]
+
+    # Fit the width and center for an inital guess
+    expected = (line, 0.05, 0.9, 1.0)
+    
+    params, cov = curve_fit(_gauss_continuum, wv, sp, expected)
+    width = params[1]
+    continuum = params[-1]
+    
+    print(params)
+    center = params[0]
+    
+
+
+    
+    bis_wave, bis, left_wv, left_sp, right_wv, right_sp = bisector_on_line(wv, 
+                                                                        sp, 
+                                                                        center,
+                                                                        width=width,
+                                                                        outlier_clip=0.05,
+                                                                        continuum=continuum)
+    
+    print(bis_wave, bis)
+    
+    bis_v = (bis_wave - line) / bis_wave * 3e8
+    
+    return bis_wave, bis_v, bis
 
     
     
