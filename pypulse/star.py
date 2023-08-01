@@ -312,7 +312,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     fine_ref_spectra_dict[rounded_mu] = spec_add
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
-                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=False)
+                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=True, convolution=False)
             
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
