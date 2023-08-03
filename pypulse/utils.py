@@ -1320,7 +1320,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 
                 if convolution:
                     kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
-                    spec_conv_loop = convolve_fft(spec_loop, kernel)
+                    spec_conv_loop = convolve(spec_loop, kernel)
                     if di_high > 0:
                         spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1-di_high]
                     else:
