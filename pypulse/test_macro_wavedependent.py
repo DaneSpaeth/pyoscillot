@@ -3,14 +3,15 @@ import numpy as np
 from dataloader import phoenix_spectrum
 from astropy.convolution import Gaussian1DKernel
 from physics import delta_relativistic_doppler
-from astropy.convolution import convolve_fft
+from astropy.convolution import convolve_fft, convolve
 import cfg
 import time
+from pathlib import Path
 
 def gaussian(x, mu, sig):
     return 1./(np.sqrt(2.*np.pi)*sig)*np.exp(-1/2 * np.square((x - mu)/sig))
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False, convolution=True):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False, convolution=True, old=False):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -30,7 +31,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         
         sigma_px = delta_wave / pixel_scale
         kernel = Gaussian1DKernel(stddev=sigma_px)
-        spec_conv = convolve_fft(spec, kernel)
+        spec_conv = convolve(spec, kernel)
     else:
         center_idx = int(len(wave) / 2)
         delta_wave = delta_relativistic_doppler(wave, v_macro)
@@ -55,8 +56,10 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 continue
             wave_local = wave[last_idx:idx]
             spec_local = spec[last_idx:idx]
-            # pixel_scale_local = pixel_scale[last_idx:idx]
+            wave_start=wave_local[0]
+            wave_stop=wave_local[-1]
             pixel_scale_local = pixel_scales_dict[scale_jumps[jump_interval]]
+        
             
             delta_wave_local = delta_wave[last_idx:idx]
             sigma_px_local = delta_wave_local / pixel_scale_local
@@ -66,7 +69,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             max_dw = np.max(delta_wave_local)
             # Convert it to pixel
             max_dpx = max_dw / pixel_scale_local
-            # And define 10 times as a overhead
+            # And define 50 times as a overhead
             if not per_pixel:
                 px_step = int(wave_step / pixel_scale_local / 2) 
                 px_over = int(np.ceil(max_dpx*50))
@@ -75,6 +78,23 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 px_over = int(np.ceil(max_dpx*50))
             
             spec_conv_local = np.zeros_like(wave_local)
+            
+            if not old:
+                root = cfg.conf_dict["datapath"] / "macroturbulence_kernels"
+                kernels_file = root / Path(f"kernels_v{v_macro:.1f}_w{wave_start}_{wave_stop}.npy")
+                if kernels_file.is_file():
+                    kernels = np.load(kernels_file)
+                else:
+                    # Lets try to precompute the kernels in an array
+                    lin_px = np.linspace(-px_over, px_over, 2*px_over+1)
+                    # kernels = np.array([gaussian(lin_px, 0., sigma) for sigma in sigma_px_local])
+                    lin_px = np.array([lin_px for i in range(len(wave_local))])
+                    sigma_px_local = np.array([sigma_px_local for i in range(2*px_over+1)]).T
+                    kernels = gaussian(lin_px, 0., sigma_px_local)
+                    np.save(kernels_file, kernels)
+            
+                spec_loops = []
+                rowmask = np.zeros(kernels.shape[0], dtype=bool)
             
             for i in range(px_step, len(wave_local), max(px_step,1)):
                 # print(f"\r{i}, {len(wave_local)}", end="")
@@ -96,12 +116,11 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                     # Now stitch together
                     spec_loop = interp_spec
                     spec_loop = np.append(spec_loop, spec_local[:i+px_step+px_over+1])
-                elif (i + px_step + px_over) > len(wave_local):
+                elif (i + px_step + px_over) >= len(wave_local):
                     if not len(scale_jump_px) > jump_interval + 1:
                         # Cannot interpolate
                         continue
                     
-                        
                     di = i + px_step + px_over - len(wave_local) + 1
                     # We have to interpolate into the last range
                     next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
@@ -122,16 +141,28 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 
                 if convolution:
                     kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
-                    spec_conv_loop = convolve_fft(spec_loop, kernel)
+                    spec_conv_loop = convolve(spec_loop, kernel)
+                    
+                    
                     if di_high > 0:
                         spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1-di_high]
                     else:
                         spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1]
+                    
                 else:
-                    kernel = gaussian(np.linspace(-(px_step+px_over), (px_step+px_over), len(spec_loop)), 0., sigma_px_local[i])
-                    spec_conv_loop = np.sum(np.dot(spec_loop,kernel))
-                    spec_conv_local[i] = spec_conv_loop
-            
+                    if old:
+                        kernel = gaussian(np.linspace(-(px_step+px_over), (px_step+px_over), len(spec_loop)), 0., sigma_px_local[i])
+                        spec_conv_loop = np.sum(spec_loop * kernel)
+                        spec_conv_local[i] = spec_conv_loop
+                    if not old:
+                        rowmask[i] = True
+                        spec_loops.append(spec_loop)
+                    
+            if not old:
+                spec_loops = np.array(spec_loops)
+                kernels = kernels[rowmask,:]
+        
+                spec_conv_local[rowmask] = np.sum(spec_loops * kernels, axis=1)
             spec_conv[last_idx:idx] = spec_conv_local
             last_idx = idx      
     
@@ -163,48 +194,63 @@ if __name__ == "__main__":
     wv_range_start = 3600
     wv_range_stop = 7150
     wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(wv_range_start, wv_range_stop))
-    
+    import copy
     
     # spec_conv_no_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=False)
     # np.save("spec_conv_no_wave.npy", spec_conv_no_wave)
     import time
     start = time.time()
-    # spec_conv_wave = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, wave_step=0.1)
+    # spec_conv_wave = add_isotropic_convective_broadening(copy.deepcopy(wave),copy.deepcopy(spec), 5000, wave_dependent=True, per_pixel=False)
+    # spec_conv_wave_old, wave_loop_old = add_isotropic_convective_broadening_old(copy.deepcopy(wave), copy.deepcopy(spec), 5000, wave_dependent=True, per_pixel=False)
+    
+
     # np.save("spec_conv_wave_new.npy", spec_conv_wave)
-    spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=False)
+    spec_noconv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=False, old=True)
     stop = time.time()
+    spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=False)
     # spec_conv_wave_conv = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=True)
+    # print(len(spec_conv_wave_px))
+    # np.save("spec_noconv_new.npy", spec_conv_wave_px)
     stop2 = time.time()
     print()
     print(round(stop-start, 2))
     print(round(stop2-stop, 2))
-    exit()
+    # exit()
+    # exit()
     # np.save("spec_conv_wave_px.npy", spec_conv_wave_px)
     
     # spec_conv_no_wave = np.load("spec_conv_no_wave.npy")
     # spec_conv_wave = np.load("spec_conv_wave_new.npy")
     # spec_conv_wave_px = np.load("spec_conv_wave_px.npy")
     
+    # spec_noconv_wave_px = np.load("spec_noconv_before.npy")
+    
     
 
     fig, ax = plt.subplots(2, 1, figsize=(6.35, 3.5), sharex=True)
     ax[0].plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum", marker=".", markersize=2)
+    
+    print(len(wave))
+    print(len(spec_noconv_wave_px))
     # ax[0].plot(wave, spec_conv_no_wave, color="tab:orange")
-    ax[0].plot(wave, spec_conv_wave_conv, marker="x", color="tab:blue", label=r"Convolved")
-    ax[0].plot(wave, spec_conv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="Multiplied")
+    ax[0].plot(wave, spec_conv_wave_px, marker="*", color="tab:blue", label=r"New")
+    ax[0].plot(wave, spec_noconv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="noconv_before")
     ax[0].legend(loc="lower left")
     
     xlim_low = wv_range_start + (wv_range_stop - wv_range_start) / 2 - 0.5
     xlim_high = xlim_low + 1
     
-    # xlim_low = 7001.5
-    # xlim_high = 7002
+    xlim_low = 4999
+    xlim_high = 5001
     mask = np.logical_and(wave >= xlim_low, wave < xlim_high)
     
-    max_in_range = np.max(spec_conv_wave_px[mask])
-    # ax[1].plot(wave,(spec_conv_wave_px-spec_conv_wave_conv)/max_in_range, color="tab:red", marker=".")
+    print(((spec_conv_wave_px-spec_noconv_wave_px) == 0).all())
+    
+    # max_in_range = np.max(spec_conv_wave_px[mask])
+    ax[1].plot(wave,(spec_conv_wave_px-spec_noconv_wave_px), color="tab:red", marker=".")
+    print(((spec_conv_wave_px-spec_noconv_wave_px)[mask]))
     # ax[1].set_ylim(-0.02, 0.00002)
-    ax[1].set_ylim(-0.00001, 0.00001)
+    # ax[1].set_ylim(-0.00005, 0.00005)
     
     ax[0].set_xlim(xlim_low, xlim_high)
     ax[0].set_ylim(bottom=0)
@@ -218,4 +264,5 @@ if __name__ == "__main__":
     # fig.set_tight_layout(True)
     fig.subplots_adjust(left=0.11, top=0.95, right=0.97, bottom=0.13, hspace=0)
     fig.align_ylabels()
+    # plt.rcParams['agg.path.chunksize'] = 10000
     plt.savefig("dbug2.png",dpi=500)

@@ -1208,7 +1208,7 @@ def add_limb_darkening(wave, spec, mu):
 #     return spec_conv
 
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False, convolution=True):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False, convolution=True, old=False):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -1228,7 +1228,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         
         sigma_px = delta_wave / pixel_scale
         kernel = Gaussian1DKernel(stddev=sigma_px)
-        spec_conv = convolve_fft(spec, kernel)
+        spec_conv = convolve(spec, kernel)
     else:
         center_idx = int(len(wave) / 2)
         delta_wave = delta_relativistic_doppler(wave, v_macro)
@@ -1253,8 +1253,10 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 continue
             wave_local = wave[last_idx:idx]
             spec_local = spec[last_idx:idx]
-            # pixel_scale_local = pixel_scale[last_idx:idx]
+            wave_start=wave_local[0]
+            wave_stop=wave_local[-1]
             pixel_scale_local = pixel_scales_dict[scale_jumps[jump_interval]]
+        
             
             delta_wave_local = delta_wave[last_idx:idx]
             sigma_px_local = delta_wave_local / pixel_scale_local
@@ -1264,7 +1266,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             max_dw = np.max(delta_wave_local)
             # Convert it to pixel
             max_dpx = max_dw / pixel_scale_local
-            # And define 10 times as a overhead
+            # And define 50 times as a overhead
             if not per_pixel:
                 px_step = int(wave_step / pixel_scale_local / 2) 
                 px_over = int(np.ceil(max_dpx*50))
@@ -1273,6 +1275,23 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 px_over = int(np.ceil(max_dpx*50))
             
             spec_conv_local = np.zeros_like(wave_local)
+            
+            if not old:
+                root = cfg.conf_dict["datapath"] / "macroturbulence_kernels"
+                kernels_file = root / Path(f"kernels_v{v_macro:.1f}_w{wave_start}_{wave_stop}.npy")
+                if kernels_file.is_file():
+                    kernels = np.load(kernels_file)
+                else:
+                    # Lets try to precompute the kernels in an array
+                    lin_px = np.linspace(-px_over, px_over, 2*px_over+1)
+                    # kernels = np.array([gaussian(lin_px, 0., sigma) for sigma in sigma_px_local])
+                    lin_px = np.array([lin_px for i in range(len(wave_local))])
+                    sigma_px_local = np.array([sigma_px_local for i in range(2*px_over+1)]).T
+                    kernels = gaussian(lin_px, 0., sigma_px_local)
+                    np.save(kernels_file, kernels)
+            
+                spec_loops = []
+                rowmask = np.zeros(kernels.shape[0], dtype=bool)
             
             for i in range(px_step, len(wave_local), max(px_step,1)):
                 # print(f"\r{i}, {len(wave_local)}", end="")
@@ -1294,12 +1313,11 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                     # Now stitch together
                     spec_loop = interp_spec
                     spec_loop = np.append(spec_loop, spec_local[:i+px_step+px_over+1])
-                elif (i + px_step + px_over) > len(wave_local):
+                elif (i + px_step + px_over) >= len(wave_local):
                     if not len(scale_jump_px) > jump_interval + 1:
                         # Cannot interpolate
                         continue
                     
-                        
                     di = i + px_step + px_over - len(wave_local) + 1
                     # We have to interpolate into the last range
                     next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
@@ -1321,15 +1339,27 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                 if convolution:
                     kernel = Gaussian1DKernel(stddev=sigma_px_local[i])
                     spec_conv_loop = convolve(spec_loop, kernel)
+                    
+                    
                     if di_high > 0:
                         spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1-di_high]
                     else:
                         spec_conv_local[i-px_step:i+px_step+1] = spec_conv_loop[px_over:px_over+2*px_step+1]
+                    
                 else:
-                    kernel = gaussian(np.linspace(-(px_step+px_over), (px_step+px_over), len(spec_loop)), 0., sigma_px_local[i])
-                    spec_conv_loop = np.sum(np.dot(spec_loop,kernel))
-                    spec_conv_local[i] = spec_conv_loop
-            
+                    if old:
+                        kernel = gaussian(np.linspace(-(px_step+px_over), (px_step+px_over), len(spec_loop)), 0., sigma_px_local[i])
+                        spec_conv_loop = np.sum(spec_loop * kernel)
+                        spec_conv_local[i] = spec_conv_loop
+                    if not old:
+                        rowmask[i] = True
+                        spec_loops.append(spec_loop)
+                    
+            if not old:
+                spec_loops = np.array(spec_loops)
+                kernels = kernels[rowmask,:]
+        
+                spec_conv_local[rowmask] = np.sum(spec_loops * kernels, axis=1)
             spec_conv[last_idx:idx] = spec_conv_local
             last_idx = idx      
     
