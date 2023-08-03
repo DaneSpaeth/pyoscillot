@@ -1269,29 +1269,15 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             # And define 50 times as a overhead
             if not per_pixel:
                 px_step = int(wave_step / pixel_scale_local / 2) 
-                px_over = int(np.ceil(max_dpx*50))
+                px_over = int(np.ceil(max_dpx*25))
             else:
                 px_step = 0
-                px_over = int(np.ceil(max_dpx*50))
+                px_over = int(np.ceil(max_dpx*25))
             
             spec_conv_local = np.zeros_like(wave_local)
             
-            if not old:
-                root = cfg.conf_dict["datapath"] / "macroturbulence_kernels"
-                kernels_file = root / Path(f"kernels_v{v_macro:.1f}_w{wave_start}_{wave_stop}.npy")
-                if kernels_file.is_file():
-                    kernels = np.load(kernels_file)
-                else:
-                    # Lets try to precompute the kernels in an array
-                    lin_px = np.linspace(-px_over, px_over, 2*px_over+1)
-                    # kernels = np.array([gaussian(lin_px, 0., sigma) for sigma in sigma_px_local])
-                    lin_px = np.array([lin_px for i in range(len(wave_local))])
-                    sigma_px_local = np.array([sigma_px_local for i in range(2*px_over+1)]).T
-                    kernels = gaussian(lin_px, 0., sigma_px_local)
-                    np.save(kernels_file, kernels)
-            
-                spec_loops = []
-                rowmask = np.zeros(kernels.shape[0], dtype=bool)
+            spec_loops = []
+            rowmask = np.zeros(len(wave_local), dtype=bool)
             
             for i in range(px_step, len(wave_local), max(px_step,1)):
                 # print(f"\r{i}, {len(wave_local)}", end="")
@@ -1356,10 +1342,26 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
                         spec_loops.append(spec_loop)
                     
             if not old:
+                root = cfg.conf_dict["datapath"] / "macroturbulence_kernels"
+                kernels_file = root / Path(f"kernels_v{v_macro:.1f}_w{wave_start}_{wave_stop}.npy")
+                if False:
+                # if kernels_file.is_file():
+                    kernels = np.load(kernels_file)
+                else:
+                    # Lets try to precompute the kernels in an array
+                    lin_px = np.linspace(-px_over, px_over, 2*px_over+1)
+                    # kernels = np.array([gaussian(lin_px, 0., sigma) for sigma in sigma_px_local])
+                    lin_px = np.array([lin_px for i in range(len(wave_local))])
+                    sigma_px_local = np.array([sigma_px_local for i in range(2*px_over+1)]).T
+                    kernels = gaussian(lin_px, 0., sigma_px_local)
+                    np.save(kernels_file, kernels)
+                    
                 spec_loops = np.array(spec_loops)
                 kernels = kernels[rowmask,:]
         
                 spec_conv_local[rowmask] = np.sum(spec_loops * kernels, axis=1)
+                del kernels
+                del spec_loops
             spec_conv[last_idx:idx] = spec_conv_local
             last_idx = idx      
     
