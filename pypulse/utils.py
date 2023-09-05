@@ -1030,14 +1030,11 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         
     return spec_corr, spec_corr_norm, spec_norm, delta_v, delta_wave
 
-def add_limb_darkening(wave, spec, mu):
-    """ Add the limb darkening law based on Hestroffer & Magnan 1998."""
-    u = 1
-    spec = copy.deepcopy(spec)
-    
+def calc_limb_dark_intensity(wave, mu):
     alpha = np.zeros_like(wave)
     mask_UV = np.logical_and(wave >= 3033, wave <= 3570)
     
+    u = 1
     real_limit = 4160
     test_limit = 3570
     mask_VIS = np.logical_and(wave >= test_limit, wave <= 10990)
@@ -1051,9 +1048,66 @@ def add_limb_darkening(wave, spec, mu):
     # i.e. going along the wavelength giving a multiplication factor
     # the intensity array should be propely normalized
     
+    return intensity
+
+def add_limb_darkening(wave, spec, mu):
+    """ Add the limb darkening law based on Hestroffer & Magnan 1998.
+    
+        :param np.array wave: Wavelength array
+        :param np.array spec: Spectrum array
+        :param float mu: Mu angle within [0, 1]
+    """
+    spec = copy.deepcopy(spec)
+    
+    intensity = calc_limb_dark_intensity(wave, mu)
+    
     spec_limb = spec * intensity
     
     return intensity, spec_limb
+
+def calc_mean_limb_dark(wave, mu_array, load_precalc=True):
+    """ Calculate a mean limb darkening continuum for a mu_array.
+    
+        :param np.array wave: A wavelength array in Angstrom
+        :param np.array mu_array: Usually a 2D array containing mu angles for the star
+        :param bool load_precalc: If True, a precalculated LD will be loaded if existing
+        
+        :returns: Averaged limb darkening continuum with the same shape as wave
+    """
+    N = 150
+    wave_start = np.min(wave)
+    wave_stop = np.max(wave)
+    outname = f"mean_LD_N{N}_wave{wave_start}_{wave_stop}.npy"
+    outfile = cfg.conf_dict["datapath"] / "mean_limb_darkening" / outname
+    if load_precalc and outfile.is_file():
+        print(f"Load precalculated mean Limb Darkening from {outfile}")
+        mean_ld_intensity = np.load(outfile)
+    else:
+        mus = copy.deepcopy(mu_array)
+        mus = mus.flatten()
+        mus = mus[~np.isnan(mus)]
+        ld_intensities = np.zeros_like(wave)
+        
+        unique_mus, counts = np.unique(mus, return_counts=True)
+        
+        
+        for idx, (mu, count) in enumerate(zip(unique_mus, counts)):
+            print(idx, len(unique_mus))
+            print(count)
+            ld_intensity = calc_limb_dark_intensity(wave, mu)
+            ld_intensities += (ld_intensity * count)
+            
+        mean_ld_intensity = ld_intensities / len(mus)
+        np.save(outfile, mean_ld_intensity)
+        
+        outname = f"wave_LD_N{N}_wave{wave_start}_{wave_stop}.npy"
+        outfile = cfg.conf_dict["datapath"] / "mean_limb_darkening" / outname
+        
+        np.save(outfile, wave)
+    return mean_ld_intensity
+        
+    
+    
 
 # def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False):
 #     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.

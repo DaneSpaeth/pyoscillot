@@ -1,17 +1,46 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from three_dim_star import ThreeDimStar, TwoDimProjector
-from utils import add_limb_darkening
+from utils import calc_mean_limb_dark, add_limb_darkening
 from dataloader import phoenix_spectrum
 from star import GridSpectrumSimulator
+from cfg import parse_global_ini
+conf_dict = parse_global_ini()
+
+
+def plot_mean_limb_dark():
+    star = ThreeDimStar()
+    N = 150
+    proj = TwoDimProjector(star, N=150, border=3, limb_darkening=False)
+
+    mu = proj.mu()
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4200, 7700))
+    
+    wave_start = np.min(wave)
+    wave_stop = np.max(wave)
+    mean_limb_dark = calc_mean_limb_dark(wave, mu)
+    
+    fig, ax = plt.subplots(1, 2, figsize=(7.16, 4.0275))
+    ax[0].imshow(mu, vmin=0, vmax=1, cmap="viridis")
+    ax[1].plot(wave, mean_limb_dark)
+    plt.savefig("mean_limb_dark.png", dpi=600)
+    
+    
+
+
+
+
+
+
+####### Probably all wrong from here! ########
 
 def plot_stellar_disk_comparison():
     star = ThreeDimStar()
-    proj = TwoDimProjector(star, N=1000, border=3, limb_darkening=False)
+    proj = TwoDimProjector(star, N=150, border=3, limb_darkening=False)
 
     mu = proj.mu()
 
-    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4200, 7700))
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3600, 7150))
 
     wavelengths = [4500, 5500, 6500, 7500]
     wave_idxs = []
@@ -133,4 +162,5 @@ def plot_summed_spectral_change():
 if __name__ == "__main__":
     # plot_spectral_change()
     # plot_summed_spectral_change()
-    plot_stellar_disk_comparison()
+    # plot_stellar_disk_comparison()
+    plot_mean_limb_dark()
