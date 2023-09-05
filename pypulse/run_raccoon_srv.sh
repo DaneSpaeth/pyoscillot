@@ -84,10 +84,10 @@ then
 
     # Now we need to unzip the fits files
     # Create a directory for the fits files
-    fits_dir=$DATAPATH/fake_spectra/$SIMNAME/$INST/fits
+    fits_dir=$DATAPATH/$SIMNAME/$INST/fits
     mkdir $fits_dir
     cd $fits_dir
-    FILES=$(find $DATAPATH/fake_spectra/$SIMNAME/$INST/ -name '*.tar')
+    FILES=$(find $DATAPATH/$SIMNAME/$INST/ -name '*.tar')
     for file in $FILES
     do
       tar -xvf $file
@@ -95,9 +95,9 @@ then
 
     # Now create a blazefile list
     # TODO: Test if that is reasonable
-    BLAZEFILEPATH=/home/dspaeth/pypulse/data/HARPS_template_blaze_A.fits
+    BLAZEFILEPATH=/data/dspaeth/pypulse_data/HARPS_template_blaze_A.fits
     BLAZETXTFILE=$fits_dir/blazefiles.txt
-    FILES=$(find $DATAPATH/fake_spectra/$SIMNAME/$INST/ -name '*.fits')
+    FILES=$(find $DATAPATH/$SIMNAME/$INST/ -name '*.fits')
     for file in $FILES
     do
       echo $file $BLAZEFILEPATH >> $BLAZETXTFILE

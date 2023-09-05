@@ -92,7 +92,7 @@ def reduce_CARMENES_VIS(global_dict, name, star, serval=True, raccoon=True):
     """ Convenience function to reduce CARMENES_VIS spectra"""
     if serval:
         subprocess.run(["bash", "run_serval_srv.sh",
-                        str(global_dict["datapath"]),
+                        str(global_dict["outpath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_VIS"])
@@ -102,7 +102,7 @@ def reduce_CARMENES_VIS(global_dict, name, star, serval=True, raccoon=True):
 
     if raccoon:
         subprocess.run(["bash", "run_raccoon_srv.sh",
-                        str(global_dict["datapath"]),
+                        str(global_dict["outpath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_VIS"])
@@ -116,7 +116,7 @@ def reduce_CARMENES_NIR(global_dict, name, star, serval=True, raccoon=True):
     """ Convenience function to reduce CARMENES_NIR spectra"""
     if serval:
         subprocess.run(["bash", "run_serval_srv.sh",
-                        str(global_dict["datapath"]),
+                        str(global_dict["outpath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_NIR"])
@@ -125,7 +125,7 @@ def reduce_CARMENES_NIR(global_dict, name, star, serval=True, raccoon=True):
         create_ascii_file(csv_file)
     if raccoon:
         subprocess.run(["bash", "run_raccoon_srv.sh",
-                        str(global_dict["datapath"]),
+                        str(global_dict["outpath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "CARMENES_NIR"])
@@ -139,13 +139,13 @@ def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
     """ Convenience function to reduce HARPS spectra"""
     if serval:
         subprocess.run(["bash", "run_serval_srv.sh",
-                        str(global_dict["datapath"]),
+                        str(global_dict["outpath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "HARPS"])
     if raccoon:
         subprocess.run(["bash", "run_raccoon_srv.sh",
-                        str(global_dict["datapath"]),
+                        str(global_dict["outpath"]),
                         str(global_dict["rvlibpath"]),
                         name, star,
                         "HARPS"])
@@ -172,6 +172,8 @@ if __name__ == "__main__":
     for i in range(186, 187):
         ticket = root / "NGC4349_TestMacro" / f"test{i}.ini"
         tickets.append(ticket)
+        
+    tickets = [root / "function_test.ini"]
 
 
     for ticket in tickets:

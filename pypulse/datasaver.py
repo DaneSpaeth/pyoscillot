@@ -19,6 +19,7 @@ class DataSaver():
         self.global_dict = cfg.parse_global_ini()
         if not laptop:
             self.dataroot = self.global_dict["datapath"]
+            self.outroot = self.global_dict["outpath"]
         else:
             self.dataroot = self.global_dict["datapath_laptop"]
         self.simulation_name = simulation_name
@@ -143,8 +144,7 @@ class DataSaver():
 
     def _create_folder(self, instrument=None):
         """ Create the folder to contain all data."""
-        folder = self.dataroot / "fake_spectra" / \
-            self.simulation_name
+        folder = self.outroot / self.simulation_name
         if instrument is not None:
             folder = folder / instrument
         try:

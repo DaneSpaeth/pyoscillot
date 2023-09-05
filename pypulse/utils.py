@@ -657,7 +657,7 @@ def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, d
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
+            out_root = cfg.datapath / "plots/phoenix_bisectors/debug"
         savename = f"{Teff}K_{logg}_{feh}_norm.png"
         out_file = out_root / savename
         if not out_file.is_file(): 
@@ -701,7 +701,7 @@ def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, debug_pl
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
+            out_root = cfg.datapath / "plots/phoenix_bisectors/debug"
         savename = f"{Teff}K_{logg}_{feh}_norm.png"
         out_file = out_root / savename
         if not out_file.is_file(): 
@@ -784,7 +784,7 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/debug")
+            out_root = cfg.datapath / "plots/phoenix_bisectors/debug"
         savename = f"{Teff}K_{logg}_{FeH}_Fe_lines.png"
         print(f"Save debug plot to {out_root}/{savename}")
         plt.savefig(out_root / savename, dpi=600)
@@ -836,7 +836,7 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+            out_root = cfg.datapath / "plots/phoenix_bisectors"
         savename = f"{Teff}K_{logg}_{FeH}_bis_fit.png"
         plt.savefig(f"{out_root}/{savename}", dpi=600)
         plt.close()
@@ -923,7 +923,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+            out_root = cfg.datapath / "plots/phoenix_bisectors"
         savename = f"{Teff}K_{logg}_{FeH}_bis_removed.png"
         fig.set_tight_layout(True)
         plt.savefig(f"{out_root}/{savename}", dpi=600)
@@ -1022,7 +1022,7 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+            out_root = cfg.datapath / "plots/phoenix_bisectors"
         savename = f"{Teff}K_{logg}_{FeH}_mu{mu}_bis_added.png"
         fig.set_tight_layout(True)
         plt.savefig(f"{out_root}/{savename}", dpi=600)
@@ -1369,7 +1369,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/macroturbulence/")
+            out_root = cfg.datapath / "/plots/macroturbulence"
         savename = f"macroturbulence.png"
         outfile = out_root / savename
         # Only save one debug plot (otherwise you would have that for every cell)
