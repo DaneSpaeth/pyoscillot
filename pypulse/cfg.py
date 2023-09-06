@@ -76,6 +76,7 @@ matplotlib.rcParams.update({'font.size': 8})
 # singleton for debug dir
 debug_dir = None
 conf_dict = parse_global_ini()
+figsize = (6.35, 3.5)
 
 
 if __name__ == "__main__":
