@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from utils import gaussian, get_ref_spectra, add_limb_darkening, add_isotropic_convective_broadening
 from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
@@ -8,6 +9,9 @@ from utils import remove_phoenix_bisector, add_bisector, calc_mean_limb_dark
 from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model, simple_ngc4349_CB_model
 import copy
 import cfg
+# Try to solve the memory leak but not working?
+import matplotlib
+matplotlib.use('Agg')
 
 class GridSpectrumSimulator():
     """ Simulate a spectrum of a star with a grid."""
@@ -317,7 +321,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     spectrum_LD_removed = spectrum / mean_limb_dark
                     fine_ref_spectra_dict[mu] = spectrum_LD_removed
                     
-                debug_plot = True
+                debug_plot = False
                 if debug_plot:
                     fig, ax = plt.subplots(1, figsize=cfg.figsize)
                     ax.plot(rest_wavelength, spectrum, label=f"Original PHOENIX Spectrum (T={temp}K)")
@@ -328,6 +332,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     ax.legend()
                     fig.set_tight_layout(True)
                     plt.savefig("LD_removed_spectrum.png", dpi=600)
+                    plt.close(fig)
             
             # If the limb darkening correction was applied this will have affected the continuum
             # Since we load precomputed continuum corrections that were calculated for raw
@@ -389,7 +394,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+    
     Teff = 4500
     logg = 2
     feh = 0.0
