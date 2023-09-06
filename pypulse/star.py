@@ -4,9 +4,10 @@ from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
 from dataloader import Zhao_bis_polynomials
-from utils import remove_phoenix_bisector, add_bisector
+from utils import remove_phoenix_bisector, add_bisector, calc_mean_limb_dark
 from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model, simple_ngc4349_CB_model
 import copy
+import cfg
 
 class GridSpectrumSimulator():
     """ Simulate a spectrum of a star with a grid."""
@@ -42,6 +43,8 @@ class GridSpectrumSimulator():
         self.conv_blue = convective_blueshift
         self.limb_dark = limb_darkening
         self.v_macro = v_macro
+        
+        self.mean_limb_dark = None
 
     def add_spot(self, phase=0.25, theta_pos=90, radius=25, T_spot=4300):
         """ Add a circular starspot at position x,y.
@@ -121,6 +124,22 @@ class GridSpectrumSimulator():
         self.mu = self.projector.mu()
         # self.granulation = self.projector.granulation_velocity()
         self.granulation = np.zeros(self.pulsation.shape)
+        
+        if self.limb_dark:
+            # Calculate (or preaload if existing) an averaged limb darkening array
+            self.mean_limb_dark = calc_mean_limb_dark(rest_wavelength, self.mu)
+            
+            debug_plot = True
+            if debug_plot:
+                fig, ax = plt.subplots(1, figsize=cfg.figsize)
+                ax.plot(rest_wavelength, self.mean_limb_dark, label="Averaged Limb Darkening Profile")
+                ax.set_xlabel(r"Wavelength [$\AA$]")
+                ax.set_ylabel("Normalized Flux")
+                ax.legend()
+                fig.set_tight_layout(True)
+                # Add saving to fake_spectra
+                plt.savefig("LD_profile.png", dpi=600)
+            
 
         T_precision_decimals = 0
         rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
@@ -136,7 +155,8 @@ class GridSpectrumSimulator():
                                                                      self.feh,
                                                                      change_bis=self.conv_blue,
                                                                      limb_dark=self.limb_dark,
-                                                                     v_macro=self.v_macro)
+                                                                     v_macro=self.v_macro,
+                                                                     mean_limb_dark=self.mean_limb_dark)
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
@@ -188,7 +208,7 @@ class GridSpectrumSimulator():
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
                       logg, feh, 
-                      change_bis=False, limb_dark=False, v_macro=0,):
+                      change_bis=False, limb_dark=False, v_macro=0, mean_limb_dark=None):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -276,9 +296,6 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             
             print(f"Needed mu angles for temperature {fine_ref_temperature}={needed_mus}")
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
-            # This one will automatically be kept in memory until all cells with this temperature are completed
-            # Ok so now we assume that the ref_spectra are correctly BIS reduced and added
-            # Or not if the user chooses not to
             # We get a dictionary of {mu:spec} for each temperature
             _, fine_ref_spectra_dict, _ = get_interpolated_spectrum(temp,
                                                                     ref_wave=rest_wavelength,
@@ -289,13 +306,41 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                     feh=feh,
                                                                     interpolation_mode="cubic_spline")
             
+            # We now have T interpolated PHOENIX spectra
+            # We choose to apply the LD correction after the T interpolation to allow
+            # an easily precomputed spline interpolation
+            # Now we remove the mean LD from the interpolated spectra
+            if limb_dark:
+                # Now correct the fine_ref_spectra
+                print(f"Apply mean limb darkening correction for fine_ref_spectra at T {temp}")
+                for mu, spectrum in fine_ref_spectra_dict.items():
+                    spectrum_LD_removed = spectrum / mean_limb_dark
+                    fine_ref_spectra_dict[mu] = spectrum_LD_removed
+                    
+                debug_plot = True
+                if debug_plot:
+                    fig, ax = plt.subplots(1, figsize=cfg.figsize)
+                    ax.plot(rest_wavelength, spectrum, label=f"Original PHOENIX Spectrum (T={temp}K)")
+                    ax.plot(rest_wavelength, fine_ref_spectra_dict[1.0], label="Mean Limb Darkening Removed Spectrum", alpha=0.7)
+                    ax.set_xlabel(r"Wavelength [$\AA$]")
+                    ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+                    ax.set_ylim(0, ax.get_ylim()[1]*1.15)
+                    ax.legend()
+                    fig.set_tight_layout(True)
+                    plt.savefig("LD_removed_spectrum.png", dpi=600)
+            
+            # If the limb darkening correction was applied this will have affected the continuum
+            # Since we load precomputed continuum corrections that were calculated for raw
+            # PHOENIX spectra we now need to keep track of the continuum correction of the LD
+            
             if change_bis:
                 # First remove the PHOENIX bisector
                 spec_corr, _, _, _, _, _ = remove_phoenix_bisector(rest_wavelength,
                                                                    fine_ref_spectra_dict[rounded_mu],
                                                                    fine_ref_temperature,
                                                                    logg,
-                                                                   feh)
+                                                                   feh,
+                                                                   limb_dark_continuum=mean_limb_dark)
                 bis_polynomial_dict = simple_alpha_boo_CB_model()
                 # spec_corr = fine_ref_spectra_dict[rounded_mu]
                 
@@ -310,6 +355,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                         mu=rounded_mu)
                     
                     fine_ref_spectra_dict[rounded_mu] = spec_add
+                    
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
                     fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=True, convolution=False, old=False)
@@ -344,32 +390,54 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    from utils import measure_bisector_on_line, normalize_phoenix_spectrum_precomputed
+    Teff = 4500
+    logg = 2
+    feh = 0.0
+    star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=True, convective_blueshift=True, v_macro=0)
+    wave, spec_LD, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
+    
+    star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=0)
+    wave, spec, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
+    
+    fig, ax = plt.subplots(1, figsize=cfg.figsize)
+    ax.plot(wave, spec, label="No Limb Darkening Correction")
+    ax.plot(wave, spec_LD, alpha=0.7, label="Limb Darkening Correction")
+    ax.set_xlabel(r"Wavelength [$\AA]")
+    ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    ax.set_ylim(0, ax.get_ylim()[1]*1.15)
+    fig.set_tight_layout(True)
+    plt.savefig("LD_comparison.png", dpi=600)
     
     
-    fig, ax = plt.subplots(1, 2)
-    PER_PIXEL = False
-    for v_macro, color, label, marker in zip([0, 5000], ("tab:blue", "tab:orange"), ("v_macro=0", "v_macro=5000"), ("x", "o")):
-        # PER_PIXEL = b
-        Teff = 4500
-        logg = 2
-        feh = 0.0
-        line = 5088.84
-        star = GridSpectrumSimulator(N_star=100, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=v_macro)
-        # star.add_pulsation(l=1, m=1, v_p=0.7, k=2439, T_var=34.0)
-        wave, spec, v = star.calc_spectrum(min_wave=4900, max_wave=5300)
+    
+    
+    
+    
+    ###### To test the macroturbulence #####
+    # from utils import measure_bisector_on_line, normalize_phoenix_spectrum_precomputed
+    # fig, ax = plt.subplots(1, 2)
+    # PER_PIXEL = False
+    # for v_macro, color, label, marker in zip([0, 5000], ("tab:blue", "tab:orange"), ("v_macro=0", "v_macro=5000"), ("x", "o")):
+    #     # PER_PIXEL = b
+    #     Teff = 4500
+    #     logg = 2
+    #     feh = 0.0
+    #     line = 5088.84
+    #     star = GridSpectrumSimulator(N_star=100, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=v_macro)
+    #     # star.add_pulsation(l=1, m=1, v_p=0.7, k=2439, T_var=34.0)
+    #     wave, spec, v = star.calc_spectrum(min_wave=4900, max_wave=5300)
 
-        mask = np.logical_and(wave>5088.7, wave<5089)
-        wave = wave[mask]
-        spec = spec[mask]
-        spec_norm = spec / np.max(spec)
-        bis_wave, bis_v, bis = measure_bisector_on_line(wave, spec_norm, line)
+    #     mask = np.logical_and(wave>5088.7, wave<5089)
+    #     wave = wave[mask]
+    #     spec = spec[mask]
+    #     spec_norm = spec / np.max(spec)
+    #     bis_wave, bis_v, bis = measure_bisector_on_line(wave, spec_norm, line)
         
-        ax[0].plot(wave, spec_norm, marker=marker, color=color, label=label)
-        ax[0].plot(bis_wave, bis, color=color)
+    #     ax[0].plot(wave, spec_norm, marker=marker, color=color, label=label)
+    #     ax[0].plot(bis_wave, bis, color=color)
         
-        ax[1].plot(bis_v, bis, color=color)
-    ax[0].legend()
-    plt.savefig("dbug.png", dpi=500)
+    #     ax[1].plot(bis_v, bis, color=color)
+    # ax[0].legend()
+    # plt.savefig("dbug.png", dpi=500)
     
     

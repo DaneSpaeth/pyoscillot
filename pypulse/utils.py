@@ -657,7 +657,7 @@ def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, d
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "plots/phoenix_bisectors/debug"
+            out_root = cfg.conf_dict["datapath"] / "plots/phoenix_bisectors/debug"
         savename = f"{Teff}K_{logg}_{feh}_norm.png"
         out_file = out_root / savename
         if not out_file.is_file(): 
@@ -674,34 +674,48 @@ def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, d
     return wave, spec_norm, continuum_interp
 
 
-def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, debug_plot=True):
+def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, 
+                                           limb_dark_continuum=None, 
+                                           debug_plot=True):
     """ Normalize a PHOENIX Spectrum using a precomupted continuum.
     
         All results are linearly interpolated back onto the original wavelength grid.
     
         :param np.array wave_vac: Wavelength in Angstrom
         :param np.array spec: Unnormalized Spectrum
+        :param int Teff: Effective Temperature (must be one of PHOENIX grid)
+        :param float logg: log(g) (must be one of PHOENIX grid)
+        :param float feh: [Fe/H] (must be one of PHOENIX grid)
+        :param np.array limb_dark_continuum: (Optional) Additional Limb Darkening continuum to remove
         
         :returns: np.array wave_norm, normalized wavelength
         :returns np.array continuum, The saved continuum
     """
-    # Now create the Rassine fit
+    # Load the precomputed continuum (this will take a precomputed PHOENIX continuum)
+    # Without knowing anything about the limb darkening correction
     wave_cont, cont = continuum(Teff, logg, feh, wavelength_range=(wave[0], wave[-1]))
     
-    
+    # Check that wavelengths are correct
     assert wave[0] >= wave_cont[0], f"Your wavelength array starts below the Rassine array limit {wave[0]} < {wave_cont[0]}" 
     assert wave[-1] <= wave_cont[-1], f"Your wavelength array ends above the Rassine array limit {wave[-1]} > {wave_cont[-1]}" 
     
-    # Normalize
-    # continuum_interp = np.interp(wave, wave_rassine, continuum)
+    # If we have removed the averaged limb darkening we must also adjust the continuum here
+    if limb_dark_continuum is not None:
+        print("Use the Limb Darkening Continuum during Continuum correction")
+        cont = cont / limb_dark_continuum
     
+    # Normalize
     spec_norm = spec / cont
+    
+        
     
     if debug_plot:
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "plots/phoenix_bisectors/debug"
+            out_root = cfg.conf_dict["datapath"] / "plots/continuum"
+            if not out_root.is_dir():
+                out_root.mkdir()
         savename = f"{Teff}K_{logg}_{feh}_norm.png"
         out_file = out_root / savename
         if not out_file.is_file(): 
@@ -717,19 +731,23 @@ def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, debug_pl
     
     return wave, spec_norm, cont
 
-def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot=False, ax=None):
+def get_phoenix_bisector(wave, spec, Teff, logg, FeH, 
+                         limb_dark_continuum=None,
+                         debug_plot=False, bis_plot=False, ax=None):
     """ Get the mean PHOENIX bisector as described by Zhao & Dumusque (2023) Fig. A.1
     
         :returns: numpy.Polynomial fit results to easily apply to every line depth
     """
-    # wave, spec, header = phoenix_spectrum(Teff, logg, FeH, wavelength_range=(5000, 7000))
-
     Fe_lines = [5250.2084, 5250.6453, 5434.5232, 6173.3344, 6301.5008]
-    # TODO REMOVE
-    # Fe_lines = [5250.2084, 5250.6453]
 
     
-    wave_rassine, spec, _ = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH, debug_plot=False)
+    wave_rassine, spec, _ = normalize_phoenix_spectrum_precomputed(wave, 
+                                                                   spec, 
+                                                                   Teff, 
+                                                                   logg, 
+                                                                   FeH, 
+                                                                   debug_plot=False, 
+                                                                   limb_dark_continuum=limb_dark_continuum)
     wave_air = wave_rassine / (1.0 + 2.735182E-4 + 131.4182 / wave**2 + 2.76249E8 / wave**4)
 
     if debug_plot:
@@ -758,11 +776,11 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot
     
         try:
             bis_wave, bis, left_wv, left_sp, right_wv, right_sp = bisector_on_line(wv, 
-                                                                               sp, 
-                                                                               line,
-                                                                               width=width,
-                                                                               outlier_clip=0.005,
-                                                                               continuum=continuum)
+                                                                                   sp, 
+                                                                                   line,
+                                                                                   width=width,
+                                                                                   outlier_clip=0.005,
+                                                                                   continuum=continuum)
         
             # Convert to velocities
             bis_v = (bis_wave - line) / bis_wave * 3e8
@@ -784,7 +802,7 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "plots/phoenix_bisectors/debug"
+            out_root = cfg.conf_dict["datapath"] / "plots/phoenix_bisectors/debug"
         savename = f"{Teff}K_{logg}_{FeH}_Fe_lines.png"
         print(f"Save debug plot to {out_root}/{savename}")
         plt.savefig(out_root / savename, dpi=600)
@@ -836,19 +854,36 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=False, bis_plot
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "plots/phoenix_bisectors"
+            out_root = cfg.conf_dict["datapath"] / "plots/phoenix_bisectors"
         savename = f"{Teff}K_{logg}_{FeH}_bis_fit.png"
         plt.savefig(f"{out_root}/{savename}", dpi=600)
         plt.close()
     
     return poly_fit
 
-def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5728.65):
-    """ Fit and Remove the phoenix bisector."""
-    poly_fit = get_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, bis_plot=True)
+def remove_phoenix_bisector(wave, spec, Teff, logg, FeH,
+                            limb_dark_continuum=None,
+                            debug_plot=True, line=5728.65,):
+    """ Fit and Remove the phoenix bisector.
+    
+        :param np.array limb_dark_continuum: (Optional) Additional Limb Darkening continuum to remove
+    """
+    poly_fit = get_phoenix_bisector(wave, 
+                                    spec, 
+                                    Teff, 
+                                    logg, 
+                                    FeH, 
+                                    debug_plot=True,
+                                    bis_plot=True, 
+                                    limb_dark_continuum=limb_dark_continuum)
     
     # First normalize the spectrum
-    _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH)
+    _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, 
+                                                                     spec, 
+                                                                     Teff, 
+                                                                     logg, 
+                                                                     FeH, 
+                                                                     limb_dark_continuum=limb_dark_continuum)
     
     delta_v = poly_fit(spec_norm)
     delta_wave = delta_relativistic_doppler(wave, v=delta_v)
@@ -923,15 +958,18 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH, debug_plot=True, line=5
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "plots/phoenix_bisectors"
+            out_root = cfg.conf_dict["datapath"] / "plots/phoenix_bisectors"
         savename = f"{Teff}K_{logg}_{FeH}_bis_removed.png"
         fig.set_tight_layout(True)
+        print(f"Save to {out_root}/{savename}")
         plt.savefig(f"{out_root}/{savename}", dpi=600)
         plt.close()
     
     return spec_corr, spec_corr_norm, spec_norm, poly_fit, delta_v, delta_wave
 
-def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, line=5728.65, mu=None):
+def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH,
+                 mu=None, limb_dark_continuum=None,
+                 debug_plot=True, line=5728.65):
     """ Add in a bisector to the data.
     
         Ideally the wave and spec should be cleaned of any previous bisectors.
@@ -939,11 +977,19 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         :param np.array wave: The Wavelength array
         :param np.array spec: The Spectrum Flux array (not normalized)
         :param np.polynomial.Polynomial: A numpy Polynomial describing the Bisector 
+        :param np.array limb_dark_continuum: (Optional) Additional Limb Darkening continuum to remove
+        
+        
         
         :returns: Corrected Spectrum, normalized corrected spectrum
     """
     print(f"ADD IN BIS")
-    _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, FeH)
+    _, spec_norm, continuum = normalize_phoenix_spectrum_precomputed(wave, 
+                                                                     spec, 
+                                                                     Teff, 
+                                                                     logg, 
+                                                                     FeH, 
+                                                                     limb_dark_continuum=limb_dark_continuum)
     
     delta_v = bis_polynomial(spec_norm)
     # delta_v *= 5
@@ -1022,7 +1068,7 @@ def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH, debug_plot=True, l
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "plots/phoenix_bisectors"
+            out_root = cfg.conf_dict["datapath"] / "plots/phoenix_bisectors"
         savename = f"{Teff}K_{logg}_{FeH}_mu{mu}_bis_added.png"
         fig.set_tight_layout(True)
         plt.savefig(f"{out_root}/{savename}", dpi=600)
@@ -1053,6 +1099,8 @@ def calc_limb_dark_intensity(wave, mu):
 def add_limb_darkening(wave, spec, mu):
     """ Add the limb darkening law based on Hestroffer & Magnan 1998.
     
+        Intended to be used for a single mu angle.
+    
         :param np.array wave: Wavelength array
         :param np.array spec: Spectrum array
         :param float mu: Mu angle within [0, 1]
@@ -1065,7 +1113,7 @@ def add_limb_darkening(wave, spec, mu):
     
     return intensity, spec_limb
 
-def calc_mean_limb_dark(wave, mu_array, load_precalc=True):
+def calc_mean_limb_dark(wave, mu_array, load_precalc=True, N=150):
     """ Calculate a mean limb darkening continuum for a mu_array.
     
         :param np.array wave: A wavelength array in Angstrom
@@ -1074,7 +1122,6 @@ def calc_mean_limb_dark(wave, mu_array, load_precalc=True):
         
         :returns: Averaged limb darkening continuum with the same shape as wave
     """
-    N = 150
     wave_start = np.min(wave)
     wave_stop = np.max(wave)
     outname = f"mean_LD_N{N}_wave{wave_start}_{wave_stop}.npy"
@@ -1423,7 +1470,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = cfg.datapath / "/plots/macroturbulence"
+            out_root = cfg.conf_dict["datapath"] / "/plots/macroturbulence"
         savename = f"macroturbulence.png"
         outfile = out_root / savename
         # Only save one debug plot (otherwise you would have that for every cell)
