@@ -1125,11 +1125,29 @@ def calc_mean_limb_dark(wave, mu_array, load_precalc=True, N=150):
     wave_start = np.min(wave)
     wave_stop = np.max(wave)
     outname = f"mean_LD_N{N}_wave{wave_start}_{wave_stop}.npy"
-    outfile = cfg.conf_dict["datapath"] / "mean_limb_darkening" / outname
-    if load_precalc and outfile.is_file():
-        print(f"Load precalculated mean Limb Darkening from {outfile}")
-        mean_ld_intensity = np.load(outfile)
-    else:
+    outroot = cfg.conf_dict["datapath"] / "mean_limb_darkening" 
+    outfile = outroot / outname
+    run = True
+    if load_precalc:
+        if outfile.is_file():
+            print(f"Load precalculated mean Limb Darkening from {outfile}")
+            mean_ld_intensity = np.load(outfile)
+            run = False
+        else:
+            wave_start = 3500.004
+            wave_stop = 17499.99
+            larger_outname = f"mean_LD_N{N}_wave{wave_start}_{wave_stop}.npy"
+            outfile = outroot / larger_outname
+            if outfile.is_file():
+                mean_ld_intensity = np.load(outfile)
+                wave_file = outroot / f"wave_LD_N{N}_wave{wave_start}_{wave_stop}.npy"
+                wave_saved = np.load(wave_file)
+                mask = np.logical_and(wave_saved >= np.min(wave), 
+                                      wave_saved <= np.max(wave))
+                mean_ld_intensity = mean_ld_intensity[mask]
+                run = False
+        
+    if run:
         mus = copy.deepcopy(mu_array)
         mus = mus.flatten()
         mus = mus[~np.isnan(mus)]

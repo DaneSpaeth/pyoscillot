@@ -10,15 +10,15 @@ conf_dict = parse_global_ini()
 
 def plot_mean_limb_dark():
     star = ThreeDimStar()
-    N = 1000
-    proj = TwoDimProjector(star, N=1000, border=3, limb_darkening=False)
+    N = 150
+    proj = TwoDimProjector(star, N=N, border=3, limb_darkening=False)
 
     mu = proj.mu()
-    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(3500, 17500))
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4000, 4500))
     
     wave_start = np.min(wave)
     wave_stop = np.max(wave)
-    mean_limb_dark = calc_mean_limb_dark(wave, mu)
+    mean_limb_dark = calc_mean_limb_dark(wave, mu, N=N)
     
     fig, ax = plt.subplots(1, 2, figsize=(7.16, 4.0275))
     ax[0].imshow(mu, vmin=0, vmax=1, cmap="viridis")
