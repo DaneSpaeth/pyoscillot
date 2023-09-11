@@ -173,8 +173,7 @@ if __name__ == "__main__":
     #     ticket = root / "NGC4349_TestLimbDark" / f"test{i}.ini"
     #     tickets.append(ticket)
     
-    tickets = [root / "thesis_tickets" / "limb_dark_off.ini",
-               root / "thesis_tickets" / "limb_dark_on.ini"]
+    tickets = [root / "test_V_flux.ini"]
 
     for ticket in tickets:
         print(ticket, ticket.is_file())

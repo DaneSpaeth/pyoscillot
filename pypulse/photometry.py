@@ -25,29 +25,35 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     root = Path("/data/dspaeth/pypulse_fake_spectra/NGC4349_Test188/arrays")
     
-    wave_files = sorted(list((root / "wavelength").glob("*npy")))
-    spec_files =  sorted(list((root / "spectrum").glob("*npy")))
+    # wave_files = sorted(list((root / "wavelength").glob("*npy")))
+    # spec_files =  sorted(list((root / "spectrum").glob("*npy")))
     
     V_fluxes = []
     bjds = []
     total_fluxes = []
-    for wave_file, spec_file in zip(wave_files, spec_files):
-        bjds.append(float(spec_file.stem))
-        assert wave_file.name == spec_file.name
+    # for wave_file, spec_file in zip(wave_files, spec_files):
+    #     bjds.append(float(spec_file.stem))
+    #     assert wave_file.name == spec_file.name
         
-        wave = np.load(wave_file)
-        spec = np.load(spec_file)
-        V_flux = V_band_flux(wave, spec)
-        V_fluxes.append(V_flux)
-        total_fluxes.append(np.sum(spec))
+    #     wave = np.load(wave_file)
+    #     spec = np.load(spec_file)
+    #     V_flux = V_band_flux(wave, spec)
+    #     V_fluxes.append(V_flux)
+    #     total_fluxes.append(np.sum(spec))
         
-    V_fluxes = np.array(V_fluxes)
+    # V_fluxes = np.array(V_fluxes)
+    # V_fluxes /= np.mean(V_fluxes)
+    # total_fluxes = np.array(total_fluxes)
+    # total_fluxes /= np.mean(total_fluxes)
+    root = Path("/data/dspaeth/pypulse_fake_spectra/TestVFlux")
+    bjds, V_fluxes = np.loadtxt(root / "V_flux.txt", unpack=True)
     V_fluxes /= np.mean(V_fluxes)
-    total_fluxes = np.array(total_fluxes)
+    bjds, total_fluxes = np.loadtxt(root / "flux.txt", unpack=True)
     total_fluxes /= np.mean(total_fluxes)
     
     plt.scatter(bjds, V_fluxes, label="V flux")
     plt.scatter(bjds, total_fluxes, label="Total flux")
+    plt.legend()
     plt.savefig("dbug.png", dpi=300)
     
     

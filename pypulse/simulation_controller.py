@@ -347,6 +347,7 @@ class SimulationController():
         self.saver.save_arrays(array_dict, bjd)
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
+        self.saver.save_V_flux(bjd, star.V_band_flux)
 
         return(f"Star {idx+1}/{N} finished")
 
@@ -493,6 +494,7 @@ class SimulationController():
         del array_dict
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
+        self.saver.save_V_flux(bjd, star.V_band_flux)
 
         self._save_to_disk(rest_wavelength, spectrum, time, bc, bjd, v_theo)
 
@@ -574,6 +576,7 @@ class SimulationController():
 
         # Save the flux
         self.saver.save_flux(bjd, star.flux)
+        self.saver.save_V_flux(bjd, star.V_band_flux)
 
         # Save the arrays
         array_dict = star.get_arrays()

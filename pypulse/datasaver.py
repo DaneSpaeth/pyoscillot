@@ -131,6 +131,13 @@ class DataSaver():
 
         with open(folder / "flux.txt", "a") as f:
             f.write(f"{bjd}    {flux}\n")
+            
+    def save_V_flux(self, bjd, V_flux):
+        """ Save flux to file."""
+        folder = self._create_folder()
+
+        with open(folder / "V_flux.txt", "a") as f:
+            f.write(f"{bjd}    {V_flux}\n")
 
     def copy_flux(self):
         """ Copy the flux file to the serval folder."""
