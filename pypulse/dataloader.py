@@ -321,8 +321,16 @@ def continuum(Teff, logg, feh, wavelength_range=None):
     
     return wave, cont
 
+def V_band_filter():
+    """ Load the Bessel photometric V band filter taken from
+        http://spiff.rit.edu/classes/phys440/lectures/filters/bess-v.pass
+    """
+    file = DATAROOT / "photometric_filters" / "bessel_V_curve.txt"
+    wave, percentage = np.loadtxt(file, unpack=True)
+    return wave, percentage
+
 
 if __name__ == "__main__":
-    wave, cont = continuum(4500, 2.0, 0.0)
+    wave, percentage = V_band_filter()
     
-    print(wave, cont)
+    print(wave, percentage)
