@@ -9,6 +9,7 @@ from utils import remove_phoenix_bisector, add_bisector, calc_mean_limb_dark
 from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model, simple_ngc4349_CB_model
 import copy
 import cfg
+import photometry
 # Try to solve the memory leak but not working?
 import matplotlib
 matplotlib.use('Agg')
@@ -44,6 +45,7 @@ class GridSpectrumSimulator():
         self.feh = feh
         self.spectrum = None
         self.flux = None
+        self.V_band_flux = None
         self.conv_blue = convective_blueshift
         self.limb_dark = limb_darkening
         self.v_macro = v_macro
@@ -164,8 +166,9 @@ class GridSpectrumSimulator():
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
-        # Also calculate the flux
+        # Also calculate the fluxes
         self.calc_flux()
+        self.calc_V_flux()
 
         return rest_wavelength, total_spectrum, v_total
 
@@ -208,6 +211,12 @@ class GridSpectrumSimulator():
 
         self.flux = np.sum(self.spectrum)
         return self.flux
+    
+    def calc_V_flux(self):
+        """ Calculate the flux in the V band filter
+        """
+        self.V_band_flux = photometry.V_band_flux(self.wavelength, self.spectrum)
+        
 
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
