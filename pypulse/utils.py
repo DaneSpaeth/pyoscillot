@@ -573,7 +573,7 @@ def get_ref_spectra(T_grid, logg, feh, wavelength_range=(3000, 7000),
             #                                             T, 
             #                                             logg, 
             #                                             feh, 
-            #                                             debug_plot=True,
+            #                                             debug_plot=False,
             #                                             mu=mu)
             #         # TODO remove
             #         # spec_add = spec_corr
@@ -616,7 +616,7 @@ def plot_individual_fit(ax, line, wv, sp, bis_wave, bis, left_wv, left_sp, right
     return ax
 
 
-def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, debug_plot=True):
+def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, debug_plot=False):
     """ Normalize a PHOENIX Spectrum using Rassine.
     
         All results are linearly interpolated back onto the original wavelength grid.
@@ -676,7 +676,7 @@ def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, d
 
 def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh, 
                                            limb_dark_continuum=None, 
-                                           debug_plot=True):
+                                           debug_plot=False):
     """ Normalize a PHOENIX Spectrum using a precomupted continuum.
     
         All results are linearly interpolated back onto the original wavelength grid.
@@ -863,7 +863,7 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH,
 
 def remove_phoenix_bisector(wave, spec, Teff, logg, FeH,
                             limb_dark_continuum=None,
-                            debug_plot=True, line=5728.65,):
+                            debug_plot=False, line=5728.65,):
     """ Fit and Remove the phoenix bisector.
     
         :param np.array limb_dark_continuum: (Optional) Additional Limb Darkening continuum to remove
@@ -873,7 +873,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH,
                                     Teff, 
                                     logg, 
                                     FeH, 
-                                    debug_plot=True,
+                                    debug_plot=False,
                                     bis_plot=True, 
                                     limb_dark_continuum=limb_dark_continuum)
     
@@ -969,7 +969,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH,
 
 def add_bisector(wave, spec, bis_polynomial, Teff, logg, FeH,
                  mu=None, limb_dark_continuum=None,
-                 debug_plot=True, line=5728.65):
+                 debug_plot=False, line=5728.65):
     """ Add in a bisector to the data.
     
         Ideally the wave and spec should be cleaned of any previous bisectors.

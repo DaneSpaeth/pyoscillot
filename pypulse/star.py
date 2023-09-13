@@ -135,7 +135,7 @@ class GridSpectrumSimulator():
             # Calculate (or preaload if existing) an averaged limb darkening array
             self.mean_limb_dark = calc_mean_limb_dark(rest_wavelength, self.mu)
             
-            debug_plot = True
+            debug_plot = False
             if debug_plot:
                 fig, ax = plt.subplots(1, figsize=cfg.figsize)
                 ax.plot(rest_wavelength, self.mean_limb_dark, label="Averaged Limb Darkening Profile")
@@ -365,14 +365,14 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                         fine_ref_temperature, 
                                                         logg, 
                                                         feh, 
-                                                        debug_plot=True,
+                                                        debug_plot=False,
                                                         mu=rounded_mu)
                     
                     fine_ref_spectra_dict[rounded_mu] = spec_add
                     
             if v_macro:
                 for mu, spec in fine_ref_spectra_dict.items():
-                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=True, per_pixel=True, convolution=False, old=False)
+                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=False, per_pixel=True, convolution=False, old=False)
             
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
