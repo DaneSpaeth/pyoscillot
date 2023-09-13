@@ -205,16 +205,15 @@ if __name__ == "__main__":
     
 
     # np.save("spec_conv_wave_new.npy", spec_conv_wave)
-    spec_noconv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=False, old=True)
-    stop = time.time()
+    #spec_noconv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=False, old=True)
+    #stop = time.time()
     spec_conv_wave_px = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=False)
     # spec_conv_wave_conv = add_isotropic_convective_broadening(wave, spec, 5000, wave_dependent=True, per_pixel=True, convolution=True)
     # print(len(spec_conv_wave_px))
     # np.save("spec_noconv_new.npy", spec_conv_wave_px)
-    stop2 = time.time()
+    stop = time.time()
     print()
     print(round(stop-start, 2))
-    print(round(stop2-stop, 2))
     # exit()
     # exit()
     # np.save("spec_conv_wave_px.npy", spec_conv_wave_px)
@@ -227,15 +226,15 @@ if __name__ == "__main__":
     
     
 
-    fig, ax = plt.subplots(2, 1, figsize=(6.35, 3.5), sharex=True)
-    ax[0].plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum", marker=".", markersize=2)
+    fig, ax = plt.subplots(1, figsize=(6.35, 3.5), sharex=True)
+    ax.plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum", marker=".", markersize=2)
     
-    print(len(wave))
-    print(len(spec_noconv_wave_px))
+    # print(len(wave))
+    # print(len(spec_noconv_wave_px))
     # ax[0].plot(wave, spec_conv_no_wave, color="tab:orange")
-    ax[0].plot(wave, spec_conv_wave_px, marker="*", color="tab:blue", label=r"New")
-    ax[0].plot(wave, spec_noconv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="noconv_before")
-    ax[0].legend(loc="lower left")
+    ax.plot(wave, spec_conv_wave_px, color="tab:blue", label=r"v_macro=5000m/s", alpha=.7)
+    # ax[0].plot(wave, spec_noconv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="noconv_before")
+    ax.legend(loc="lower left")
     
     xlim_low = wv_range_start + (wv_range_stop - wv_range_start) / 2 - 0.5
     xlim_high = xlim_low + 1
@@ -244,25 +243,24 @@ if __name__ == "__main__":
     xlim_high = 5001
     mask = np.logical_and(wave >= xlim_low, wave < xlim_high)
     
-    print(((spec_conv_wave_px-spec_noconv_wave_px) == 0).all())
     
     # max_in_range = np.max(spec_conv_wave_px[mask])
-    ax[1].plot(wave,(spec_conv_wave_px-spec_noconv_wave_px), color="tab:red", marker=".")
-    print(((spec_conv_wave_px-spec_noconv_wave_px)[mask]))
+    # ax[1].plot(wave,(spec_conv_wave_px-spec_noconv_wave_px), color="tab:red", marker=".")
+    # print(((spec_conv_wave_px-spec_noconv_wave_px)[mask]))
     # ax[1].set_ylim(-0.02, 0.00002)
     # ax[1].set_ylim(-0.00005, 0.00005)
     
-    ax[0].set_xlim(xlim_low, xlim_high)
-    ax[0].set_ylim(bottom=0)
+    # ax.set_xlim(xlim_low, xlim_high)
+    ax.set_ylim(bottom=0)
     # ax[0].vlines(5000.0, ax[0].get_ylim()[0], ax[0].get_ylim()[1])
     
-    ax[1].set_xlabel(r"Wavelength $[\AA]$")
-    ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
-    ax[1].set_ylabel("Relative Difference")
+    ax.set_xlabel(r"Wavelength $[\AA]$")
+    ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    # ax[1].set_ylabel("Relative Difference")
     # ax[1].set_yticks([-0.000015, -0.00001, -0.000005, 0.0, 0.000005, 0.00001, 0.000015])
     figsize=(6.35, 3.5)
     # fig.set_tight_layout(True)
     fig.subplots_adjust(left=0.11, top=0.95, right=0.97, bottom=0.13, hspace=0)
     fig.align_ylabels()
     # plt.rcParams['agg.path.chunksize'] = 10000
-    plt.savefig("dbug2.png",dpi=500)
+    plt.savefig("v_macro_new_full.png",dpi=500)
