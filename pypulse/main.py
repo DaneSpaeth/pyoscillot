@@ -169,11 +169,11 @@ if __name__ == "__main__":
 
     # rot_dir = Path(root / "NGC4349_TestRot")
     # tickets = [rot_dir / "test67.ini"]
-    # for i in range(188, 189):
-    #     ticket = root / "NGC4349_TestLimbDark" / f"test{i}.ini"
-    #     tickets.append(ticket)
+    for i in range(192, 193):
+        ticket = root / "NGC4349_TestMacro" / f"test{i}.ini"
+        tickets.append(ticket)
     
-    tickets = [root / "test_V_flux.ini"]
+    # tickets = [root / "test_V_flux.ini"]
 
     for ticket in tickets:
         print(ticket, ticket.is_file())
