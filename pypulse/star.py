@@ -343,6 +343,20 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     plt.savefig("LD_removed_spectrum.png", dpi=600)
                     plt.close(fig)
             
+            # First add in the macroturbulence
+            if v_macro:
+                for mu, spec in fine_ref_spectra_dict.items():
+                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, 
+                                                                                    spec,
+                                                                                    v_macro=v_macro, 
+                                                                                    debug_plot=False, 
+                                                                                    per_pixel=True, 
+                                                                                    convolution=False,
+                                                                                    old=False)
+                    
+            # NOTE: We assume that the macroturbulence correction leaves the continuum largely
+            # unchanged so that we don't need to adjust the continuum
+                    
             # If the limb darkening correction was applied this will have affected the continuum
             # Since we load precomputed continuum corrections that were calculated for raw
             # PHOENIX spectra we now need to keep track of the continuum correction of the LD
@@ -370,9 +384,6 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                     
                     fine_ref_spectra_dict[rounded_mu] = spec_add
                     
-            if v_macro:
-                for mu, spec in fine_ref_spectra_dict.items():
-                    fine_ref_spectra_dict[mu] = add_isotropic_convective_broadening(rest_wavelength, spec, v_macro=v_macro, debug_plot=False, per_pixel=True, convolution=False, old=False)
             
 
         local_spectrum = fine_ref_spectra_dict[rounded_mu].copy()
