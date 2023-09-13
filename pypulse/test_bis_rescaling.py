@@ -26,12 +26,14 @@ for i, file in enumerate(files):
     v = v[mask]
     bis = bis[mask]
     
+    print(np.min(v))
+    
     R = int(file.stem.split("R_")[-1])
     Rs.append(R)
     
     ax[0].plot(v, bis, color=colordict[R], marker=".", linestyle="None", label=f"R={R}")
     poly_fit = Polynomial.fit(bis,v, 5, window=(0, 1))
-    lin_bis = np.linspace(0.27, 0.9)
+    lin_bis = np.linspace(0.27, 0.9, 100)
     ax[0].plot(poly_fit(lin_bis), lin_bis, color=colordict[R])
     
     
@@ -43,6 +45,7 @@ for i, file in enumerate(files):
         factors.append(factor)
     ax[1].plot(factor, lin_bis, color=colordict[R])
 
+print(len(factor))
 # integrated_params = np.zeros(6)
 factors = np.array(factors)
 R_test = 500000
@@ -66,10 +69,12 @@ plt.close()
 
 
 BIS_model = simple_alpha_boo_CB_model()[1.0]
+
 fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
 lin_bis = np.linspace(0, 1, 100)
 shift = np.mean(BIS_model(lin_bis))
 ax.plot((BIS_model(lin_bis)) -shift, lin_bis, label="Alpha Boo BIS model")
 ax.plot((BIS_model(lin_bis)-shift)*factor_test, lin_bis, label="Rescaled Alpha Boo BIS model")
+ax.legend()
 fig.set_tight_layout(True)
 plt.savefig("alpha_boo_rescale.png", dpi=300)
