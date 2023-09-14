@@ -110,20 +110,24 @@ def project_line_of_sight(phi, theta, values, component, inclination):
 # @jit(nopython=True)
 def project_2d(x, y, z, phi, theta, values, N,
                border=10, component=None, inclination=90,
-               azimuth=0, line_of_sight=False):
+               azimuth=0, line_of_sight=False, return_grid_points=False):
     """ Project the 3d geometry onto a 2d plane.
 
     https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853
     """
 
     y = y
-    large_number = 1e20
+    large_number = -1e20
     # keep origin fixed
     origin = (0, large_number, 0)
     d = 1
-
-    rot = Rot.from_euler('xz', [90 - inclination, azimuth], degrees=True)
-
+    
+    # First rotate the x y and z values to put the observer into the origin
+    # i.e. account for inclination (and azimuth, although the latter is not used)
+    # Rotate by 90 - inclination in the around the x axis
+    # And yb azimuth around the z axis
+    # The y axis is defined as the line of sight
+    rot = Rot.from_euler('xz', [-(90 - inclination), azimuth], degrees=True)
     x_rot = np.zeros(x.shape)
     y_rot = np.zeros(y.shape)
     z_rot = np.zeros(z.shape)
@@ -134,15 +138,32 @@ def project_2d(x, y, z, phi, theta, values, N,
             x_rot[row, col] = vec_rot[0]
             y_rot[row, col] = vec_rot[1]
             z_rot[row, col] = vec_rot[2]
-
+    
+    # Why do we need that?
     x_rot[y_rot < 0] = np.nan
     z_rot[y_rot < 0] = np.nan
-
+    
+    # fig = plt.figure(figsize=(9,9))
+    # ax = fig.add_subplot(111)
+    # ax.scatter(x_rot, z_rot, c=values, vmin=0, vmax=np.pi)
+    # ax.set_xlabel("X'")
+    # ax.set_ylabel("Y'")
+    # ax.set_aspect('equal', 'box')
+    # plt.savefig("rotation.png", dpi=300)
+    # plt.close()
+    
+    # Now project the x and z values onto the line of sight
     x_proj = (x_rot - origin[0]) * d / (y_rot - origin[1])
     z_proj = (z_rot - origin[2]) * d / (y_rot - origin[1])
-
+    
+    # Since you moved so far back for the projection the values are now very small
+    # So we divide by the maximum in x and z (since that is the limb of the star)
+    # and should be normalized to one
+    # But does it do anything now?
     x_proj = x_proj / np.nanmax(x_proj)
     z_proj = z_proj / np.nanmax(z_proj)
+    
+    print(x_proj)
 
     dN = 2 / N
     x_grid = np.linspace(-1 - border * dN, 1 + border * dN, N + 2 * border)
@@ -158,6 +179,16 @@ def project_2d(x, y, z, phi, theta, values, N,
     x_proj = x_proj.flatten()[nan_mask]
     z_proj = z_proj.flatten()[nan_mask]
     values = values.flatten()[nan_mask]
+    
+    # fig = plt.figure(figsize=(9,9))
+    # ax = fig.add_subplot(111)
+    # ax.scatter(x_proj, z_proj, c=values, vmin=0, vmax=np.pi)
+    # ax.set_xlabel("X'")
+    # ax.set_ylabel("Y'")
+    # ax.set_aspect('equal', 'box')
+    # plt.savefig("projection.png", dpi=300)
+    # plt.close()
+    
 
     if line_of_sight:
         phi = phi.flatten()[nan_mask]
@@ -168,11 +199,69 @@ def project_2d(x, y, z, phi, theta, values, N,
     # print(values)
 
     # original
+    
+    # linearly interpolate all the irregular grid points onto the regular grid
     method = "linear"
-
     grid = griddata(coords, values, (xx, zz),
                     method=method, fill_value=np.nan)
-    return grid
+    if return_grid_points:
+        return grid, xx, zz
+    else:
+        return grid
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    
+    
+    def plot_3d_and_proj(phi, theta, xx, yy, zz, savename):
+    
+        x = xx.flatten()
+        y = yy.flatten()
+        z = zz.flatten()
+        grid, xx, zz = project_2d(xx, yy, zz, phi, theta, theta, return_grid_points=True, N=150, inclination=9)
+        
+        fig = plt.figure(figsize=(18,9))
+        ax = fig.add_subplot(121, projection='3d')
+        ax2 = fig.add_subplot(122)
+        ax.scatter(x, y, z, marker=".", c=theta, vmin=0, vmax=np.pi)
+        ax.set_aspect('equal', 'box')
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        
+        # Project
+        ax2.scatter(xx[~np.isnan(grid)], zz[~np.isnan(grid)], marker=".", c=grid[~np.isnan(grid)], vmin=0, vmax=np.pi, s=1)
+        ax2.set_aspect('equal', 'box')
+        ax2.set_xlabel("X'")
+        ax2.set_ylabel("Z'")
+        plt.savefig(savename, dpi=300)
+        plt.close()
+    
+    # Test a sphere
+    phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=100)
+    plot_3d_and_proj(phi, theta, xx, yy, zz, "3D_cloud.png")
+    
+    # Test a cube
+    # x = np.linspace(-3, 3, 25)
+    # y = np.linspace(-2, 2, 25)
+    # z = np.linspace(-1, 1, 25)
+    
+    # xx, yy = np.meshgrid(x, y)
+    
+    # # yy ,zz = np.meshgrid(y, z)
+    # # yy = np.ones_like(xx)
+    
+    
+    # phi = np.zeros_like(xx)
+    # theta = np.zeros_like(xx)
+    # plot_3d_and_proj(phi, theta, xx, yy, zz, "3D_cuboid.png")
+    
+    
+    
+    
+    
+    
+    
 
 
 
