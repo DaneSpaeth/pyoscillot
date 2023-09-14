@@ -8,7 +8,6 @@ import spherical_geometry as geo
 from matplotlib import cm
 from plapy.constants import SIGMA
 from plapy.utils.utils import round_digits
-import limb_darkening as limb
 from astrometric_jitter import calc_photocenter, calc_astrometric_deviation
 import copy
 import dataloader as load
@@ -274,7 +273,7 @@ class TwoDimProjector():
     """ Project a 3D star onto a 2D plane."""
 
     def __init__(self, star, N=1000, border=10, inclination=90, azimuth=0,
-                 line_of_sight=True, limb_darkening=False):
+                 line_of_sight=True):
         """ Construct Projector object.
 
             :param star: Instance of 3D star to project
@@ -290,9 +289,6 @@ class TwoDimProjector():
         self.azimuth = azimuth
         self.line_of_sight = line_of_sight
 
-        self.limb_darkening = limb_darkening
-
-        print(f"Limb Darkening is {self.limb_darkening}")
 
     def _project(self, values, line_of_sight=False, component=None):
         """ Helper function to project stuff.
@@ -319,25 +315,6 @@ class TwoDimProjector():
                                     component=component)
         return projection
 
-    def _add_limb_darkening(self):
-        """ Add a limb darkening. For the moment simply add onto the
-            temperature.
-        """
-        raise NotImplementedError
-        # Try to be clever
-        # Create an array with ones of the same shape as the 3D star
-        unit_array = np.ones(self.star.phi.shape)
-        # Now project the ones onto the radial component
-        # This gives you the cos of the angle between the line of sight
-        # and the radial unit vector
-        # the cosine of this angle is often defined as the limb angle
-        # see e.g. PhD thesis of Müller
-        limb_angle_2d = self._project(unit_array,
-                                      line_of_sight=True,
-                                      component="rad")
-
-        self.limb_angle_2d = limb_angle_2d
-
     def mu(self):
         """ Return a 2D map of the angle mu.
 
@@ -346,8 +323,6 @@ class TwoDimProjector():
             where gamma is the angle between the line of sight and the surface
             normal.
 
-            I copy the first part from the limb_darkening function which
-            essentially tries to do the same thing.
         """
         # Try to be clever
         # Create an array with ones of the same shape as the 3D star
@@ -382,15 +357,6 @@ class TwoDimProjector():
     def temperature(self):
         """ Project the temperature onto a 2d plane."""
         tempmap = self._project(self.star.temperature, line_of_sight=False)
-
-        if self.limb_darkening:
-            print("I GET HERE AND THE LIMBDARKENING IS TRUE")
-            self._add_limb_darkening()
-            # Calculate the facrot for the itensity
-            factor = limb.schwarzschild_law(self.limb_angle_2d)
-            # Now you need to calculate that for the factor for temperature
-            factor_temp = factor**(1 / 4)
-            tempmap *= factor_temp
 
         return tempmap
 
@@ -571,10 +537,6 @@ class TwoDimProjector():
         intensity = self.star.intensity_stefan_boltzmann()
         intensity_2d = self._project(intensity, line_of_sight=False)
         intensity_2d[np.isnan(intensity_2d)] = 0
-        if self.limb_darkening:
-            self._add_limb_darkening()
-            factor = limb.schwarzschild_law(self.limb_angle_2d)
-            intensity_2d = intensity_2d * factor
 
         self.calc_photocenter(intensity_2d)
         return intensity_2d
@@ -635,13 +597,14 @@ if __name__ == "__main__":
     star = ThreeDimStar(N=1000)
     # star.create_rotation()
     # star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
-    projector = TwoDimProjector(star, N=500, border=3, limb_darkening=False, inclination=90)
+    projector = TwoDimProjector(star, N=100, border=3, inclination=90)
+    projector.temperature()
 
-    plt.imshow(projector.mu())
+    # plt.imshow(projector.mu())
     
-    print(projector.mu())
-    print(np.nanmean(projector.mu()))
-    plt.savefig("dbug.png", dpi=500)
+    # print(projector.mu())
+    # print(np.nanmean(projector.mu()))
+    # plt.savefig("dbug.png", dpi=500)
 
 
 

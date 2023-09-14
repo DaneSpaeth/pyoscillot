@@ -39,8 +39,7 @@ class GridSpectrumSimulator():
                                          N=N_star,
                                          border=N_border,
                                          inclination=inclination,
-                                         line_of_sight=True,
-                                         limb_darkening=False)
+                                         line_of_sight=True)
         self.logg = logg
         self.feh = feh
         self.spectrum = None
