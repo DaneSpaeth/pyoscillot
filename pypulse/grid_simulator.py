@@ -10,7 +10,7 @@ TICKETROOT = global_dict["ticketpath"]
 #### INSERT YOUR NAMES ETC HERE ####
 gridname = "NGC4349_broadeninggrid"
 baseticket = TICKETROOT / gridname / "base.ini"
-overviewfile = TICKETROOT / gridname / "gridoverview.csv"
+overviewfile = TICKETROOT / gridname / "gridoverview.txt"
 
 #### DEFINE THE RANGES THAT YOU WANT TO SIMULATE ####
 # dt = np.arange(21, 24, 1, dtype=int)
@@ -31,10 +31,14 @@ for idx, (v_rot, v_macro) in enumerate(zip(v_rots.flatten(), v_macros.flatten())
     config["GLOBAL"]["v_macro"] = str(v_macro)
     
     
-    outfile = TICKETROOT / gridname / f"{simname}.ini"
-    with open(outfile, "w") as f:
-        config.write(f)
+    # outfile = TICKETROOT / gridname / f"{simname}.ini"
+    # with open(outfile, "w") as f:
+    #     config.write(f)
+    with open(overviewfile, "a") as f:
+        f.write(f"{idx_plus}    {v_rot}    {v_macro}\n")
 
-est_time = v_rots.size * timedelta(minutes=35)
+# Save the settings
+
+est_time = v_rots.size * timedelta(minutes=25)
 print(est_time)
 
