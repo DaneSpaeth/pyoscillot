@@ -10,7 +10,7 @@ from datasaver import DataSaver
 from star import GridSpectrumSimulator
 from pathlib import Path
 import cfg
-from time_sampling import sample_phase, load_presampled_phase
+from time_sampling import sample_phase, load_presampled_times
 import carmenes_simulator as carmenes
 import harps_simulator as harps
 from theoretical_rvs import calc_theoretical_results
@@ -255,10 +255,9 @@ class SimulationController():
         else:
             # In this mode the infos N, N_periods and P are not used
             filename = self.conf["timesampling"]
-            phase_sample, time_sample = load_presampled_phase(filename)
-            print(time_sample)
+            time_sample = load_presampled_times(filename)
             # Overwrite N
-            N = len(phase_sample)
+            N = len(time_sample)
             self.conf["n"] = N
 
         # Now you have a global and raw phase and time_sample
@@ -372,10 +371,9 @@ class SimulationController():
                 random_day_range=(rand_day_min, rand_day_max))
         else:
             filename = self.conf["timesampling"]
-            phase_sample, time_sample = load_presampled_phase(filename)
-            print(time_sample)
+            time_sample = load_presampled_times(filename)
             # Overwrite N
-            N = len(phase_sample)
+            N = len(time_sample)
             self.conf["n"] = N
 
         K_sample = np.zeros(len(time_sample))

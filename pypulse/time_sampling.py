@@ -54,7 +54,7 @@ def sample_phase(sample_P, N_global=30, N_periods=1,
 
 
 def sample_phase_randomuniform(N_global, N_periods, period):
-    """ Sample time and phase for a random timesampling with one observation in random nights with additional
+    """ Sample time for a random timesampling with one observation in random nights with additional
         random sampling within the night
     ."""
     stop = datetime.combine(date.today(), datetime.min.time())
@@ -83,8 +83,8 @@ def sample_phase_randomuniform(N_global, N_periods, period):
     return phase_sample.astype(float), time_sample
 
 
-def presample_phase(N_global, N_periods, period, sampling="uniform", start=None, start_phase=0):
-    """ Presample the phases of a spot sim for repeated use"""
+def presample_times(N_global, N_periods, period, sampling="uniform", start=None, start_phase=0):
+    """ Presample the times of a sim for repeated use"""
     if sampling == "uniform":
         phase_sample, time_sample = sample_phase(period, N_global, N_periods, start=start, start_phase=start_phase)
     elif sampling == "randomuniform":
@@ -107,30 +107,27 @@ def presample_phase(N_global, N_periods, period, sampling="uniform", start=None,
     print(f"Save to {out_file}")
 
     with open(out_file, "w") as f:
-        for p, t in zip(phase_sample, time_sample):
-            line = f"{p:.15f}    {t.isoformat()}\n"
+        for t in time_sample:
+            line = f"{t.isoformat()}\n"
             f.write(line)
 
 
-def load_presampled_phase(savename):
-    """ Load a presampled spot phase."""
+def load_presampled_times(savename):
+    """ Load presampled times."""
     global_dict = parse_global_ini()
     load_directory = global_dict["datapath"]
 
     savename = savename.replace(".dat", "")
     load_file = load_directory / "timesamples" / f"{savename}.dat"
 
-    phase_sample = np.array([])
     time_sample = np.array([])
     with open(load_file, "r") as f:
         for line in f:
-            cols = line.strip().split()
-            phase_sample = np.append(phase_sample, float(cols[0]))
             time_sample = np.append(
-                time_sample, datetime.fromisoformat(cols[1]))
+                time_sample, datetime.fromisoformat(line.strip()))
 
-    return phase_sample, time_sample
+    return time_sample
 
 
 if __name__ == "__main__":
-    presample_phase(40, 3, 674.5, "uniform", start=datetime.strptime("2005-03-20T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f")- timedelta(days=200))
+    presample_times(40, 3, 674.5, "uniform", start=datetime.strptime("2005-03-20T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f")- timedelta(days=200))
