@@ -147,6 +147,7 @@ class GridSpectrumSimulator():
             
 
         T_precision_decimals = 0
+        weights = self.projector.weights
         rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
                                                                      self.rotation,
                                                                      self.pulsation,
@@ -161,7 +162,8 @@ class GridSpectrumSimulator():
                                                                      change_bis=self.conv_blue,
                                                                      limb_dark=self.limb_dark,
                                                                      v_macro=self.v_macro,
-                                                                     mean_limb_dark=self.mean_limb_dark)
+                                                                     mean_limb_dark=self.mean_limb_dark,
+                                                                     weights=weights)
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
@@ -225,11 +227,14 @@ class GridSpectrumSimulator():
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
                       logg, feh, 
-                      change_bis=False, limb_dark=False, v_macro=0, mean_limb_dark=None):
+                      change_bis=False, limb_dark=False, v_macro=0, mean_limb_dark=None, weights=None):
     """ Compute the spectrum.
 
         Does all the heavy lifting
     """
+    if weights is None:
+        print("USE UNIFORM WEIGHTS")
+        weights = np.ones_like(temperature)
 
     # Calc v over c
     v_c_rot = rotation / C
@@ -251,6 +256,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     v_c_pulse = v_c_pulse.flatten()
     v_c_gran = v_c_gran.flatten()
     mu = mu.flatten()
+    weights = weights.flatten()
 
     sorted_temp_indices = np.argsort(temperature)
     sorted_temperature = temperature[sorted_temp_indices]
@@ -258,6 +264,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     sorted_v_c_pulse = v_c_pulse[sorted_temp_indices]
     sorted_v_c_gran = v_c_gran[sorted_temp_indices]
     sorted_mus = mu[sorted_temp_indices]
+    sorted_weights = weights[sorted_temp_indices]
 
     sorted_temperature = np.round(sorted_temperature, decimals=T_precision_decimals)
     
@@ -279,12 +286,13 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                   np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
     print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulsation! Probably at the pole!")
 
-    for temp, v_c_r, v_c_p, v_c_g, rounded_mu, mu in zip(sorted_temperature, 
+    for temp, v_c_r, v_c_p, v_c_g, rounded_mu, mu, weight in zip(sorted_temperature, 
                                             sorted_v_c_rot, 
                                             sorted_v_c_pulse,
                                             sorted_v_c_gran,
                                             rounded_mus,
-                                            sorted_mus):
+                                            sorted_mus,
+                                            sorted_weights):
         # print(f"Calc cell {done}/{total_cells}")
         # done += 1
         if np.isnan(temp):
@@ -397,7 +405,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             if limb_dark:
                 _, local_spectrum = add_limb_darkening(rest_wavelength, local_spectrum, mu)
             # print(f"Skip Star Element {row, col}")
-            total_spectrum += local_spectrum
+            # Also add in the weight (if cell is only partially on the star)
+            total_spectrum += local_spectrum * weight
         else:
             # print(f"Calculate Star Element {row, col}")
             # local_wavelength = rest_wavelength + \
@@ -412,7 +421,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
             if limb_dark:
                 _, interpol_spectrum = add_limb_darkening(rest_wavelength, interpol_spectrum, mu)
-            total_spectrum += interpol_spectrum
+            # Also add in the weight (if cell is only partially on the star)
+            total_spectrum += interpol_spectrum * weight
 
     return rest_wavelength, total_spectrum, v_total
 
