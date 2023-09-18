@@ -204,21 +204,63 @@ def project_2d(x, y, z, phi, theta, values, N,
     method = "linear"
     grid = griddata(coords, values, (xx, zz),
                     method=method, fill_value=np.nan)
+    
+    # Test to also take the cells, whose center is outside the circle
+    nanmask_grid = np.isnan(grid)
+    grid_nearest = griddata(coords, values, (xx, zz),
+                            method="nearest", fill_value=np.nan)
+    grid[nanmask_grid] = grid_nearest[nanmask_grid]
     if return_grid_points:
-        return grid, xx, zz
+        return grid, xx, zz, nanmask_grid
     else:
         return grid
+    
+def percentage_within_circle(x, y):
+    """ Calculate the percentage of a pixel that is within a unit circle.
+    
+        :param xs, ys: Center coordinates of all pixels
+        :param dx: Size of one pixel in 1 direction
+    """
+    
+    dx = x[0,1] - x[0,0]
+    distances_from_origin = np.sqrt(x**2 + y**2)
+    percentages = np.zeros_like(distances_from_origin)
+    
+    # You can already set the ones inside and outside to 0
+    inside_mask = distances_from_origin <= 1 - np.sqrt(2*(dx/2)**2)
+    percentages[inside_mask] = 1
+    outside_mask = distances_from_origin > 1 + np.sqrt(2*(dx/2)**2)
+    percentages[outside_mask] = 0
+    
+    edge_mask = np.logical_and(~inside_mask, ~outside_mask)
+    x_border = x[edge_mask].flatten()
+    y_border = y[edge_mask].flatten()
+    pct_border = np.zeros_like(x_border)
+    for idx, (_x, _y) in enumerate(zip(x_border, y_border)):
+        sample_x = np.linspace(_x - dx/2, _x + dx/2, 100)
+        sample_y = np.linspace(_y - dx/2, _y + dx/2, 100)
+    
+        xx, yy = np.meshgrid(sample_x, sample_y)
+        dist = np.sqrt(xx**2 + yy**2)
+        dist = dist.flatten()
+        pct = (dist <= 1).sum() / len(dist)
+        pct_border[idx] = pct
+    
+    percentages[edge_mask] = pct_border
+    return percentages
+        
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle
     
     
     def plot_3d_and_proj(phi, theta, xx, yy, zz, savename):
-    
+        N = 50
         x = xx.flatten()
         y = yy.flatten()
         z = zz.flatten()
-        grid, xx, zz = project_2d(xx, yy, zz, phi, theta, theta, return_grid_points=True, N=150, inclination=9)
+        grid, xx, zz, nanmask_grid = project_2d(xx, yy, zz, phi, theta, theta, return_grid_points=True, N=N, inclination=90)
         
         fig = plt.figure(figsize=(18,9))
         ax = fig.add_subplot(121, projection='3d')
@@ -230,15 +272,43 @@ if __name__ == "__main__":
         ax.set_zlabel("Z")
         
         # Project
-        ax2.scatter(xx[~np.isnan(grid)], zz[~np.isnan(grid)], marker=".", c=grid[~np.isnan(grid)], vmin=0, vmax=np.pi, s=1)
+        # ax2.imshow(grid)
+        print(xx.shape)
+        print(zz.shape)
+        percentages = percentage_within_circle(xx, zz)
+        img = ax2.scatter(xx, zz, marker=".", c=percentages, vmin=0, vmax=1, s=15,)
+        xlim = (-1.1, 1.1)
+        ylim = (-1.1, 1.1)
+        ax2.plot(xx[percentages > 0], zz[percentages > 0], 
+                 c="tab:red", marker="s", fillstyle='none',markersize=8, linestyle="None",)
+        
+        # ax2.scatter(xx[nanmask_grid], zz[nanmask_grid], marker=".", c=percentages[nanmask_grid], vmin=0, vmax=1, s=15,)
+        ax2.plot(xx[percentages < 0], zz[percentages < 0], 
+                 c="gray", marker="s", fillstyle='none',markersize=8, linestyle="None",)
+        
         ax2.set_aspect('equal', 'box')
         ax2.set_xlabel("X'")
         ax2.set_ylabel("Z'")
+        
+        circle = Circle((0, 0), 1, fill=False)
+        ax2.add_patch(circle)
+        
+        ax2.hlines(0, xlim[0], xlim[1], linestyle="--", linewidth=1, color="black")
+        ax2.vlines(0, ylim[0], ylim[1], linestyle="--", linewidth=1, color="black")
+        
+        ax2.set_xlim(xlim)
+        ax2.set_ylim(ylim)
+        
+        # ax3 = fig.add_subplot(133)
+        plt.colorbar(img, label="Cell weighting")
+        fig.set_tight_layout(True)
         plt.savefig(savename, dpi=300)
+        
+        
         plt.close()
     
     # Test a sphere
-    phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=100)
+    phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=151)
     plot_3d_and_proj(phi, theta, xx, yy, zz, "3D_cloud.png")
     
     # Test a cube
