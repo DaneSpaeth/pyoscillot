@@ -194,7 +194,10 @@ class GridSpectrumSimulator():
 
     def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
                       T_var=0, T_phase=0, refbjd=0):
-        """ Add a pulsation to the star."""
+        """ Add a pulsation to the star.
+        
+            Also adjust the phase here.
+        """
         # TODO make these values adjustable
         # t = phase / self.three_dim_star.nu
         # Adjust the phase, i.e. reftime corresponds to phase 0
