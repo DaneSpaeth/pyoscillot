@@ -288,6 +288,23 @@ class TwoDimProjector():
         self.inclination = inclination
         self.azimuth = azimuth
         self.line_of_sight = line_of_sight
+        
+        # Calculate the weights for the edges
+        _, xx, zz, _ = geo.project_2d(self.star.x,
+                                                    self.star.y,
+                                                    self.star.z,
+                                                    self.star.phi,
+                                                    self.star.theta,
+                                                    np.zeros_like(self.star.x),
+                                                    self.N,
+                                                    inclination=self.inclination,
+                                                    border=self.border,
+                                                    line_of_sight=False,
+                                                    component=None,
+                                                    return_grid_points=True)
+        self.weights = geo.percentage_within_circle(xx, zz)
+        print(self.weights)
+        
 
 
     def _project(self, values, line_of_sight=False, component=None):
@@ -597,14 +614,14 @@ if __name__ == "__main__":
     star = ThreeDimStar(N=1000)
     # star.create_rotation()
     # star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
-    projector = TwoDimProjector(star, N=100, border=3, inclination=90)
-    projector.temperature()
+    projector = TwoDimProjector(star, N=150, border=3, inclination=90)
+    projector.weights
 
-    # plt.imshow(projector.mu())
+    plt.imshow(projector.weights, vmin=0, vmax=1)
     
     # print(projector.mu())
     # print(np.nanmean(projector.mu()))
-    # plt.savefig("dbug.png", dpi=500)
+    plt.savefig("dbug.png", dpi=500)
 
 
 
