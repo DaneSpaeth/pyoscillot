@@ -21,7 +21,7 @@ def interpolate(spectrum, wavelength):
     (tmpl_spec, tmpl_wave, tmpl_blaze) = harps_template(spec_filename="HARPS_template_ngc4349_127_e2ds_A.fits")
 
     interpol_spec = []
-    R_real = 115000
+    R_real = 120000
     # R_test = 130000
     print("Adjusting Resolution")
     for order in range(len(tmpl_wave)):
