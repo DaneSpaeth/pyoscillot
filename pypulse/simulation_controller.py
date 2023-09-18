@@ -425,6 +425,7 @@ class SimulationController():
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
         N_star = int(self.conf["n_star"])
+        refbjd = float(self.conf.get("refbjd", 0.0))
 
         print(f"Calculate star {idx+1}/{N} at bjd {bjd}")
         star = GridSpectrumSimulator(
@@ -452,10 +453,10 @@ class SimulationController():
                 ms = range(-l, l + 1)
             for m in ms:
                 print(
-                    f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}")
+                    f"Add Pulsation {sim}, with P={P}, l={l}, m={m}, v_p={v_p}, k={k}, dT={dT}, T_phase={T_phase}, refbjd={refbjd}")
 
                 star.add_pulsation(t=bjd, l=l, m=m, nu=1 / P, v_p=v_p, k=k,
-                                   T_var=dT, T_phase=T_phase)
+                                   T_var=dT, T_phase=T_phase, refbjd=refbjd)
 
         # Wavelength in restframe of phoenix spectra but already perturbed by
         # pulsation

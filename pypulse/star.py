@@ -193,10 +193,12 @@ class GridSpectrumSimulator():
         return array_dict
 
     def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
-                      T_var=0, T_phase=0):
+                      T_var=0, T_phase=0, refbjd=0):
         """ Add a pulsation to the star."""
         # TODO make these values adjustable
         # t = phase / self.three_dim_star.nu
+        # Adjust the phase, i.e. reftime corresponds to phase 0
+        t -= refbjd
         self.three_dim_star.add_pulsation(t=t, l=l, m=m, nu=nu, v_p=v_p, k=k,
                                           T_var=T_var, T_phase=T_phase)
 

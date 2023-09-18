@@ -169,14 +169,14 @@ if __name__ == "__main__":
 
     # rot_dir = Path(root / "NGC4349_TestRot")
     # tickets = [rot_dir / "test67.ini"]
-    # for i in range(205, 206):
-    #     ticket = root / "NGC4349_TestMacro" / f"test{i}.ini"
-    #     tickets.append(ticket)
+    for i in range(206, 207):
+        ticket = root / "NGC4349_TestSampling" / f"test{i}.ini"
+        tickets.append(ticket)
     
     # tickets = [root / "test_V_flux.ini"]
     
-    grid_folder = root / "NGC4349_broadeninggrid"
-    tickets = sorted(list(grid_folder.glob("*_broadeninggrid_*.ini")))
+    # grid_folder = root / "NGC4349_broadeninggrid"
+    # tickets = sorted(list(grid_folder.glob("*_broadeninggrid_*.ini")))
 
     for ticket in tickets:
         main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
