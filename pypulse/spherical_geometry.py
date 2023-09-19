@@ -3,7 +3,7 @@ import numpy as np
 from scipy.special import sph_harm
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial.transform import Rotation as Rot
-from scipy.interpolate import griddata
+from scipy.interpolate import griddata, bisplrep, bisplev, interp2d
 from scipy.spatial.distance import cdist
 import time
 from numba import jit
@@ -163,7 +163,6 @@ def project_2d(x, y, z, phi, theta, values, N,
     x_proj = x_proj / np.nanmax(x_proj)
     z_proj = z_proj / np.nanmax(z_proj)
     
-    print(x_proj)
 
     dN = 2 / N
     x_grid = np.linspace(-1 - border * dN, 1 + border * dN, N + 2 * border)
@@ -206,10 +205,12 @@ def project_2d(x, y, z, phi, theta, values, N,
                     method=method, fill_value=np.nan)
     
     # Test to also take the cells, whose center is outside the circle
+    # Using nearest neighbor interpolation -> not ideal
     nanmask_grid = np.isnan(grid)
     grid_nearest = griddata(coords, values, (xx, zz),
                             method="nearest", fill_value=np.nan)
     grid[nanmask_grid] = grid_nearest[nanmask_grid]
+    
     if return_grid_points:
         return grid, xx, zz, nanmask_grid
     else:
@@ -260,7 +261,7 @@ if __name__ == "__main__":
         x = xx.flatten()
         y = yy.flatten()
         z = zz.flatten()
-        grid, xx, zz, nanmask_grid = project_2d(xx, yy, zz, phi, theta, theta, return_grid_points=True, N=N, inclination=90)
+        grid, xx, zz, nanmask_grid = project_2d(xx, yy, zz, phi, theta, np.ones_like(phi)*4500, return_grid_points=True, N=N, inclination=90)
         
         fig = plt.figure(figsize=(18,9))
         ax = fig.add_subplot(121, projection='3d')
