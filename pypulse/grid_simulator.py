@@ -42,7 +42,6 @@ for idx, (v_rot, v_macro) in enumerate(zip(v_rots.flatten(), v_macros.flatten())
         f.write(f"{idx_plus}    {v_rot}    {v_macro}\n")
 
 # Save the settings
-
 est_time = v_rots.size * timedelta(minutes=30)
 print(est_time)
 
