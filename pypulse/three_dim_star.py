@@ -614,7 +614,7 @@ if __name__ == "__main__":
     star = ThreeDimStar(N=1000)
     # star.create_rotation()
     # star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
-    projector = TwoDimProjector(star, N=150, border=3, inclination=90)
+    projector = TwoDimProjector(star, N=150, border=3, inclination=45)
     projector.weights
 
     plt.imshow(projector.weights, vmin=0, vmax=1)

@@ -175,11 +175,14 @@ if __name__ == "__main__":
     
     # tickets = [root / "test_V_flux.ini"]
     
-    # grid_folder = root / "NGC4349_broadeninggrid"
-    # tickets = sorted(list(grid_folder.glob("*_broadeninggrid_*.ini")))
+    grid_folder = root / "NGC4349_broadeninggrid"
+    tickets = sorted(list(grid_folder.glob("*_broadeninggrid_*.ini")))
 
     for ticket in tickets:
-        main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+        try:
+            main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+        except:
+            continue
     # i = 24
     # ticket = root / "NGC4349-127" / f"test{i}.ini"
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)

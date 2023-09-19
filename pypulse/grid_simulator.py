@@ -14,9 +14,13 @@ overviewfile = TICKETROOT / gridname / "gridoverview.txt"
 
 #### DEFINE THE RANGES THAT YOU WANT TO SIMULATE ####
 # dt = np.arange(21, 24, 1, dtype=int)
-v_rot = np.arange(1000, 6500, 500, dtype=int)
-v_macro = np.arange(1000, 6500, 500, dtype=int)
+v_rot = np.arange(3000, 6500, 500, dtype=int)
+v_macro = np.arange(6500, 3000, -500, dtype=int)
 v_rots, v_macros = np.meshgrid(v_rot, v_macro)
+
+# Empty the file from last time
+with open(overviewfile, "w") as f:
+    pass
 
 for idx, (v_rot, v_macro) in enumerate(zip(v_rots.flatten(), v_macros.flatten())):
     idx_plus = idx + 1
@@ -31,14 +35,14 @@ for idx, (v_rot, v_macro) in enumerate(zip(v_rots.flatten(), v_macros.flatten())
     config["GLOBAL"]["v_macro"] = str(v_macro)
     
     
-    # outfile = TICKETROOT / gridname / f"{simname}.ini"
-    # with open(outfile, "w") as f:
-    #     config.write(f)
+    outfile = TICKETROOT / gridname / f"{simname}.ini"
+    with open(outfile, "w") as f:
+        config.write(f)
     with open(overviewfile, "a") as f:
         f.write(f"{idx_plus}    {v_rot}    {v_macro}\n")
 
 # Save the settings
 
-est_time = v_rots.size * timedelta(minutes=25)
+est_time = v_rots.size * timedelta(minutes=30)
 print(est_time)
 
