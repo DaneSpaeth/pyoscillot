@@ -175,8 +175,8 @@ if __name__ == "__main__":
     
     # tickets = [root / "test_V_flux.ini"]
     
-    grid_folder = root / "NGC4349_broadeninggrid"
-    tickets = sorted(list(grid_folder.glob("*_broadeninggrid_*.ini")))
+    grid_folder = root / "NGC4349_inclinationgrid"
+    tickets = sorted(list(grid_folder.glob("*_inclinationgrid_*.ini")))
 
     for ticket in tickets:
         try:
