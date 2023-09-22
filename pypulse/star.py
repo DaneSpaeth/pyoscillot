@@ -306,6 +306,9 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
         if np.isnan(v_c_g):
             print(f"Skip a cell since granulation is NaN")
             continue
+        if np.isnan(weight):
+            print("Skip a cell since the weight is NaN")
+            continue
         
         # Let's make the fine_ref_spectrum a dictionary of all needed mu angles
         
@@ -406,7 +409,12 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                 _, local_spectrum = add_limb_darkening(rest_wavelength, local_spectrum, mu)
             # print(f"Skip Star Element {row, col}")
             # Also add in the weight (if cell is only partially on the star)
-            total_spectrum += local_spectrum * weight
+            local_spectrum *= weight
+            if not np.isnan(local_spectrum).any():
+                total_spectrum += local_spectrum
+            else:
+                print("Skip Cell since there is a NaN in the local spectrum")
+                print(np.isnan(local_spectrum).all())
         else:
             # print(f"Calculate Star Element {row, col}")
             # local_wavelength = rest_wavelength + \
@@ -422,34 +430,50 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             if limb_dark:
                 _, interpol_spectrum = add_limb_darkening(rest_wavelength, interpol_spectrum, mu)
             # Also add in the weight (if cell is only partially on the star)
-            total_spectrum += interpol_spectrum * weight
+            interpol_spectrum *= weight
+            if not np.isnan(interpol_spectrum).any():
+                total_spectrum += interpol_spectrum
+            else:
+                print("Skip Cell since there is a NaN in the local spectrum")
+                print(np.isnan(interpol_spectrum).all())
 
     return rest_wavelength, total_spectrum, v_total
 
 
 if __name__ == "__main__":
-    
+    print("Test")
     Teff = 4500
     logg = 2
     feh = 0.0
-    star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=True, convective_blueshift=True, v_macro=0)
-    wave, spec_LD, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
-    
     star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=0)
+    star.add_pulsation()
     wave, spec, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
     
-    fig, ax = plt.subplots(2, 1, figsize=cfg.figsize, sharex=True)
-    ax[0].plot(wave, spec_LD, alpha=0.7, label="Limb Darkening Correction")
-    ax[0].plot(wave, spec, label="No Limb Darkening Correction")
-    ax[0].legend()
-    ax[1].plot(wave, (spec_LD - spec) / spec)
-    ax[1].set_xlabel(r"Wavelength [$\AA$]")
-    ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
-    ax[1].set_ylabel(r"$\Delta$ Flux [%]")
-    ax[0].set_ylim(0, ax[0].get_ylim()[1]*1.15)
-    # fig.set_tight_layout(True)
-    fig.subplots_adjust(hspace=0, wspace=0, left=0.15, right=0.99, bottom=0.15, top=0.99)
-    plt.savefig("LD_comparison.png", dpi=600)
+    print(spec)
+    
+    
+    #### To TEST the Limb Darkening ####
+    # Teff = 4500
+    # logg = 2
+    # feh = 0.0
+    # star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=True, convective_blueshift=True, v_macro=0)
+    # wave, spec_LD, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
+    
+    # star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=0)
+    # wave, spec, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
+    
+    # fig, ax = plt.subplots(2, 1, figsize=cfg.figsize, sharex=True)
+    # ax[0].plot(wave, spec_LD, alpha=0.7, label="Limb Darkening Correction")
+    # ax[0].plot(wave, spec, label="No Limb Darkening Correction")
+    # ax[0].legend()
+    # ax[1].plot(wave, (spec_LD - spec) / spec)
+    # ax[1].set_xlabel(r"Wavelength [$\AA$]")
+    # ax[0].set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    # ax[1].set_ylabel(r"$\Delta$ Flux [%]")
+    # ax[0].set_ylim(0, ax[0].get_ylim()[1]*1.15)
+    # # fig.set_tight_layout(True)
+    # fig.subplots_adjust(hspace=0, wspace=0, left=0.15, right=0.99, bottom=0.15, top=0.99)
+    # plt.savefig("LD_comparison.png", dpi=600)
     
     
     

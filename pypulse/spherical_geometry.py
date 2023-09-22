@@ -17,7 +17,10 @@ from numba import jit
 """
 
 def sph_to_x_y_z(phi, theta):
-    """ Convert spherical coordinates phi, theta to x,y,z."""
+    """ Convert spherical coordinates phi, theta to x,y,z.
+    
+        Checked: 2023-09-21
+    """
     # The Cartesian coordinates of the unit sphere
     x = np.sin(theta) * np.cos(phi)
     y = np.sin(theta) * np.sin(phi)
@@ -56,13 +59,16 @@ def x_y_z_to_sph(x, y, z):
 
 
 def get_spherical_phi_theta_x_y_z(N=250):
-    """ Sample x and z for a spherical star."""
+    """ Sample x and z for a spherical star.
+    
+        Checked: 2023-09-21
+    """
     # Theta: Polar Angle, i.e. colatitude or zenith angle
-    theta = np.linspace(0, np.pi, N)
+    theta = np.linspace(0, np.pi, N, endpoint=True)
 
     # Phi: Azimuthal angle
     # previously I had 2 N here
-    phi = np.linspace(0, 2 * np.pi, N)
+    phi = np.linspace(0, 2 * np.pi, N, endpoint=False)
     # phi = np.linspace(0, np.pi)
     phi, theta = np.meshgrid(phi, theta)
 
@@ -77,8 +83,15 @@ def project_line_of_sight(phi, theta, values, component, inclination):
     # Line of sight unit vector
     los = np.array(
         (0,
-         np.cos(np.radians(90 - inclination)),
-         -np.sin(np.radians(90 - inclination))))
+         -np.cos(np.radians(90 - inclination)),
+         np.sin(np.radians(90 - inclination))))
+    
+    # TODO think about which unit vector to use. Why does it matter?
+    # Previous LOS vector
+    # los = np.array(
+    #     (0,
+    #      np.cos(np.radians(90 - inclination)),
+    #      -np.sin(np.radians(90 - inclination))))
 
     scalar_prods = []
     for p, t in zip(phi, theta):
@@ -111,7 +124,7 @@ def project_line_of_sight(phi, theta, values, component, inclination):
 def project_2d(x, y, z, phi, theta, values, N,
                border=10, component=None, inclination=90,
                azimuth=0, line_of_sight=False, return_grid_points=False,
-               edge_extapolation="nearest"):
+               edge_extrapolation="nearest"):
     """ Project the 3d geometry onto a 2d plane.
 
     https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853
@@ -141,8 +154,11 @@ def project_2d(x, y, z, phi, theta, values, N,
             z_rot[row, col] = vec_rot[2]
     
     # Hide the layers on the backside of the star
-    x_rot[y_rot < 0] = np.nan
-    z_rot[y_rot < 0] = np.nan
+    # x_rot[y_rot >= 0] = np.nan
+    # z_rot[y_rot >= 0] = np.nan
+    
+    x_rot[y_rot >= 0] = np.nan
+    z_rot[y_rot >= 0] = np.nan
     
     # fig = plt.figure(figsize=(9,9))
     # ax = fig.add_subplot(111)
@@ -154,8 +170,8 @@ def project_2d(x, y, z, phi, theta, values, N,
     # plt.close()
     
     # Now project the x and z values onto the line of sight
-    x_proj = (x_rot - origin[0]) * d / (y_rot - origin[1])
-    z_proj = (z_rot - origin[2]) * d / (y_rot - origin[1])
+    x_proj = (x_rot - origin[0]) * d / np.abs((y_rot - origin[1]))
+    z_proj = (z_rot - origin[2]) * d / np.abs((y_rot - origin[1]))
     
     
     # Since you moved so far back for the projection the values are now very small
@@ -226,11 +242,11 @@ def project_2d(x, y, z, phi, theta, values, N,
     
     # Test to also take the cells, whose center is outside the circle
     # Using nearest neighbor interpolation -> not ideal
-    if edge_extapolation == "nearest":
+    if edge_extrapolation == "nearest":
         grid_nearest = griddata(coords, values, (xx, zz),
                                 method="nearest", fill_value=np.nan)
         grid[edge_mask] = grid_nearest[edge_mask]
-    elif edge_extapolation == "bispline":
+    elif edge_extrapolation == "bispline":
         tck = bisplrep(x_proj, z_proj, values, kx=3, ky=3)
         values_bispl = bisplev(x_grid, z_grid, tck).T 
         grid[edge_mask] = values_bispl[edge_mask]
@@ -336,12 +352,12 @@ if __name__ == "__main__":
         
         plt.close()
         
-    def plot_test_extrapolation(phi, theta, xx, yy, zz, savename, edge_extapolation):
+    def plot_test_extrapolation(phi, theta, xx, yy, zz, savename, edge_extrapolation):
         N = 50
         x = xx.flatten()
         y = yy.flatten()
         z = zz.flatten()
-        grid, xx, zz, nanmask_grid = project_2d(xx, yy, zz, phi, theta, 4500+100*np.sin(phi), return_grid_points=True, N=N, inclination=90, azimuth=0, edge_extapolation=edge_extapolation)
+        grid, xx, zz, nanmask_grid = project_2d(xx, yy, zz, phi, theta, 4500+100*np.sin(phi), return_grid_points=True, N=N, inclination=90, azimuth=0, edge_extrapolation=edge_extrapolation)
         
         fig = plt.figure(figsize=(18,18))
         ax = fig.add_subplot(221, projection='3d')
@@ -393,11 +409,86 @@ if __name__ == "__main__":
         
         
         plt.close()
+        
+    def plot_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest"):
+        N = 50
+        x = _xx.flatten()
+        y = _yy.flatten()
+        z = _zz.flatten()
+        
+        fig = plt.figure(figsize=(6.5, 6.5))
+        ax = fig.add_subplot(221, projection='3d')
+        ax2 = fig.add_subplot(222, projection='3d')
+        ax.scatter(x, y, z, marker=".", c=phi.flatten(), vmin=0, vmax=2*np.pi)
+        ax.set_aspect('equal', 'box')
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        
+        ax2.scatter(x, y, z, marker=".", c=theta.flatten(), vmin=0, vmax=np.pi)
+        ax2.set_aspect('equal', 'box')
+        ax2.set_xlabel("X")
+        ax2.set_ylabel("Y")
+        ax2.set_zlabel("Z")
+        
+        ### Plot the phi projection ###
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi, return_grid_points=True, N=N, inclination=90, azimuth=0, edge_extrapolation=edge_extrapolation)
+        ax3 = fig.add_subplot(223)
+        percentages = percentage_within_circle(xx, zz)
+        grid[percentages <= 0] = np.nan
+        img = ax3.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=2*np.pi, s=70,)
+        xlim = (-1.1, 1.1)
+        ylim = (-1.1, 1.1)
+        ax3.plot(xx[percentages > 0], zz[percentages > 0], 
+                 c="tab:red", marker="s", fillstyle='none',markersize=8, linestyle="None",)
+        ax3.set_aspect('equal', 'box')
+        ax3.set_xlabel("X'")
+        ax3.set_ylabel("Z'")
+        
+        circle = Circle((0, 0), 1, fill=False)
+        ax3.add_patch(circle)
+        
+        ax3.hlines(0, xlim[0], xlim[1], linestyle="--", linewidth=1, color="black")
+        ax3.vlines(0, ylim[0], ylim[1], linestyle="--", linewidth=1, color="black")
+        
+        ax3.set_xlim(xlim)
+        ax3.set_ylim(ylim)
+        
+        ### Plot the theta projection ###
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, theta, return_grid_points=True, N=N, inclination=90, azimuth=0, edge_extrapolation=edge_extrapolation)
+        ax4 = fig.add_subplot(224)
+        percentages = percentage_within_circle(xx, zz)
+        grid[percentages <= 0] = np.nan
+        img = ax4.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=np.pi, s=70,)
+        xlim = (-1.1, 1.1)
+        ylim = (-1.1, 1.1)
+        ax4.plot(xx[percentages > 0], zz[percentages > 0], 
+                 c="tab:red", marker="s", fillstyle='none',markersize=8, linestyle="None",)
+        ax4.set_aspect('equal', 'box')
+        ax4.set_xlabel("X'")
+        ax4.set_ylabel("Z'")
+        
+        circle = Circle((0, 0), 1, fill=False)
+        ax4.add_patch(circle)
+        
+        ax4.hlines(0, xlim[0], xlim[1], linestyle="--", linewidth=1, color="black")
+        ax4.vlines(0, ylim[0], ylim[1], linestyle="--", linewidth=1, color="black")
+        
+        ax4.set_xlim(xlim)
+        ax4.set_ylim(ylim)
+        
+        ax.set_title(r"$\phi$-Component")
+        ax2.set_title(r"$\theta$-Component")
+        fig.set_tight_layout(True)
+        
+        plt.savefig(f"PhD_plots/{name}.png", dpi=600)
+        
     
     # Test a sphere
     phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=151)
-    plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_nearest.png", "nearest")
-    plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_bispline.png", "bispline")
+    # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_nearest.png", "nearest")
+    # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_bispline.png", "bispline")
+    plot_for_phd(phi, theta, xx, yy, zz, "sph_coords_and_projection")
     
     
     # Test a cube
