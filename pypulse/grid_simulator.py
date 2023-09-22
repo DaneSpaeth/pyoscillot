@@ -14,7 +14,7 @@ overviewfile = TICKETROOT / gridname / "gridoverview.txt"
 
 #### DEFINE THE RANGES THAT YOU WANT TO SIMULATE ####
 # dt = np.arange(21, 24, 1, dtype=int)
-v_rot = np.arange(4000, 6000, 500, dtype=int)
+v_rot = np.arange(4000, 7000, 500, dtype=int)
 v_macro = np.arange(4000, 6000, 500, dtype=int)
 inclination = np.arange(15, 90, 15)
 v_rots, v_macros, inclinations = np.meshgrid(v_rot, v_macro, inclination)
