@@ -141,7 +141,7 @@ def project_2d(x, y, z, phi, theta, values, N,
     # Rotate by 90 - inclination in the around the x axis
     # And yb azimuth around the z axis
     # The y axis is defined as the line of sight
-    rot = Rot.from_euler('xz', [-(90 - inclination), azimuth], degrees=True)
+    rot = Rot.from_euler('xz', [(90 - inclination), azimuth], degrees=True)
     x_rot = np.zeros(x.shape)
     y_rot = np.zeros(y.shape)
     z_rot = np.zeros(z.shape)
@@ -416,7 +416,7 @@ if __name__ == "__main__":
         y = _yy.flatten()
         z = _zz.flatten()
         
-        fig = plt.figure(figsize=(6.5, 6.5))
+        fig = plt.figure(figsize=(7.5, 7.0))
         ax = fig.add_subplot(221, projection='3d')
         ax2 = fig.add_subplot(222, projection='3d')
         ax.scatter(x, y, z, marker=".", c=phi.flatten(), vmin=0, vmax=2*np.pi)
@@ -432,15 +432,15 @@ if __name__ == "__main__":
         ax2.set_zlabel("Z")
         
         ### Plot the phi projection ###
-        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi, return_grid_points=True, N=N, inclination=90, azimuth=0, edge_extrapolation=edge_extrapolation)
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi, return_grid_points=True, N=N, inclination=45, azimuth=0, edge_extrapolation=edge_extrapolation)
         ax3 = fig.add_subplot(223)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax3.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=2*np.pi, s=70,)
+        img = ax3.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=2*np.pi, s=30,)
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
-        ax3.plot(xx[percentages > 0], zz[percentages > 0], 
-                 c="tab:red", marker="s", fillstyle='none',markersize=8, linestyle="None",)
+        # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
+        #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax3.set_aspect('equal', 'box')
         ax3.set_xlabel("X'")
         ax3.set_ylabel("Z'")
@@ -455,15 +455,15 @@ if __name__ == "__main__":
         ax3.set_ylim(ylim)
         
         ### Plot the theta projection ###
-        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, theta, return_grid_points=True, N=N, inclination=90, azimuth=0, edge_extrapolation=edge_extrapolation)
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, theta, return_grid_points=True, N=N, inclination=45, azimuth=0, edge_extrapolation=edge_extrapolation)
         ax4 = fig.add_subplot(224)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax4.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=np.pi, s=70,)
+        img = ax4.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=np.pi, s=30,)
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
-        ax4.plot(xx[percentages > 0], zz[percentages > 0], 
-                 c="tab:red", marker="s", fillstyle='none',markersize=8, linestyle="None",)
+        # ax4.plot(xx[percentages > 0], zz[percentages > 0], 
+        #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax4.set_aspect('equal', 'box')
         ax4.set_xlabel("X'")
         ax4.set_ylabel("Z'")
@@ -479,7 +479,7 @@ if __name__ == "__main__":
         
         ax.set_title(r"$\phi$-Component")
         ax2.set_title(r"$\theta$-Component")
-        fig.set_tight_layout(True)
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.05, wspace=0.27, hspace=0.07)
         
         plt.savefig(f"PhD_plots/{name}.png", dpi=600)
         
