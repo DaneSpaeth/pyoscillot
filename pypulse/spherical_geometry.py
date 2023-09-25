@@ -131,7 +131,7 @@ def project_2d(x, y, z, phi, theta, values, N,
     """
 
     y = y
-    large_number = -1e20
+    large_number = -1e99
     # keep origin fixed
     origin = (0, large_number, 0)
     d = 1
@@ -170,16 +170,21 @@ def project_2d(x, y, z, phi, theta, values, N,
     # plt.close()
     
     # Now project the x and z values onto the line of sight
-    x_proj = (x_rot - origin[0]) * d / np.abs((y_rot - origin[1]))
-    z_proj = (z_rot - origin[2]) * d / np.abs((y_rot - origin[1]))
+    # x_proj = (x_rot - origin[0]) * d / np.abs((y_rot - origin[1]))
+    # z_proj = (z_rot - origin[2]) * d / np.abs((y_rot - origin[1]))
     
     
     # Since you moved so far back for the projection the values are now very small
     # So we divide by the maximum in x and z (since that is the limb of the star)
     # and should be normalized to one
     # But does it do anything now?
-    x_proj = x_proj / np.nanmax(x_proj)
-    z_proj = z_proj / np.nanmax(z_proj)
+    # x_proj = x_proj / np.nanmax(x_proj)
+    # z_proj = z_proj / np.nanmax(z_proj)
+    
+    # Test this
+    x_proj = x_rot
+    z_proj = z_rot
+    
     
     # fig = plt.figure(figsize=(9,9))
     # ax = fig.add_subplot(111)
@@ -410,7 +415,7 @@ if __name__ == "__main__":
         
         plt.close()
         
-    def plot_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest"):
+    def plot_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest", inclination=90):
         N = 50
         x = _xx.flatten()
         y = _yy.flatten()
@@ -432,11 +437,16 @@ if __name__ == "__main__":
         ax2.set_zlabel("Z")
         
         ### Plot the phi projection ###
-        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi, return_grid_points=True, N=N, inclination=45, azimuth=0, edge_extrapolation=edge_extrapolation)
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi,
+                                                return_grid_points=True, 
+                                                N=N, 
+                                                inclination=inclination, 
+                                                azimuth=0, 
+                                                edge_extrapolation=edge_extrapolation)
         ax3 = fig.add_subplot(223)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax3.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=2*np.pi, s=30,)
+        img = ax3.scatter(xx, zz, marker="s", c=grid, vmin=0, vmax=2*np.pi, s=6.0,)
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
         # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
@@ -455,11 +465,16 @@ if __name__ == "__main__":
         ax3.set_ylim(ylim)
         
         ### Plot the theta projection ###
-        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, theta, return_grid_points=True, N=N, inclination=45, azimuth=0, edge_extrapolation=edge_extrapolation)
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, theta, 
+                                                return_grid_points=True,
+                                                N=N, 
+                                                inclination=inclination,
+                                                azimuth=0, 
+                                                edge_extrapolation=edge_extrapolation)
         ax4 = fig.add_subplot(224)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax4.scatter(xx, zz, marker=".", c=grid, vmin=0, vmax=np.pi, s=30,)
+        img = ax4.scatter(xx, zz, marker="s", c=grid, vmin=0, vmax=np.pi, s=6.0,)
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
         # ax4.plot(xx[percentages > 0], zz[percentages > 0], 
@@ -488,7 +503,7 @@ if __name__ == "__main__":
     phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=151)
     # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_nearest.png", "nearest")
     # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_bispline.png", "bispline")
-    plot_for_phd(phi, theta, xx, yy, zz, "sph_coords_and_projection")
+    plot_for_phd(phi, theta, xx, yy, zz, "sph_coords_and_projection", inclination=60)
     
     
     # Test a cube
