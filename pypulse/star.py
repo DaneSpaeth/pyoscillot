@@ -415,6 +415,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             else:
                 print("Skip Cell since there is a NaN in the local spectrum")
                 print(np.isnan(local_spectrum).all())
+                print(f"Weight is nan: {np.isnan(weight)}")
         else:
             # print(f"Calculate Star Element {row, col}")
             # local_wavelength = rest_wavelength + \
@@ -436,6 +437,9 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             else:
                 print("Skip Cell since there is a NaN in the local spectrum")
                 print(np.isnan(interpol_spectrum).all())
+                print(f"Weight is nan: {weight}")
+                print(f"v_c_tot: {v_c_tot}")
+                
 
     return rest_wavelength, total_spectrum, v_total
 

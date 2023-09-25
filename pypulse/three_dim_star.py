@@ -352,6 +352,12 @@ class TwoDimProjector():
         mu = self._project(unit_array,
                            line_of_sight=True,
                            component="rad")
+        
+        # However, since we have defined the projection such that 
+        # the radial velocity is negative when pointing to the observer
+        # i.e. when the amplitude of the radial oscillation is positive
+        # we have introduced a minus that we need to invert
+        mu *= -1
 
         return mu
 

@@ -78,7 +78,10 @@ def get_spherical_phi_theta_x_y_z(N=250):
 
 
 def project_line_of_sight(phi, theta, values, component, inclination):
-    """ Project the values onto the line of sight."""
+    """ Project the values onto the line of sight.
+    
+        Unit vectors checked: 2023-09-25
+    """
 
     # Line of sight unit vector
     los = np.array(
@@ -102,17 +105,17 @@ def project_line_of_sight(phi, theta, values, component, inclination):
                                np.sin(t) * np.sin(p),
                                np.cos(t)))
 
-            scalar_prods.append(np.dot(r_unit, los))
+            scalar_prods.append(np.dot(r_unit, -los))
         elif component == "phi":
             phi_unit = np.array((-np.sin(p),
                                  np.cos(p),
                                  0))
-            scalar_prods.append(np.dot(phi_unit, los))
+            scalar_prods.append(np.dot(phi_unit, -los))
         elif component == "theta":
             theta_unit = np.array((np.cos(t) * np.cos(p),
                                    np.cos(t) * np.sin(p),
                                    -np.sin(t)))
-            scalar_prods.append(np.dot(theta_unit, los))
+            scalar_prods.append(np.dot(theta_unit, -los))
 
     scalar_prods = np.array(scalar_prods)
     # print(np.nanmin(scalar_prods), np.nanmax(scalar_prods))
@@ -415,7 +418,7 @@ if __name__ == "__main__":
         
         plt.close()
         
-    def plot_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest", inclination=90):
+    def plot_general_coordinates_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest", inclination=90):
         N = 50
         x = _xx.flatten()
         y = _yy.flatten()
@@ -498,12 +501,140 @@ if __name__ == "__main__":
         
         plt.savefig(f"PhD_plots/{name}.png", dpi=600)
         
+    def plot_projection_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest", inclination=90):
+        N = 50
+        x = _xx.flatten()
+        y = _yy.flatten()
+        z = _zz.flatten()
+        
+        fig = plt.figure(figsize=(7.5, 10.0))
+        # ax = fig.add_subplot(231, projection='3d')
+        # ax2 = fig.add_subplot(232, projection='3d')
+        # ax3 = fig.add_subplot(233, projection='3d')
+        # ax.scatter(x, y, z, marker=".", c=np.ones_like(x), vmin=0, vmax=1)
+        # ax.set_aspect('equal', 'box')
+        # ax.set_xlabel("X")
+        # ax.set_ylabel("Y")
+        # ax.set_zlabel("Z")
+        
+        # ax2.scatter(x, y, z, marker=".", c=theta.flatten(), vmin=0, vmax=np.pi)
+        # ax2.set_aspect('equal', 'box')
+        # ax2.set_xlabel("X")
+        # ax2.set_ylabel("Y")
+        # ax2.set_zlabel("Z")
+        
+        # ax3.scatter(x, y, z, marker=".", c=phi.flatten(), vmin=0, vmax=2*np.pi)
+        # ax3.set_aspect('equal', 'box')
+        # ax3.set_xlabel("X")
+        # ax3.set_ylabel("Y")
+        # ax3.set_zlabel("Z")
+        
+        
+        ### Plot the radial projection ###
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, np.ones_like(theta),
+                                                return_grid_points=True, 
+                                                N=N, 
+                                                line_of_sight=True,
+                                                component="rad",
+                                                inclination=inclination, 
+                                                azimuth=0,
+                                                edge_extrapolation=edge_extrapolation)
+        ax4 = fig.add_subplot(131)
+        percentages = percentage_within_circle(xx, zz)
+        grid[percentages <= 0] = np.nan
+        img = ax4.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=6.0, cmap="plasma")
+        xlim = (-1.1, 1.1)
+        ylim = (-1.1, 1.1)
+        # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
+        #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
+        ax4.set_aspect('equal', 'box')
+        ax4.set_xlabel("X'")
+        ax4.set_ylabel("Z'")
+        
+        circle = Circle((0, 0), 1, fill=False)
+        ax4.add_patch(circle)
+        
+        ax4.hlines(0, xlim[0], xlim[1], linestyle="--", linewidth=1, color="black")
+        ax4.vlines(0, ylim[0], ylim[1], linestyle="--", linewidth=1, color="black")
+        
+        ax4.set_xlim(xlim)
+        ax4.set_ylim(ylim)
+        
+        
+        
+        ### Plot the phi projection ###
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, np.ones_like(theta),
+                                                return_grid_points=True, 
+                                                N=N, 
+                                                line_of_sight=True,
+                                                component="theta",
+                                                inclination=inclination, 
+                                                azimuth=0,
+                                                edge_extrapolation=edge_extrapolation)
+        ax5 = fig.add_subplot(132)
+        percentages = percentage_within_circle(xx, zz)
+        grid[percentages <= 0] = np.nan
+        img = ax5.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=6.0,cmap="plasma")
+        xlim = (-1.1, 1.1)
+        ylim = (-1.1, 1.1)
+        # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
+        #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
+        ax5.set_aspect('equal', 'box')
+        ax5.set_xlabel("X'")
+        ax5.set_ylabel("Z'")
+        
+        circle = Circle((0, 0), 1, fill=False)
+        ax5.add_patch(circle)
+        
+        ax5.hlines(0, xlim[0], xlim[1], linestyle="--", linewidth=1, color="black")
+        ax5.vlines(0, ylim[0], ylim[1], linestyle="--", linewidth=1, color="black")
+        
+        ax5.set_xlim(xlim)
+        ax5.set_ylim(ylim)
+        
+        ### Plot the theta projection ###
+        grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, np.ones_like(phi), 
+                                                return_grid_points=True,
+                                                N=N, 
+                                                line_of_sight=True,
+                                                component="phi",
+                                                inclination=inclination,
+                                                azimuth=0, 
+                                                edge_extrapolation=edge_extrapolation)
+        ax6 = fig.add_subplot(133)
+        percentages = percentage_within_circle(xx, zz)
+        grid[percentages <= 0] = np.nan
+        img = ax6.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=6.0, cmap="plasma")
+        xlim = (-1.1, 1.1)
+        ylim = (-1.1, 1.1)
+        # ax4.plot(xx[percentages > 0], zz[percentages > 0], 
+        #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
+        ax6.set_aspect('equal', 'box')
+        ax6.set_xlabel("X'")
+        ax6.set_ylabel("Z'")
+        
+        circle = Circle((0, 0), 1, fill=False)
+        ax6.add_patch(circle)
+        
+        ax6.hlines(0, xlim[0], xlim[1], linestyle="--", linewidth=1, color="black")
+        ax6.vlines(0, ylim[0], ylim[1], linestyle="--", linewidth=1, color="black")
+        
+        ax6.set_xlim(xlim)
+        ax6.set_ylim(ylim)
+        
+        ax4.set_title(r"radial-Component")
+        ax5.set_title(r"$\theta$-Component")
+        ax6.set_title(r"$\phi$-Component")
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.05, wspace=0.27, hspace=0.07)
+        
+        plt.savefig(f"PhD_plots/{name}.png", dpi=600)
+        
     
     # Test a sphere
     phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=151)
     # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_nearest.png", "nearest")
     # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_bispline.png", "bispline")
-    plot_for_phd(phi, theta, xx, yy, zz, "sph_coords_and_projection", inclination=60)
+    plot_projection_for_phd(phi, theta, xx, yy, zz, "scalar_product_projection_minus", inclination=90)
     
     
     # Test a cube
