@@ -170,10 +170,15 @@ class ThreeDimStar():
             :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
+            
+            Displacement + Velocity checked: 2023-09-27
         """
         # Calculate the spherical harmonic Y(l,m)
+        # scipy.sph_harm switches the definition of theta and phi, therefore we need
+        # to give the params switched around
         harm = sph_harm(m, l, self.phi, self.theta)
-
+        
+        # Calculate the displacement without any amplitude (we only need it for the T later)
         displ = harm * np.exp(1j * 2 * np.pi * nu * t)
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
@@ -181,6 +186,7 @@ class ThreeDimStar():
         # a factor 1j * 2 * np.pi * nu
         # but we absorb the  2 * np.pi * nu part in the v_p constant
         # See Kochukhov et al. (2004)
+        # v_p is now the amplitude of the pulsation in radial direction
         pulsation = 1j * v_p * displ
 
         self.displacement_rad += displ
@@ -199,13 +205,15 @@ class ThreeDimStar():
             :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
+            
+            Displacement, Pulsation checked: 2023-09-27
         """
 
         # Calculate the spherical harmonic Y(l,m)
         harmonic = sph_harm(m, l, self.phi, self.theta)
         # You need the partial derivative wrt to phi
-        part_deriv = 1 / np.sin(self.theta) * 1j * m * harmonic
-        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t)
+        part_deriv =  1j * m * harmonic
+        displ = 1 / np.sin(self.theta) * part_deriv * np.exp(1j * 2 * np.pi * nu * t)
 
         pulsation = 1j * k * v_p * displ
 
@@ -219,19 +227,26 @@ class ThreeDimStar():
             :param float t: Time at which to evaluate the pulsation
             :param int l: Number of surface lines of nodes
             :param int m: Number of polar lines of nodes (-l<=m<=l)
+            
+            Partial Derivative checked: 2023-09-27
+            Displacement, Pulsation checked: 2023-09-27
         """
         # Calculate the spherical harmonic Y(l,m)
         harmonic = sph_harm(m, l, self.phi, self.theta)
         # You need the partial derivative wrt to theta
         # Taken from
         # https://functions.wolfram.com/Polynomials/SphericalHarmonicY/20/ShowAll.html
+        # https://functions.wolfram.com/PDF/SphericalHarmonicY.pdf
         if m < l:
             part_deriv = m * 1 / np.tan(self.theta) * harmonic + \
                 np.sqrt((l - m) * (l + m + 1)) * np.exp(-1j * self.phi) * \
                 sph_harm(m + 1, l, self.phi, self.theta)
         else:
+            # The second part of the above equation is 0
+            # But in python it will give you a NaN since you still compute
+            # The spherical harmonic
             part_deriv = m * 1 / np.tan(self.theta) * harmonic
-
+        
         displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t)
 
         pulsation = 1j * k * v_p * displ
