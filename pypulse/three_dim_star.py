@@ -7,12 +7,9 @@ from scipy.special import sph_harm
 import spherical_geometry as geo
 from matplotlib import cm
 from plapy.constants import SIGMA
-from plapy.utils.utils import round_digits
-from astrometric_jitter import calc_photocenter, calc_astrometric_deviation
+from astrometric_jitter import calc_photocenter
 import copy
-import dataloader as load
-from physics import radiance_to_temperature, calc_granulation_velocity_rad, calc_granulation_velocity_phi_theta
-import random
+
 
 
 class ThreeDimStar():
@@ -60,16 +57,8 @@ class ThreeDimStar():
         self.pulsation_phi = np.zeros(self.phi.shape, dtype="complex128")
         self.pulsation_theta = np.zeros(self.phi.shape, dtype="complex128")
 
-        # Save the granulation velocity components and the temperature
-        self.granulation_rad = np.zeros(self.phi.shape, dtype="float64")
-        self.granulation_phi = np.zeros(self.phi.shape, dtype="float64")
-        self.granulation_theta = np.zeros(self.phi.shape, dtype="float64")
-        self.granulation_temp = np.zeros(self.phi.shape, dtype="float64")
-
         self.temperature = self.Teff * np.ones(self.phi.shape)
         self.base_Temp = copy.deepcopy(self.temperature)
-        self.inner_granule_mask = np.zeros(self.phi.shape, dtype="bool")
-        self.granular_lane_mask = np.zeros(self.phi.shape, dtype="bool")
 
     def add_spot(self, rad, theta_pos=90, phi_pos=90, T_spot=4000):
         """ Add a spot to the 3D star.
@@ -110,34 +99,6 @@ class ThreeDimStar():
         self.spotmask += above_plane_mask
         print(f"Add spot with temperature {T_spot}")
         self.temperature[self.spotmask.astype(bool)] = T_spot
-
-    def add_granulation(self):
-        """ Add granulation to the star starting from Hans models"""
-        size = 160
-        assert self.N % size == 0, "For granulation we can only create stars with multiples of the cell size (160)"
-        N_cells = int(self.N / size)
-
-
-        granulation_spectral_radiance = load.granulation_map()
-        granulation_temperature = radiance_to_temperature(granulation_spectral_radiance)
-        timestemp = 992 + 1292
-        granulation_temp_local = granulation_temperature[timestemp, :, :]
-        granulation_rad_local = calc_granulation_velocity_rad(granulation_temp_local)
-        (granulation_phi_local,
-         granulation_theta_local,
-         _,
-         _) = calc_granulation_velocity_phi_theta(granulation_temp_local, granulation_rad_local)
-
-        for i in range(N_cells):
-            for j in range(N_cells):
-                # timestemp = random.randint(0, intensity.shape[0])
-                idx_phi = 0 + i * int(self.N / N_cells)
-                idx_theta = 0 + j * int(self.N / N_cells)
-                self.temperature[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_temp_local
-
-                self.granulation_rad[idx_theta:idx_theta + size, idx_phi:idx_phi + size]  = granulation_rad_local
-                self.granulation_phi[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_phi_local
-                self.granulation_theta[idx_theta:idx_theta + size, idx_phi:idx_phi + size] = granulation_theta_local
 
     def get_distance(self, phi_center, theta_center):
         """ Return the great circle distance from position given by phi and theta.
@@ -407,26 +368,6 @@ class TwoDimProjector():
         # return np.rint(rotation_2d).astype(int)
         return rotation_2d
 
-    def granulation_rad(self):
-        """ Project the radial part of the granulation velocity onto a 2d plane"""
-        granulation_rad_2d = self._project(self.star.granulation_rad,
-                                           line_of_sight=self.line_of_sight,
-                                           component="rad")
-        return granulation_rad_2d
-
-    def granulation_phi(self):
-        """ Project the phi part of the granulation velocity onto a 2d plane"""
-        granulation_phi_2d = self._project(self.star.granulation_phi,
-                                           line_of_sight=self.line_of_sight,
-                                           component="phi")
-        return granulation_phi_2d
-
-    def granulation_theta(self):
-        """ Project the theta part of the granulation velocity onto a 2d plane"""
-        granulation_theta_2d = self._project(self.star.granulation_theta,
-                                             line_of_sight=self.line_of_sight,
-                                            component="theta")
-        return granulation_theta_2d
 
     def displacement_rad(self):
         """ Project the radial displacement of the star onto a 2d plane.
