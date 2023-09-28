@@ -121,7 +121,7 @@ class ThreeDimStar():
 
             :param v: Rotation velocity at equator in m/s.
         """
-        self.rotation = -v * np.sin(self.theta)
+        self.rotation = v * np.sin(self.theta)
 
     def add_pulsation_rad(self, t, l, m, nu, v_p, k, T_var, T_phase):
         """ Add the radial component of displacement and pulsation.
