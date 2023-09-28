@@ -35,7 +35,6 @@ class ThreeDimStar():
         self.Teff = Teff
 
         self.v_rot = v_rot
-        self.create_rotation(v_rot)
 
         self.default_maps()
 
@@ -157,7 +156,7 @@ class ThreeDimStar():
         # temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         
         # Discuss with Sabine
-        temp_variation = T_var * (displ * np.exp(1j * np.radians(T_phase) / np.max(harm))).real
+        temp_variation = T_var * (displ * np.exp(1j * np.radians(T_phase)) / np.max(harm)).real
 
         self.temperature += temp_variation
 
@@ -645,14 +644,30 @@ def plot_T_variation():
                         vmin=4499, vmax=4501, marker=".", cmap=cmap)
         
     plt.savefig("PhD_plots/temperature_check.png", dpi=300)
+
+
+def plot_rotation():
+    fig = plt.figure(figsize=(16,9))
+    cmap = "seismic"
     
+    ax0 = fig.add_subplot(121, projection="3d")
+    ax1 = fig.add_subplot(122)
+    
+    star = ThreeDimStar(N=1000, v_rot=3000)
+    star.create_rotation()
+    projector = TwoDimProjector(star, N=151)
+    ax0.scatter(star.x, star.y, star.z, c=star.rotation,
+                vmin=-3000, vmax=3000, marker=".", cmap=cmap)
+    
+    ax1.imshow(projector.rotation(), origin="lower", vmin=-3000, vmax=3000, cmap=cmap)
+    
+    plt.savefig("PhD_plots/rotation_check.png", dpi=300)   
         
     
         
 if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
-    plot_T_variation()
-
+    plot_rotation()
 
 
