@@ -154,8 +154,10 @@ class ThreeDimStar():
         self.pulsation_rad += pulsation
 
         # Caution temperature is not reset
-        temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
-        temp_variation = T_var * temp_variation / np.nanmax(temp_variation)
+        # temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
+        
+        # Discuss with Sabine
+        temp_variation = T_var * (displ * np.exp(1j * np.radians(T_phase) / np.max(harm))).real
 
         self.temperature += temp_variation
 
@@ -570,20 +572,87 @@ def plot_3d(x, y, z, value, scale_down=1):
     plt.show()
 
 
+def plot_for_phd(l=1, m=1):
+    plt.rcParams.update({'font.size': 8})
+    star = ThreeDimStar(N=1000)
+    star.add_pulsation(l=l, m=m, v_p=1, k=1, nu=1/600, t=300)
+    projector = TwoDimProjector(star, N=151, border=3, inclination=90, line_of_sight=False)
+    projector_los = TwoDimProjector(star, N=151, border=3, inclination=90, line_of_sight=True)
+    
+    fig = plt.figure(figsize=(6.5, 6.0))
+    ax0 = fig.add_subplot(331, projection="3d")
+    ax1 = fig.add_subplot(332, projection="3d")
+    ax2 = fig.add_subplot(333, projection="3d")
+    
+    three_d_axes = [ax0, ax1, ax2]
+    values_list = [star.pulsation_rad.real, 
+                   star.pulsation_theta.real,
+                   star.pulsation_phi.real]
+    
+    cmap = "seismic"
+    for ax, values in zip(three_d_axes, values_list):
+        print("Plot 3D")
+        ax.scatter(star.x, star.y, star.z, c=values, vmin=-1, vmax=1, marker=".", cmap=cmap)
+        ax.set_box_aspect((1, 1, 1))
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        
+    ax0.set_title(r"radial-Component")
+    ax1.set_title(r"$\theta$-Component")
+    ax2.set_title(r"$\phi$-Component")
+        
+    two_d_axes = [fig.add_subplot(330+i) for i in range(4, 10)]
+    values_list = [projector.pulsation_rad(),
+                   projector.pulsation_theta(),
+                   projector.pulsation_phi(),
+                   projector_los.pulsation_rad(),
+                   projector_los.pulsation_theta(),
+                   projector_los.pulsation_phi()]
+    for ax, values in zip(two_d_axes, values_list):
+        print(values.shape)
+        img = ax.imshow(values, vmin=-1, vmax=1, cmap=cmap, origin="lower")
+        
+        ax.set_xlabel("X'")
+        ax.set_ylabel("Y'")
+        
+    cbar_ax = fig.add_axes([0.88, 0.70, 0.02, 0.20])
+    fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
+    
+    cbar_ax = fig.add_axes([0.88, 0.40, 0.02, 0.20])
+    fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
+    
+    cbar_ax = fig.add_axes([0.88, 0.10, 0.02, 0.20])
+    fig.colorbar(img, cax=cbar_ax, label=r"RV (proj.) [m/s]")
+        
+        
+    fig.subplots_adjust(left=0.08, right=0.78, top=0.95, bottom=0.06, wspace=0.45, hspace=0.1)
+    plt.savefig("PhD_plots/pulsation_components.png", dpi=300)
+    
+    
+def plot_T_variation():
+    fig = plt.figure(figsize=(16,9))
+    cmap = "seismic"
+    
+    ax = [fig.add_subplot(240+i, projection="3d") for i in range(1, 9)]
+    
+    for idx, t in zip(range(4), (0, 150, 300, 450)):
+        star = ThreeDimStar(N=1000, Teff=4500)
+        star.add_pulsation(l=1, m=0, v_p=1, k=1, nu=1/600, t=t, T_var=1)
+        ax[idx].scatter(star.x, star.y, star.z, c=star.pulsation_rad.real,
+                        vmin=-1, vmax=1, marker=".", cmap=cmap)
+        ax[idx+4].scatter(star.x, star.y, star.z, c=star.temperature,
+                        vmin=4499, vmax=4501, marker=".", cmap=cmap)
+        
+    plt.savefig("PhD_plots/temperature_check.png", dpi=300)
+    
+        
+    
+        
 if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
-    star = ThreeDimStar(N=1000)
-    # star.create_rotation()
-    # star.add_pulsation(T_var=100, l=1, m=1, v_p=4, k=100, nu=1/698.61)
-    projector = TwoDimProjector(star, N=150, border=3, inclination=45)
-    projector.weights
-
-    plt.imshow(projector.weights, vmin=0, vmax=1)
-    
-    # print(projector.mu())
-    # print(np.nanmean(projector.mu()))
-    plt.savefig("dbug.png", dpi=500)
+    plot_T_variation()
 
 
 
