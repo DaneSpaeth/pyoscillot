@@ -227,12 +227,12 @@ if __name__ == "__main__":
     
 
     fig, ax = plt.subplots(1, figsize=(6.35, 3.5), sharex=True)
-    ax.plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum", marker=".", markersize=2)
+    ax.plot(wave, spec, color="tab:grey", label="PHOENIX Spectrum", marker=".", markersize=3)
     
     # print(len(wave))
     # print(len(spec_noconv_wave_px))
     # ax[0].plot(wave, spec_conv_no_wave, color="tab:orange")
-    ax.plot(wave, spec_conv_wave_px, color="tab:blue", label=r"v_macro=5000m/s", alpha=.7)
+    ax.plot(wave, spec_conv_wave_px, color="tab:blue", label=r"$\eta$=5000m/s", marker="*")
     # ax[0].plot(wave, spec_noconv_wave_px, marker=".", color="tab:red", alpha=0.7, linestyle="--", label="noconv_before")
     ax.legend(loc="lower left")
     
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     # ax[1].set_ylim(-0.02, 0.00002)
     # ax[1].set_ylim(-0.00005, 0.00005)
     
-    # ax.set_xlim(xlim_low, xlim_high)
+    ax.set_xlim(xlim_low, xlim_high)
     ax.set_ylim(bottom=0)
     # ax[0].vlines(5000.0, ax[0].get_ylim()[0], ax[0].get_ylim()[1])
     
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     # ax[1].set_yticks([-0.000015, -0.00001, -0.000005, 0.0, 0.000005, 0.00001, 0.000015])
     figsize=(6.35, 3.5)
     # fig.set_tight_layout(True)
-    fig.subplots_adjust(left=0.11, top=0.95, right=0.97, bottom=0.13, hspace=0)
+    fig.subplots_adjust(left=0.11, top=0.95, right=0.96, bottom=0.13, hspace=0)
     fig.align_ylabels()
     # plt.rcParams['agg.path.chunksize'] = 10000
-    plt.savefig("v_macro_new_full.png",dpi=500)
+    plt.savefig("v_macro_new_around5000.png",dpi=500)
