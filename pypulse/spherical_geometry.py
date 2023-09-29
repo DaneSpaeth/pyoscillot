@@ -321,9 +321,9 @@ if __name__ == "__main__":
         ax2 = fig.add_subplot(122)
         ax.scatter(x, y, z, marker=".", c=theta, vmin=0, vmax=np.pi)
         ax.set_aspect('equal', 'box')
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
         
         # Project
         # ax2.imshow(grid)
@@ -340,8 +340,8 @@ if __name__ == "__main__":
                  c="gray", marker="s", fillstyle='none',markersize=8, linestyle="None",)
         
         ax2.set_aspect('equal', 'box')
-        ax2.set_xlabel("X'")
-        ax2.set_ylabel("Z'")
+        ax2.set_xlabel("x'")
+        ax2.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax2.add_patch(circle)
@@ -372,9 +372,9 @@ if __name__ == "__main__":
         ax2 = fig.add_subplot(222)
         ax.scatter(x, y, z, marker=".", c=4500+100*np.sin(phi), vmin=4400, vmax=4600)
         ax.set_aspect('equal', 'box')
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
         
         
         percentages = percentage_within_circle(xx, zz)
@@ -390,8 +390,8 @@ if __name__ == "__main__":
         #          c="gray", marker="s", fillstyle='none',markersize=8, linestyle="None",)
         
         ax2.set_aspect('equal', 'box')
-        ax2.set_xlabel("X'")
-        ax2.set_ylabel("Z'")
+        ax2.set_xlabel("x'")
+        ax2.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax2.add_patch(circle)
@@ -407,8 +407,8 @@ if __name__ == "__main__":
         ax3.plot_surface(xx, zz, grid, cmap=cm.viridis,  vmin=4400, vmax=4600,)
         ax3.azim = 45
         ax3.elev = 45
-        ax3.set_xlabel("X'")
-        ax3.set_ylabel("Z'")
+        ax3.set_xlabel("x'")
+        ax3.set_ylabel("z'")
         ax3.set_zlabel("T [K]")
         
         plt.colorbar(img, label="T [K]")
@@ -424,20 +424,20 @@ if __name__ == "__main__":
         y = _yy.flatten()
         z = _zz.flatten()
         
-        fig = plt.figure(figsize=(7.5, 7.0))
-        ax = fig.add_subplot(221, projection='3d')
-        ax2 = fig.add_subplot(222, projection='3d')
+        fig = plt.figure(figsize=(6.5, 7.0))
+        ax = fig.add_subplot(222, projection='3d')
+        ax2 = fig.add_subplot(221, projection='3d')
         ax.scatter(x, y, z, marker=".", c=phi.flatten(), vmin=0, vmax=2*np.pi)
         ax.set_aspect('equal', 'box')
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
         
         ax2.scatter(x, y, z, marker=".", c=theta.flatten(), vmin=0, vmax=np.pi)
         ax2.set_aspect('equal', 'box')
-        ax2.set_xlabel("X")
-        ax2.set_ylabel("Y")
-        ax2.set_zlabel("Z")
+        ax2.set_xlabel("x")
+        ax2.set_ylabel("y")
+        ax2.set_zlabel("z")
         
         ### Plot the phi projection ###
         grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi,
@@ -446,17 +446,17 @@ if __name__ == "__main__":
                                                 inclination=inclination, 
                                                 azimuth=0, 
                                                 edge_extrapolation=edge_extrapolation)
-        ax3 = fig.add_subplot(223)
+        ax3 = fig.add_subplot(224)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax3.scatter(xx, zz, marker="s", c=grid, vmin=0, vmax=2*np.pi, s=6.0,)
+        img = ax3.scatter(xx, zz, marker="s", c=grid, vmin=0, vmax=2*np.pi, s=3.,)
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
         # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
         #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax3.set_aspect('equal', 'box')
-        ax3.set_xlabel("X'")
-        ax3.set_ylabel("Z'")
+        ax3.set_xlabel("x'")
+        ax3.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax3.add_patch(circle)
@@ -474,17 +474,17 @@ if __name__ == "__main__":
                                                 inclination=inclination,
                                                 azimuth=0, 
                                                 edge_extrapolation=edge_extrapolation)
-        ax4 = fig.add_subplot(224)
+        ax4 = fig.add_subplot(223)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax4.scatter(xx, zz, marker="s", c=grid, vmin=0, vmax=np.pi, s=6.0,)
+        img = ax4.scatter(xx, zz, marker="s", c=grid, vmin=0, vmax=np.pi, s=3.5,)
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
         # ax4.plot(xx[percentages > 0], zz[percentages > 0], 
         #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax4.set_aspect('equal', 'box')
-        ax4.set_xlabel("X'")
-        ax4.set_ylabel("Z'")
+        ax4.set_xlabel("x'")
+        ax4.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax4.add_patch(circle)
@@ -497,17 +497,16 @@ if __name__ == "__main__":
         
         ax.set_title(r"$\phi$-Component")
         ax2.set_title(r"$\theta$-Component")
-        fig.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.05, wspace=0.27, hspace=0.07)
+        fig.subplots_adjust(left=0.1, right=0.92, top=0.95, bottom=0.05, wspace=0.27, hspace=0.07)
         
-        plt.savefig(f"PhD_plots/{name}.png", dpi=600)
+        plt.savefig(f"PhD_plots/{name}.png", dpi=300)
         
-    def plot_projection_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest", inclination=90):
-        N = 50
+    def plot_projection_for_phd(phi, theta, _xx, _yy, _zz, name, edge_extrapolation="nearest", inclination=90, N=150):
         x = _xx.flatten()
         y = _yy.flatten()
         z = _zz.flatten()
         
-        fig = plt.figure(figsize=(7.5, 10.0))
+        fig = plt.figure(figsize=(6.5, 10.0))
         # ax = fig.add_subplot(231, projection='3d')
         # ax2 = fig.add_subplot(232, projection='3d')
         # ax3 = fig.add_subplot(233, projection='3d')
@@ -529,6 +528,11 @@ if __name__ == "__main__":
         # ax3.set_ylabel("Y")
         # ax3.set_zlabel("Z")
         
+        fig, ax = plt.subplots(2, 3, figsize=(7.5, 5.0), sharey="row")
+        ax4 = ax[0,0]
+        ax5 = ax[0,1]
+        ax6 = ax[0,2]
+        
         
         ### Plot the radial projection ###
         grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, np.ones_like(theta),
@@ -539,17 +543,18 @@ if __name__ == "__main__":
                                                 inclination=inclination, 
                                                 azimuth=0,
                                                 edge_extrapolation=edge_extrapolation)
-        ax4 = fig.add_subplot(131)
+        # ax4 = fig.add_subplot(131)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax4.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=6.0, cmap="plasma")
+        size = 2.0
+        img = ax4.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=size, cmap="seismic")
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
         # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
         #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax4.set_aspect('equal', 'box')
-        ax4.set_xlabel("X'")
-        ax4.set_ylabel("Z'")
+        ax4.set_xlabel("x'")
+        ax4.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax4.add_patch(circle)
@@ -560,6 +565,35 @@ if __name__ == "__main__":
         ax4.set_xlim(xlim)
         ax4.set_ylim(ylim)
         
+        # Get the projected phi angle
+        phi_proj, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, phi,
+                                                return_grid_points=True, 
+                                                N=N, 
+                                                line_of_sight=False,
+                                                inclination=inclination, 
+                                                azimuth=0,
+                                                edge_extrapolation=edge_extrapolation)
+        
+        # Get the projected theta angle
+        theta_proj, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, theta,
+                                                return_grid_points=True, 
+                                                N=N, 
+                                                line_of_sight=False,
+                                                inclination=inclination, 
+                                                azimuth=0,
+                                                edge_extrapolation=edge_extrapolation)
+        
+        # Plot the profiles
+        ax_pro = ax[1,0]
+        ax_pro.plot(zz[xx==0], grid[xx == 0], color="tab:blue", label="profile at x'=0")
+        ax_pro.plot(xx[zz==0], grid[zz == 0], color="tab:orange", label="profile at z'=0")
+        ax_pro.set_xlim(xlim)
+        ax_pro.set_ylim(-1, 1)
+        ax_pro.set_ylabel("Projected Value")
+        ax_pro.set_xlabel("Coordinate")
+        ax_pro.legend()
+        
+        # ax_pro.plot(xx[zz==0], np.sin(phi_proj[zz==0]), color="black")
         
         
         ### Plot the phi projection ###
@@ -571,17 +605,15 @@ if __name__ == "__main__":
                                                 inclination=inclination, 
                                                 azimuth=0,
                                                 edge_extrapolation=edge_extrapolation)
-        ax5 = fig.add_subplot(132)
+        # ax5 = fig.add_subplot(132)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax5.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=6.0,cmap="plasma")
-        xlim = (-1.1, 1.1)
-        ylim = (-1.1, 1.1)
+        img = ax5.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=size,cmap="seismic")
         # ax3.plot(xx[percentages > 0], zz[percentages > 0], 
         #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax5.set_aspect('equal', 'box')
-        ax5.set_xlabel("X'")
-        ax5.set_ylabel("Z'")
+        ax5.set_xlabel("x'")
+        # ax5.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax5.add_patch(circle)
@@ -592,6 +624,16 @@ if __name__ == "__main__":
         ax5.set_xlim(xlim)
         ax5.set_ylim(ylim)
         
+        # Plot the profiles
+        ax_pro = ax[1,1]
+        ax_pro.plot(zz[xx==0], grid[xx == 0], color="tab:blue", label="profile at x'=0")
+        ax_pro.plot(xx[zz==0], grid[zz == 0], color="tab:orange", label="profile at z'=0")
+        ax_pro.set_xlim(xlim)
+        ax_pro.set_ylim(-1, 1)
+        # ax_pro.set_ylabel("Projected Value")
+        ax_pro.set_xlabel("Coordinate")
+        # ax_pro.legend()
+        
         ### Plot the theta projection ###
         grid, xx, zz, nanmask_grid = project_2d(_xx, _yy, _zz, phi, theta, np.ones_like(phi), 
                                                 return_grid_points=True,
@@ -601,17 +643,17 @@ if __name__ == "__main__":
                                                 inclination=inclination,
                                                 azimuth=0, 
                                                 edge_extrapolation=edge_extrapolation)
-        ax6 = fig.add_subplot(133)
+        # ax6 = fig.add_subplot(133)
         percentages = percentage_within_circle(xx, zz)
         grid[percentages <= 0] = np.nan
-        img = ax6.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=6.0, cmap="plasma")
+        img = ax6.scatter(xx, zz, marker="s", c=grid, vmin=-1, vmax=1, s=size, cmap="seismic")
         xlim = (-1.1, 1.1)
         ylim = (-1.1, 1.1)
         # ax4.plot(xx[percentages > 0], zz[percentages > 0], 
         #          c="tab:red", marker="s", fillstyle='none',markersize=2.8, linestyle="None",)
         ax6.set_aspect('equal', 'box')
-        ax6.set_xlabel("X'")
-        ax6.set_ylabel("Z'")
+        ax6.set_xlabel("x'")
+        # ax6.set_ylabel("z'")
         
         circle = Circle((0, 0), 1, fill=False)
         ax6.add_patch(circle)
@@ -622,37 +664,39 @@ if __name__ == "__main__":
         ax6.set_xlim(xlim)
         ax6.set_ylim(ylim)
         
+        # Plot the profiles
+        ax_pro = ax[1,2]
+        ax_pro.plot(zz[xx==0], grid[xx == 0], color="tab:blue", label="profile at x'=0")
+        ax_pro.plot(xx[zz==0], grid[zz == 0], color="tab:orange", label="profile at z'=0")
+        ax_pro.set_xlim(xlim)
+        ax_pro.set_ylim(-1, 1)
+        # ax_pro.set_ylabel("Projected Value")
+        ax_pro.set_xlabel("Coordinate")
+        # ax_pro.legend()
+        
         ax4.set_title(r"radial-Component")
         ax5.set_title(r"$\theta$-Component")
         ax6.set_title(r"$\phi$-Component")
-        fig.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.05, wspace=0.27, hspace=0.07)
         
-        plt.savefig(f"PhD_plots/{name}.png", dpi=600)
+        # fig.colorbar(img, label="Projected Value", cax=ax[0,3], width=0.1)
+        fig.subplots_adjust(left=0.1, right=0.87, top=0.95, bottom=0.1, wspace=0.0, hspace=0.25)
+        
+        cbar_ax = fig.add_axes([0.89, 0.55, 0.02, 0.40])
+        fig.colorbar(img, cax=cbar_ax, label="Projected Value")
+        
+        
+        plt.savefig(f"PhD_plots/{name}.pdf", dpi=600)
         
     
     # Test a sphere
-    phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z(N=151)
+    phi, theta, xx, yy, zz = get_spherical_phi_theta_x_y_z()
     # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_nearest.png", "nearest")
     # plot_test_extrapolation(phi, theta, xx, yy, zz, "3D_cloud_test_extrapol_bispline.png", "bispline")
-    plot_projection_for_phd(phi, theta, xx, yy, zz, "scalar_product_projection_minus", inclination=90)
+    # plot_general_coordinates_for_phd(phi, theta, xx, yy, zz, "sph_coords_and_projection", inclination=90)
     
+    plot_projection_for_phd(phi, theta, xx, yy, zz, "scalar_product_projection", inclination=90, N=151)
     
-    # Test a cube
-    # x = np.linspace(-3, 3, 25)
-    # y = np.linspace(-2, 2, 25)
-    # z = np.linspace(-1, 1, 25)
-    
-    # xx, yy = np.meshgrid(x, y)
-    
-    # # yy ,zz = np.meshgrid(y, z)
-    # # yy = np.ones_like(xx)
-    
-    
-    # phi = np.zeros_like(xx)
-    # theta = np.zeros_like(xx)
-    # plot_3d_and_proj(phi, theta, xx, yy, zz, "3D_cuboid.png")
-    
-    
+  
     
     
     
