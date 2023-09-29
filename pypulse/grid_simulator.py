@@ -8,22 +8,24 @@ global_dict = parse_global_ini()
 TICKETROOT = global_dict["ticketpath"]
 
 #### INSERT YOUR NAMES ETC HERE ####
-gridname = "NGC4349_inclinationgrid"
+gridname = "NGC4349_blindsearch_grid"
 baseticket = TICKETROOT / gridname / "base.ini"
 overviewfile = TICKETROOT / gridname / "gridoverview.txt"
 
 #### DEFINE THE RANGES THAT YOU WANT TO SIMULATE ####
 # dt = np.arange(21, 24, 1, dtype=int)
-v_rot = np.arange(4000, 7000, 500, dtype=int)
-v_macro = np.arange(4000, 6000, 500, dtype=int)
-inclination = np.arange(15, 90, 15)
-v_rots, v_macros, inclinations = np.meshgrid(v_rot, v_macro, inclination)
+v_rot = np.arange(0000, 3000, 1000, dtype=int)
+v_macro = np.arange(4000, 6000, 1000, dtype=int)
+v_p = np.arange(0.4, 1.0, 0.1)
+K = np.arange(2537-600, 2537+500, 200)
+
+v_rots, v_macros, vps, Ks = np.meshgrid(v_rot, v_macro, v_p, K)
 
 # Empty the file from last time
 with open(overviewfile, "w") as f:
     pass
 
-for idx, (v_rot, v_macro, incl) in enumerate(zip(v_rots.flatten(), v_macros.flatten(), inclinations.flatten())):
+for idx, (v_rot, v_macro, v_p, K) in enumerate(zip(v_rots.flatten(), v_macros.flatten(), vps.flatten(), Ks.flatten())):
     idx_plus = idx + 1
     
     config = configparser.ConfigParser()
@@ -34,7 +36,8 @@ for idx, (v_rot, v_macro, incl) in enumerate(zip(v_rots.flatten(), v_macros.flat
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
     config["GLOBAL"]["v_rot"] = str(v_rot)
     config["GLOBAL"]["v_macro"] = str(v_macro)
-    config["GLOBAL"]["inclination"] = str(incl)
+    config["GLOBAL"]["K"] = str(K)
+    config["GLOBAL"]["v_p"] = str(round(v_p, 1))
     
     
     outfile = TICKETROOT / gridname / f"{simname}.ini"
