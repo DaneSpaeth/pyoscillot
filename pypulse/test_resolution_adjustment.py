@@ -11,7 +11,7 @@ from scipy.interpolate import CubicSpline, interp1d
 plt.rcParams['axes.formatter.useoffset'] = False
 
 
-LB_root = Path("/home/dspaeth/pypulse/data/resolution_tests")
+LB_root = Path("/data/dspaeth/pypulse_data/resolution_tests")
 df = pd.read_csv(LB_root / "LB_R700000.csv")
 
 wave_LB_700000 = np.array(df["x"])
@@ -38,7 +38,7 @@ ax.plot(wave_LB_100000, spec_LB_100000, color="tab:blue", lw=1, label="R=100000 
 lin_spec_70000 = cs_700000(lin_wave)
 
 
-spec_res_dane  = adjust_resolution_dane(lin_wave, lin_spec_70000, R=100000, R_phoenix=700000)
+spec_res_dane  = adjust_resolution_dane(lin_wave, lin_spec_70000, R=100000)
 ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pypulse)")
 
 ax.legend()
@@ -48,4 +48,4 @@ ax.set_xlim(6301.35, 6301.67)
 print(np.min(lin_spec_70000))
 print(np.min(spec_res_dane))
 fig.set_tight_layout(True)
-plt.savefig("resolution_test_LB.png", dpi=600)
+plt.savefig("PhD_plots/resolution_test_LB.pdf", dpi=600)

@@ -350,36 +350,15 @@ def adjust_resolution(wave, spec, R, w_sample=1):
     return f_sm
 
 
-def adjust_resolution_dane(wave, spec, R=100000, R_phoenix = 1e99):
+def adjust_resolution_dane(wave, spec, R=100000):
     mid_px = int(len(wave)/2)
     center = wave[mid_px]
-    # R_phoenix = 1e100
     
-    # For the calculation of the kernel width:
-    # convolution is associative: (f*g)*h = f*(g*h)
-    # The PHOENIX spec is already the convolution if the raw spec
-    # and a normal distribution with sigma_phoenix
-    # Now we need to calc what sigma_prime is that we need to still apply
-    # We now that the final product should be given by R = lambda / FWHM (or delta lambda)
-    # We can convert that to sigma_inst using 2*np.sqrt(2*np.log(2))*sigma_inst = FWHM 
-    # That would simply be the sigma of a Gaussian if we had the raw perfect PHOENIX spec
-    # But we don't, so we first need to get rid of the PHOENIX resolution
-    # Here we can make use of the relation of the convolution for two Gaussians
-    # N(µ_1, sigma_1) * N(µ_2, sigma_2) = N(µ_1 + µ_2, sqrt(sigma_1**2 + sigma_2**2))
-    # see e.g.: https://jeremy9959.net/Math-5800-Spring-2020/notebooks/convolution_of_gaussians.html
-    # or: https://math.stackexchange.com/questions/1745174/convolution-of-two-gaussian-functions
-    # So we can calculate the necessary sigma_prime to still apply to the PHOENIX spectra as
-    # sigma_prime = sqrt(sigma_inst**2 - sigma_phoenix**2)
-    
-    sigma_phoenix = center / (2*np.sqrt(2*np.log(2)) * R_phoenix)
-
     sigma_inst = center / (2*np.sqrt(2*np.log(2)) * R)
-
-    sigma_prime = np.sqrt(sigma_inst**2 - sigma_phoenix**2)
     
     # convert that to pixel
     pixel_scale = wave[mid_px] - wave[mid_px - 1]
-    sigma_px = sigma_prime / pixel_scale
+    sigma_px = sigma_inst / pixel_scale
     
     kernel = Gaussian1DKernel(stddev=sigma_px)
     sp_conv = convolve_fft(spec, kernel)
