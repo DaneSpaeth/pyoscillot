@@ -5,7 +5,7 @@ from scipy.signal import deconvolve
 import matplotlib.pyplot as plt
 from astropy.time import Time
 from dataloader import harps_template
-from utils import adjust_resolution, adjust_resolution_dane, _gauss_continuum, bisector_on_line
+from utils import adjust_resolution, adjust_resolution_dane, _gauss_continuum, bisector_on_line, rebin
 import cfg
 
 
@@ -46,8 +46,9 @@ def interpolate(spectrum, wavelength):
                        debug_line)
 
         # Interpolate the calculated spectra onto the tmpl_wave grid
-        func = interp1d(local_wavelength, local_spectrum_HARPS, kind="linear")
-        order_spec = func(tmpl_wave[order])
+        # func = interp1d(local_wavelength, local_spectrum_HARPS, kind="linear")
+        # order_spec = func(tmpl_wave[order])
+        order_spec = rebin(local_wavelength, local_spectrum_HARPS, tmpl_wave[order])
 
         # Adjust for the blaze
         order_spec *= tmpl_blaze[order]
