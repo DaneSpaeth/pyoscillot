@@ -294,6 +294,12 @@ def interpolate_to_restframe(wavelength, spectrum, rest_wavelength):
     return shift_spec
 
 def adjust_resolution(wave, spec, R=100000):
+    """ Basic resolution adjustment using a convolution with a Gaussian kernel.
+    
+        :param np.array wave: Wavelength array in Angstrom
+        :param np.array spec: Spectrum arry
+        :param float R: resolution to smooth to
+    """
     mid_px = int(len(wave)/2)
     center = wave[mid_px]
     
@@ -307,6 +313,126 @@ def adjust_resolution(wave, spec, R=100000):
     sp_conv = convolve_fft(spec, kernel)
     
     return sp_conv
+
+def adjust_resolution_per_pixel(wave, spec, R=100000):
+    """ Improved resolution adjustment function working per pixel and taking care of jumps.
+    
+        :param np.array wave: Wavelength array in Angstrom
+        :param np.array spec: Spectrum arry
+        :param float R: resolution to smooth to
+    """
+    # Define the scale jumps present in PHOENIX
+    scale_jumps = [0, 5000, 10000, 15000, 20000]
+    pixel_scales_dict = {0: None,
+                            5000: 0.006,
+                            10000: 0.01,
+                            15000: 0.03,
+                            20000: None}
+    scale_jumps = [sj for sj in scale_jumps if sj < wave[-1] + 5000 and sj > wave[0] - 5000]
+    scale_jump_px = [(np.abs(wave-sj)).argmin() for sj in scale_jumps]
+    
+    last_idx = 0
+    spec_conv = np.zeros_like(wave)
+    
+    print(wave.shape)
+    
+    # Calculate the local smoothing kernel for each wavelength point
+    sigma_inst = wave / (2*np.sqrt(2*np.log(2)) * R)
+    for jump_interval, idx in enumerate(scale_jump_px):
+        # In case you are at the right border, make sure to include the last point
+        if idx == len(wave) - 1:
+            idx += 1
+
+        # Make arrays that run exactly to the jump but do not include it
+        if jump_interval == 0:
+            continue
+        wave_local = wave[last_idx:idx]
+        spec_local = spec[last_idx:idx]
+        wave_start = wave_local[0]
+        wave_stop = wave_local[-1]
+        pixel_scale_local = pixel_scales_dict[scale_jumps[jump_interval]]
+        
+        sigma_px_local = sigma_inst[last_idx:idx] / pixel_scale_local
+        
+        
+        # Let's first calculate the largest width in the current segment
+        max_dpx = np.max(sigma_px_local)
+        
+        # And define 25 times as a overhead
+        px_over = int(np.ceil(max_dpx*25))
+        
+        spec_conv_local = np.zeros_like(wave_local)
+        spec_loops = []
+        
+        rowmask = np.zeros(len(wave_local), dtype=bool)
+        for i in range(0, len(wave_local)):
+            # print(f"\r{i}, {len(wave_local)}", end="")
+            if (i - px_over) < 0:
+                if jump_interval == 1:
+                    # Cannot interpolate
+                    continue
+                di = i - px_over
+                # We have to interpolate into the last range
+                prev_interval_wave = wave[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                prev_interval_spec = spec[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                
+                lin_wave = np.linspace(wave_local[0] - np.abs(di)*pixel_scale_local,
+                                        wave_local[0],
+                                        np.abs(di))
+                interp_spec = np.interp(lin_wave, prev_interval_wave, prev_interval_spec)
+                # Now you have the interpolated spectrum in the new sampling range
+                # Now stitch together
+                spec_loop = interp_spec
+                spec_loop = np.append(spec_loop, spec_local[:i+px_over+1])
+            elif (i + px_over) >= len(wave_local):
+                if not len(scale_jump_px) > jump_interval + 1:
+                    # Cannot interpolate
+                    continue
+                
+                di = i + px_over - len(wave_local) + 1
+                # We have to interpolate into the last range
+                next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                next_interval_spec = spec[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                
+                lin_wave = np.linspace(wave_local[-1] + pixel_scale_local,
+                                        wave_local[-1] + np.abs(di)*pixel_scale_local, np.abs(di))
+                interp_spec = np.interp(lin_wave, next_interval_wave, next_interval_spec)
+                # Now you have the interpolated spectrum in the new sampling range
+                # Now stitch together
+                spec_loop = spec_local[i - px_over:]
+                spec_loop = np.append(spec_loop, interp_spec)
+            else:
+                spec_loop = spec_local[i - px_over:i + px_over + 1]
+            
+            
+            rowmask[i] = True
+            spec_loops.append(spec_loop)
+        
+        
+        # Compute the kernels
+        lin_px = np.linspace(-px_over, px_over, 2*px_over+1)
+        lin_px = np.array([lin_px for i in range(len(wave_local))])
+        sigma_px_local = np.array([sigma_px_local for i in range(2*px_over+1)]).T
+        print(lin_px.shape)
+        print(sigma_px_local.shape)
+        
+        kernels = gaussian(lin_px, 0., sigma_px_local)
+        
+                    
+
+                    
+        spec_loops = np.array(spec_loops)
+        kernels = kernels[rowmask,:]
+
+        spec_conv_local[rowmask] = np.sum(spec_loops * kernels, axis=1)
+        del kernels
+        del spec_loops
+        spec_conv[last_idx:idx] = spec_conv_local
+        last_idx = idx  
+        
+    return spec_conv 
+        
+    
 
 
 def _overplot_telluric_mask(ax):
@@ -1474,12 +1600,25 @@ def measure_bisector_on_line(wave, spec, line):
 
 if __name__ == "__main__":
     wave, spec, header = phoenix_spectrum()
-    spec_macro = add_isotropic_convective_broadening(wave, spec, v_macro=6000)
+    
+    mask = np.logical_and(wave>4900, wave<5100)
+    wave = wave[mask]
+    spec = spec[mask]
+    spec_R = adjust_resolution_per_pixel(wave, spec, R=100000)
     
     fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
-    ax.plot(wave, spec)
-    ax.plot(wave, spec_macro)
+    ax.plot(wave, spec, "bx")
+    ax.plot(wave, spec_R, "r*")
     
-    ax.set_xlim(6500, 6505)
+    mask = np.logical_and(wave>4999, wave<5001)
+    wave = wave[mask]
+    spec = spec[mask]
+    spec_R = spec_R[mask]
+    print(wave[spec_R.argmin()])
+    print(wave[spec.argmin()])
+    
+    ax.set_xlim(4999, 5001)
+    
+    
     
     plt.savefig("dbug.png", dpi=300)
