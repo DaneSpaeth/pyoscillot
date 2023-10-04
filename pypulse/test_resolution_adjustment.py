@@ -38,11 +38,11 @@ ax.plot(wave_LB_100000, spec_LB_100000, color="tab:blue", lw=1, label="R=100000 
 lin_spec_70000 = cs_700000(lin_wave)
 
 
-spec_res_dane  = adjust_resolution(lin_wave, lin_spec_70000, R=100000)
+spec_res_dane  = adjust_resolution_per_pixel(lin_wave, lin_spec_70000, R=100000)
 ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pypulse)")
 
-spec_res_per_pixel = adjust_resolution_per_pixel(lin_wave, lin_spec_70000, R=100000)
-ax.plot(lin_wave, spec_res_dane, color="tab:red", lw=1, label="R=100000 (pypulse, per pixel)")
+# spec_res_per_pixel = adjust_resolution_per_pixel(lin_wave, lin_spec_70000, R=100000)
+# ax.plot(lin_wave, spec_res_dane, color="tab:red", lw=1, label="R=100000 (pypulse, per pixel)")
 
 ax.legend()
 ax.set_ylabel("Normalized Intensity")
@@ -51,4 +51,4 @@ ax.set_xlim(6301.35, 6301.67)
 print(np.min(lin_spec_70000))
 print(np.min(spec_res_dane))
 fig.set_tight_layout(True)
-plt.savefig("PhD_plots/resolution_test_LB.png", dpi=600)
+plt.savefig("PhD_plots/resolution_test_LB.pdf", dpi=600)
