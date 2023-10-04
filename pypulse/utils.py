@@ -1375,7 +1375,7 @@ def calc_mean_limb_dark(wave, mu_array, load_precalc=True, N=150):
 #     return spec_conv
 
 
-def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=False, convolution=True, old=False):
+def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True, debug_plot=False, wave_step=0.5, per_pixel=True, convolution=False, old=False):
     """ Add the effect of macroturbulence, i.e. convective broadening, via convolution.
     
         This function assumes an isotropic broadening term, i.e. a constant
@@ -1602,9 +1602,9 @@ if __name__ == "__main__":
     wave, spec, header = phoenix_spectrum()
     
     mask = np.logical_and(wave>4900, wave<5100)
-    wave = wave[mask]
-    spec = spec[mask]
-    spec_R = adjust_resolution_per_pixel(wave, spec, R=100000)
+    # wave = wave[mask]
+    # spec = spec[mask]
+    spec_R = add_isotropic_convective_broadening(wave, spec, v_macro=5000)
     
     fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
     ax.plot(wave, spec, "bx")
