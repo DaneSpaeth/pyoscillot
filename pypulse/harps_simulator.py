@@ -34,7 +34,7 @@ def interpolate(spectrum, wavelength):
 
         local_wavelength = wavelength[local_wave_mask]
         local_spectrum = spectrum[local_wave_mask]
-        local_spectrum_HARPS = spectrum_HARPS[spectrum_HARPS]
+        local_spectrum_HARPS = spectrum_HARPS[local_wave_mask]
         
 
         # Adjust the resolution per order
