@@ -176,13 +176,15 @@ if __name__ == "__main__":
     # tickets = [root / "test_V_flux.ini"]
     
     # grid_folder = root / "NGC4349_blindsearch_grid"
-    # tickets = sorted(list(grid_folder.glob("*_blindsearch_grid_*.ini")))
+    tickets = sorted(list(grid_folder.glob("*_blindsearch_grid_*.ini")))
 
-    for ticket in tickets:
+    for idx, ticket in enumerate(tickets):
         try:
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         except:
             continue
+        if idx >= 35:
+            exit()
         
     # i = 24
     # ticket = root / "NGC4349-127" / f"test{i}.ini"

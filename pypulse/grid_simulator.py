@@ -31,13 +31,13 @@ for idx, (v_rot, v_macro, v_p, K) in enumerate(zip(v_rots.flatten(), v_macros.fl
     config = configparser.ConfigParser()
     config.read(baseticket)
     
-    simname = f"{gridname}_{idx_plus}"
+    simname = f"{gridname}_{idx_plus:03d}"
     config["GLOBAL"]["name"] = simname
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
     config["GLOBAL"]["v_rot"] = str(v_rot)
     config["GLOBAL"]["v_macro"] = str(v_macro)
-    config["GLOBAL"]["K"] = str(K)
-    config["GLOBAL"]["v_p"] = str(round(v_p, 1))
+    config["pulsation"]["K"] = str(K)
+    config["pulsation"]["v_p"] = str(round(v_p, 1))
     
     
     outfile = TICKETROOT / gridname / f"{simname}.ini"
