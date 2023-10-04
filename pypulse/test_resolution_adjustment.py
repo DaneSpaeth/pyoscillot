@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import adjust_resolution, adjust_resolution_dane, _gauss_continuum, neg_gaussian
+from utils import adjust_resolution, adjust_resolution, _gauss_continuum, neg_gaussian
 from dataloader import phoenix_spectrum
 from scipy.optimize import curve_fit
 from astropy.convolution import Gaussian1DKernel
@@ -38,7 +38,7 @@ ax.plot(wave_LB_100000, spec_LB_100000, color="tab:blue", lw=1, label="R=100000 
 lin_spec_70000 = cs_700000(lin_wave)
 
 
-spec_res_dane  = adjust_resolution_dane(lin_wave, lin_spec_70000, R=100000)
+spec_res_dane  = adjust_resolution(lin_wave, lin_spec_70000, R=100000)
 ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pypulse)")
 
 ax.legend()
