@@ -5,7 +5,7 @@ from scipy.signal import deconvolve
 import matplotlib.pyplot as plt
 from astropy.time import Time
 from dataloader import harps_template
-from utils import adjust_resolution, _gauss_continuum, bisector_on_line, rebin
+from utils import adjust_resolution_per_pixel, _gauss_continuum, bisector_on_line, rebin
 import cfg
 from pathlib import Path
 
@@ -25,6 +25,7 @@ def interpolate(spectrum, wavelength):
     R_real = 115000
     # R_test = 130000
     print("Adjusting Resolution")
+    spectrum_HARPS = adjust_resolution_per_pixel(wavelength, spectrum, R=R_real)
     for order in range(len(tmpl_wave)):
 
         # Cut the calculated wavelengths and spectra to the order
@@ -33,11 +34,12 @@ def interpolate(spectrum, wavelength):
 
         local_wavelength = wavelength[local_wave_mask]
         local_spectrum = spectrum[local_wave_mask]
+        local_spectrum_HARPS = spectrum_HARPS[spectrum_HARPS]
         
 
         # Adjust the resolution per order
         # This will use one kernel per order
-        local_spectrum_HARPS = adjust_resolution(local_wavelength, local_spectrum, R=R_real)
+        # local_spectrum_HARPS = adjust_resolution(local_wavelength, local_spectrum, R=R_real)
         # DEBUG PLOT
         debug_line = 5728.65
         if debug_line > local_wavelength[0] and debug_line < local_wavelength[-1]:
