@@ -175,7 +175,7 @@ if __name__ == "__main__":
     
     # tickets = [root / "test_V_flux.ini"]
     
-    # grid_folder = root / "NGC4349_blindsearch_grid"
+    grid_folder = root / "NGC4349_blindsearch_grid"
     tickets = sorted(list(grid_folder.glob("*_blindsearch_grid_*.ini")))
 
     for idx, ticket in enumerate(tickets):
