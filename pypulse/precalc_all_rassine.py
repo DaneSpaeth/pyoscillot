@@ -10,22 +10,22 @@ from spline_interpolation import interpolate_on_temperature
 from utils import get_ref_spectra
 
     
-out_root = Path("/home/dspaeth/pypulse/data/continuum_fits")
+out_root = Path("/data/dspaeth/pypulse_data/continuum_fits")
 WAVE_START = 3550
 WAVE_STOP = 17550
 cutoff_px = 200
 poly_order = 3
 
 # Define stellar parameters
-logg = 2.0
+logg = 4.5
 feh = 0.0
 
-min_T = 4400
-max_T = 4600
+min_T = 5700
+max_T = 5900
 
 wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
 
-for Teff in range(4499, 4500, 1):
+for Teff in range(min_T, max_T, 1):
     # To get the right sign for PHOENIX
     if feh == 0.0:
         feh_str = -0.0000001
