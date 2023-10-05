@@ -169,9 +169,14 @@ if __name__ == "__main__":
 
     # rot_dir = Path(root / "NGC4349_TestRot")
     # tickets = [rot_dir / "test67.ini"]
-    for i in range(223, 224):
+    for i in range(224, 225):
         ticket = root / "NGC4349_TestMacro" / f"test{i}.ini"
         tickets.append(ticket)
+        
+    for ticket in tickets:
+        main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+        
+    exit()
     
     # tickets = [root / "test_V_flux.ini"]
     
