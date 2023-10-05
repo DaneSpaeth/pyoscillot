@@ -334,7 +334,6 @@ def adjust_resolution_per_pixel(wave, spec, R=100000):
     last_idx = 0
     spec_conv = np.zeros_like(wave)
     
-    print(wave.shape)
     
     # Calculate the local smoothing kernel for each wavelength point
     sigma_inst = wave / (2*np.sqrt(2*np.log(2)) * R)
@@ -343,69 +342,79 @@ def adjust_resolution_per_pixel(wave, spec, R=100000):
         if idx == len(wave) - 1:
             idx += 1
 
-        # Make arrays that run exactly to the jump but do not include it
+        # # Make arrays that run exactly to the jump but do not include it
         if jump_interval == 0:
             continue
         wave_local = wave[last_idx:idx]
         spec_local = spec[last_idx:idx]
-        wave_start = wave_local[0]
-        wave_stop = wave_local[-1]
+        # wave_start = wave_local[0]
+        # wave_stop = wave_local[-1]
         pixel_scale_local = pixel_scales_dict[scale_jumps[jump_interval]]
+        pixel_scale_local = wave_local[50] - wave_local[49]
         
         sigma_px_local = sigma_inst[last_idx:idx] / pixel_scale_local
-        
         
         # Let's first calculate the largest width in the current segment
         max_dpx = np.max(sigma_px_local)
         
         # And define 25 times as a overhead
-        px_over = int(np.ceil(max_dpx*25))
+        px_over = int(np.ceil(max_dpx*7))
         
         spec_conv_local = np.zeros_like(wave_local)
         spec_loops = []
         
         rowmask = np.zeros(len(wave_local), dtype=bool)
         for i in range(0, len(wave_local)):
-            # print(f"\r{i}, {len(wave_local)}", end="")
+            # Check if you overlap into the last interval on the left
             if (i - px_over) < 0:
+                # Check if you're in the first interval, i.e. you cannot interpolate
+                # Set the left side to 0 then
                 if jump_interval == 1:
-                    # Cannot interpolate
-                    continue
-                di = i - px_over
-                # We have to interpolate into the last range
-                prev_interval_wave = wave[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
-                prev_interval_spec = spec[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
-                
-                lin_wave = np.linspace(wave_local[0] - np.abs(di)*pixel_scale_local,
-                                        wave_local[0],
-                                        np.abs(di))
-                interp_spec = np.interp(lin_wave, prev_interval_wave, prev_interval_spec)
-                # Now you have the interpolated spectrum in the new sampling range
-                # Now stitch together
-                spec_loop = interp_spec
-                spec_loop = np.append(spec_loop, spec_local[:i+px_over+1])
+                    spec_loop = np.zeros(np.abs(i-px_over))
+                    spec_loop = np.append(spec_loop, spec_local[:i+px_over+1])
+                else:
+                    di = i - px_over
+                    # We have to interpolate into the last range
+                    prev_interval_wave = wave[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                    prev_interval_spec = spec[scale_jump_px[jump_interval-2]:scale_jump_px[jump_interval-1]]
+                    
+                    lin_wave = np.linspace(wave_local[0] - np.abs(di)*pixel_scale_local,
+                                            wave_local[0],
+                                            np.abs(di))
+                    interp_spec = np.interp(lin_wave, prev_interval_wave, prev_interval_spec)
+                    # Now you have the interpolated spectrum in the new sampling range
+                    # Now stitch together
+                    spec_loop = interp_spec
+                    spec_loop = np.append(spec_loop, spec_local[:i+px_over+1])
+            # Check if you overlap on the right side        
             elif (i + px_over) >= len(wave_local):
+                # Check if you're in the last interval, i.e. you cannot interpolate
+                # Set the right side to 0 then
                 if not len(scale_jump_px) > jump_interval + 1:
-                    # Cannot interpolate
-                    continue
-                
-                di = i + px_over - len(wave_local) + 1
-                # We have to interpolate into the last range
-                next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
-                next_interval_spec = spec[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
-                
-                lin_wave = np.linspace(wave_local[-1] + pixel_scale_local,
-                                        wave_local[-1] + np.abs(di)*pixel_scale_local, np.abs(di))
-                interp_spec = np.interp(lin_wave, next_interval_wave, next_interval_spec)
-                # Now you have the interpolated spectrum in the new sampling range
-                # Now stitch together
-                spec_loop = spec_local[i - px_over:]
-                spec_loop = np.append(spec_loop, interp_spec)
+                    spec_loop = spec_local[i - px_over:]
+                    spec_loop = np.append(spec_loop, np.zeros(i + px_over - len(wave_local) + 1))
+                else:
+                    di = i + px_over - len(wave_local) + 1
+                    # We have to interpolate into the last range
+                    next_interval_wave = wave[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                    next_interval_spec = spec[scale_jump_px[jump_interval]:scale_jump_px[jump_interval+1]]
+                    
+                    lin_wave = np.linspace(wave_local[-1] + pixel_scale_local,
+                                            wave_local[-1] + np.abs(di)*pixel_scale_local, np.abs(di))
+                    interp_spec = np.interp(lin_wave, next_interval_wave, next_interval_spec)
+                    # Now you have the interpolated spectrum in the new sampling range
+                    # Now stitch together
+                    spec_loop = spec_local[i - px_over:]
+                    spec_loop = np.append(spec_loop, interp_spec)
             else:
-                spec_loop = spec_local[i - px_over:i + px_over + 1]
+                px_start = i - px_over
+                px_stop = i + px_over + 1
+                spec_loop = spec_local[px_start : px_stop]
             
             
             rowmask[i] = True
+            
+            spec_loop = np.array(spec_loop)
             spec_loops.append(spec_loop)
         
         
@@ -413,14 +422,9 @@ def adjust_resolution_per_pixel(wave, spec, R=100000):
         lin_px = np.linspace(-px_over, px_over, 2*px_over+1)
         lin_px = np.array([lin_px for i in range(len(wave_local))])
         sigma_px_local = np.array([sigma_px_local for i in range(2*px_over+1)]).T
-        print(lin_px.shape)
-        print(sigma_px_local.shape)
         
         kernels = gaussian(lin_px, 0., sigma_px_local)
         
-                    
-
-                    
         spec_loops = np.array(spec_loops)
         kernels = kernels[rowmask,:]
 
