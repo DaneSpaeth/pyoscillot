@@ -167,20 +167,21 @@ def interpolate_on_temperature(T, ref_wave, ref_spectra, logg, feh, mu=1.0):
     return spec_interpol
     
 if __name__ == "__main__":
-    from utils import get_ref_spectra
-    import matplotlib.pyplot as plt
-    wave, ref_spectra, ref_headers = get_ref_spectra(np.array([4550]), 2.0, 0.0)
-    spec_interpol = interpolate_on_temperature(4550, wave, ref_spectra, 2.0, 0.0, 1.0)
+    # from utils import get_ref_spectra
+    # import matplotlib.pyplot as plt
+    # wave, ref_spectra, ref_headers = get_ref_spectra(np.array([4550]), 2.0, 0.0)
+    # spec_interpol = interpolate_on_temperature(4550, wave, ref_spectra, 2.0, 0.0, 1.0)
     
-    fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
-    markersize = 1
-    ax.plot(wave, ref_spectra[4500][1.0], marker="^", markersize=markersize, label="T=4500 K (PHOENIX)")
-    ax.plot(wave, ref_spectra[4600][1.0], alpha=0.7, marker="v", markersize=markersize, label="T=4600 K (PHOENIX)")
-    ax.plot(wave, spec_interpol, alpha=0.7, marker="o", markersize=markersize, label="T=4550 K (interpolated)")
-    ax.set_xlim(5499, 5515)
-    ax.set_xlabel(r"Wavelength [$\AA$]")
-    ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
-    ax.set_ylim(0, ax.get_ylim()[1])
-    ax.legend()
-    fig.set_tight_layout(True)
-    plt.savefig("temp_interpolation.png", dpi=300)
+    # fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+    # markersize = 1
+    # ax.plot(wave, ref_spectra[4500][1.0], marker="^", markersize=markersize, label="T=4500 K (PHOENIX)")
+    # ax.plot(wave, ref_spectra[4600][1.0], alpha=0.7, marker="v", markersize=markersize, label="T=4600 K (PHOENIX)")
+    # ax.plot(wave, spec_interpol, alpha=0.7, marker="o", markersize=markersize, label="T=4550 K (interpolated)")
+    # ax.set_xlim(5499, 5515)
+    # ax.set_xlabel(r"Wavelength [$\AA$]")
+    # ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
+    # ax.set_ylim(0, ax.get_ylim()[1])
+    # ax.legend()
+    # fig.set_tight_layout(True)
+    # plt.savefig("temp_interpolation.png", dpi=300)
+    precompute_second_derivative_grid(4.5, 0.0)
