@@ -128,7 +128,7 @@ def get_interpolated_spectrum(T_local,
     mu_dict = {}
     for mu in mu_angles:
         if not spec_intensity:
-            spec = ref_spectra[T_close][mu]
+            spec = ref_spectra[T_close][1.0]
         else:
             # The specific intensities are saved as a datacube
             spec_int_cube = ref_spectra[T_close]
@@ -144,7 +144,7 @@ def get_interpolated_spectrum(T_local,
             if int(T_local) != T_close:
                 spec = spec * planck_ratio(wave * 1e-10, T_local, T_close)
         elif interpolation_mode == "cubic_spline":
-            spec = interpolate_on_temperature(T_local, wave, ref_spectra, logg=logg, feh=feh, mu=mu)
+            spec = interpolate_on_temperature(T_local, wave, ref_spectra, logg=logg, feh=feh, mu=1.0)
         else:
             raise NotImplementedError(f"interpolation_mode={interpolation_mode} is not implemented")
         mu_dict[mu] = spec

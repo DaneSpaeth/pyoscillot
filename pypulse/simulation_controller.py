@@ -419,6 +419,10 @@ class SimulationController():
         limb_darkening = bool(int(self.conf["limb_darkening"]))
         # For backwards compatibility: Get the conv blueshift param, default = False
         convective_blueshift = bool(int(self.conf.get("convective_blueshift", 0)))
+        
+        convective_blueshift_model = str(self.conf.get("convective_blueshift_model", "alpha_boo"))
+        allowed_conv_blue_models = ["alpha_boo", "sun"]
+        assert convective_blueshift_model in allowed_conv_blue_models, f"convective_blueshift_model must be in {allowed_conv_blue_models} but is {convective_blueshift_model}"
         v_macro = float(self.conf.get("v_macro", 0))
         v_rot = self.conf["v_rot"]
         inclination = self.conf["inclination"]
@@ -434,6 +438,7 @@ class SimulationController():
             v_rot=v_rot, inclination=inclination,
             limb_darkening=limb_darkening,
             convective_blueshift=convective_blueshift,
+            convective_blueshift_model=convective_blueshift_model,
             v_macro=v_macro)
 
         # Add all specified pulsations

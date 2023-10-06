@@ -19,7 +19,8 @@ class GridSpectrumSimulator():
 
     def __init__(self, N_star=500, N_border=5, Teff=4800, logg=3.0, feh=0.0,
                  v_rot=3000, inclination=90, limb_darkening=True,
-                 convective_blueshift=False, v_macro=0):
+                 convective_blueshift=False, convective_blueshift_model="alpha_boo", 
+                 v_macro=0):
         """ Initialize grid.
 
             :param int N_star: number of grid cells on the star in x and y
@@ -30,6 +31,7 @@ class GridSpectrumSimulator():
             :param int Teff: Effective Temperature [K] (must be available)
             :param int v_rot: V*sin(i) [m/s]
             :param bool convective_blueshift: Add in the conv blueshift Bisectors
+            :param str convective_blueshift_model: Which convective blueshift model to use. At the moment [alpha_boo, sun]
             :param int v_macro: (Isotropic) macroturbulent velocity [m/s]
         """
         self.three_dim_star = ThreeDimStar(Teff=Teff, v_rot=v_rot)
@@ -46,6 +48,7 @@ class GridSpectrumSimulator():
         self.flux = None
         self.V_band_flux = None
         self.conv_blue = convective_blueshift
+        self.conv_blue_model = convective_blueshift_model
         self.limb_dark = limb_darkening
         self.v_macro = v_macro
         
@@ -160,6 +163,7 @@ class GridSpectrumSimulator():
                                                                      self.logg, 
                                                                      self.feh,
                                                                      change_bis=self.conv_blue,
+                                                                     convective_blueshift_model=self.conv_blue_model, 
                                                                      limb_dark=self.limb_dark,
                                                                      v_macro=self.v_macro,
                                                                      mean_limb_dark=self.mean_limb_dark,
@@ -227,7 +231,8 @@ class GridSpectrumSimulator():
 def _compute_spectrum(temperature, rotation, pulsation, granulation, mu, 
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
                       logg, feh, 
-                      change_bis=False, limb_dark=False, v_macro=0, mean_limb_dark=None, weights=None):
+                      change_bis=False, convective_blueshift_model="alpha_boo", 
+                      limb_dark=False, v_macro=0, mean_limb_dark=None, weights=None):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -271,13 +276,16 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     # The mu values that are available for the BIS calculations of convective_blueshift
     if change_bis:
         # available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
-        available_mus = np.array(list(ref_spectra[list(ref_spectra.keys())[0]].keys()))
+        if convective_blueshift_model == "alpha_boo":
+            available_mus = np.array(list(ref_spectra[list(ref_spectra.keys())[0]].keys()))
+        elif convective_blueshift_model == "sun":
+            available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
         print(f"Available mus = {available_mus}")
         rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
         rounded_mus = np.array(rounded_mus)
     else:
         rounded_mus = np.ones_like(sorted_temperature)
-    
+        
     v_total = np.nanmean(pulsation)
     fine_ref_spectra_dict = None
     fine_ref_temperature = None
@@ -321,6 +329,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             # If not compute a current ref spectrum
             fine_ref_temperature = temp
             needed_mus = np.unique(rounded_mus[sorted_temperature==fine_ref_temperature])
+            
             
             print(f"Needed mu angles for temperature {fine_ref_temperature}={needed_mus}")
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
@@ -384,7 +393,10 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                    logg,
                                                                    feh,
                                                                    limb_dark_continuum=mean_limb_dark)
-                bis_polynomial_dict = simple_alpha_boo_CB_model()
+                if convective_blueshift_model == "alpha_boo":
+                    bis_polynomial_dict = simple_alpha_boo_CB_model()
+                elif convective_blueshift_model == "sun":
+                    bis_polynomial_dict = Zhao_bis_polynomials()
                 # spec_corr = fine_ref_spectra_dict[rounded_mu]
                 
                 for mu in fine_ref_spectra_dict.keys():
@@ -394,10 +406,10 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                         fine_ref_temperature, 
                                                         logg, 
                                                         feh, 
-                                                        debug_plot=False,
-                                                        mu=rounded_mu)
+                                                        debug_plot=True,
+                                                        mu=mu)
                     
-                    fine_ref_spectra_dict[rounded_mu] = spec_add
+                    fine_ref_spectra_dict[mu] = spec_add
                     
             
 
