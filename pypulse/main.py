@@ -169,16 +169,25 @@ if __name__ == "__main__":
 
     # rot_dir = Path(root / "NGC4349_TestRot")
     # tickets = [rot_dir / "test67.ini"]
-    for i in range(224, 225):
-        ticket = root / "NGC4349_TestMacro" / f"test{i}.ini"
-        tickets.append(ticket)
+    # for i in range(224, 225):
+    #     ticket = root / "NGC4349_TestMacro" / f"test{i}.ini"
+    #     tickets.append(ticket)
         
-    for ticket in tickets:
-        main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
-        
-    exit()
+    # for ticket in tickets:
+    #     main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    
     
     # tickets = [root / "test_V_flux.ini"]
+    tickets = []
+    # tickets.append(Path(root / "PhD_thesis_BIS" / "SunBIS9.ini"))
+    tickets.append(Path(root / "PhD_thesis_BIS" / "SunBIS11.ini"))
+    tickets.append(Path(root / "PhD_thesis_BIS" / "SunBIS12.ini"))
+    for idx, ticket in enumerate(tickets):
+        try:
+            main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+        except:
+            continue
+    exit()
     
     grid_folder = root / "NGC4349_blindsearch_grid"
     tickets = sorted(list(grid_folder.glob("*_blindsearch_grid_*.ini")))
@@ -188,8 +197,8 @@ if __name__ == "__main__":
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         except:
             continue
-        if idx >= 35:
-            exit()
+        if idx < 35 or idx > 70:
+            continue
         
     # i = 24
     # ticket = root / "NGC4349-127" / f"test{i}.ini"
