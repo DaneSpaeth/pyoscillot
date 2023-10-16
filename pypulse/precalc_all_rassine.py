@@ -20,12 +20,14 @@ poly_order = 3
 logg = 4.5
 feh = 0.0
 
-min_T = 5700
-max_T = 5900
+min_T = 4486
+max_T = 4530
+step = 0.1
 
 wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
+Teffs = np.arange(min_T, max_T+step, step)
 
-for Teff in range(min_T, max_T, 1):
+for Teff in Teffs:
     # To get the right sign for PHOENIX
     if feh == 0.0:
         feh_str = -0.0000001
@@ -38,11 +40,14 @@ for Teff in range(min_T, max_T, 1):
     if not out_dir.is_dir():
         out_dir.mkdir() 
     # Make a debug plot
+    print("\n\n\n")
+    print("==================================================")
     print(f"START RUN FOR TEFF={Teff}")
+    print("==================================================")
     fig, ax = plt.subplots(1, figsize=(30,9))
     
     
-    out_str = f"{int(Teff):05d}K-{logg:.2f}{feh_str:+.1f}"
+    out_str = f"{Teff:05.1f}K-{logg:.2f}{feh_str:+.1f}"
     
     # wave, spec,_, file = phoenix_spectrum(Teff=Teff, logg=logg, feh=feh, return_filepath=True, wavelength_range=(WAVE_START,WAVE_STOP))
     spec = interpolate_on_temperature(Teff, wave, ref_spectra, logg, feh)

@@ -137,9 +137,10 @@ class ThreeDimStar():
         # scipy.sph_harm switches the definition of theta and phi, therefore we need
         # to give the params switched around
         harm = sph_harm(m, l, self.phi, self.theta)
+    
         
         # Calculate the displacement without any amplitude (we only need it for the T later)
-        displ = harm * np.exp(1j * 2 * np.pi * nu * t)
+        displ = harm * np.exp(1j * 2 * np.pi * nu * t) / self.normalization
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
         # you need to differentiate the displacements wrt t which introduces
@@ -173,9 +174,10 @@ class ThreeDimStar():
 
         # Calculate the spherical harmonic Y(l,m)
         harmonic = sph_harm(m, l, self.phi, self.theta)
+        
         # You need the partial derivative wrt to phi
         part_deriv =  1j * m * harmonic
-        displ = 1 / np.sin(self.theta) * part_deriv * np.exp(1j * 2 * np.pi * nu * t)
+        displ = 1 / np.sin(self.theta) * part_deriv * np.exp(1j * 2 * np.pi * nu * t) / self.normalization
 
         pulsation = 1j * k * v_p * displ
 
@@ -195,6 +197,7 @@ class ThreeDimStar():
         """
         # Calculate the spherical harmonic Y(l,m)
         harmonic = sph_harm(m, l, self.phi, self.theta)
+        
         # You need the partial derivative wrt to theta
         # Taken from
         # https://functions.wolfram.com/Polynomials/SphericalHarmonicY/20/ShowAll.html
@@ -209,7 +212,7 @@ class ThreeDimStar():
             # The spherical harmonic
             part_deriv = m * 1 / np.tan(self.theta) * harmonic
         
-        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t)
+        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t) / self.normalization
 
         pulsation = 1j * k * v_p * displ
 
@@ -217,7 +220,7 @@ class ThreeDimStar():
         self.pulsation_theta += pulsation
 
     def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
-                      T_var=0, T_phase=0):
+                      T_var=0, T_phase=0, normalization="max_imaginary"):
         """ Convenience function to add all pulsations in one go.
 
             :param float t: Time at which to evaluate the pulsation
@@ -233,6 +236,27 @@ class ThreeDimStar():
             :parm float T_phase: Phase shift of Temp variation wrt to radial
                                  displacement
         """
+        # Calc the normalization
+        harmonic = sph_harm(m, l, self.phi, self.theta)
+        # We want the maximum of the real part since we want only take the real part later
+        if normalization == "None":
+            self.normalization = 1
+        elif normalization == "max_real":
+            raise NotImplementedError
+            self.normalization = np.max(harmonic.real)
+        elif normalization == "max_imaginary":
+            self.normalization = np.max(harmonic.imag)
+            print(self.normalization)
+        elif normalization == "max_abs":
+            raise NotImplementedError
+            self.normalization = np.max(np.abs(harmonic))
+        else:
+            raise NotImplementedError
+            
+        # print(self.normalization)
+            
+        
+        
         self.add_pulsation_rad(t, l, m, nu, v_p, k, T_var, T_phase)
         self.add_pulsation_phi(t, l, m, nu, v_p, k)
         self.add_pulsation_theta(t, l, m, nu, v_p, k)
@@ -668,6 +692,13 @@ def plot_rotation():
 if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
-    plot_rotation()
-
+    star = ThreeDimStar()
+    star.add_pulsation(normalization="None", v_p=1/0.34545999660276927)
+    
+    star2 = ThreeDimStar()
+    star2.add_pulsation(normalization="max_imaginary", v_p=33.3)
+    
+    # print((star2.pulsation_rad - star.pulsation_rad))
+    # print((star2.pulsation_rad == star.pulsation_rad).all())
+    print(np.max(star2.pulsation_rad.real))
 
