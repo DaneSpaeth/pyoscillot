@@ -293,6 +293,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     num_skipped_nans_pulsation = (np.count_nonzero(~np.isnan(sorted_temperature)) -
                                   np.count_nonzero(~np.isnan(sorted_v_c_pulse)))
     print(f"{num_skipped_nans_pulsation} will be skipped due to NaNs in the pulsation! Probably at the pole!")
+    weight_sum = 0
 
     for temp, v_c_r, v_c_p, v_c_g, rounded_mu, mu, weight in zip(sorted_temperature, 
                                             sorted_v_c_rot, 
@@ -446,12 +447,16 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             interpol_spectrum *= weight
             if not np.isnan(interpol_spectrum).any():
                 total_spectrum += interpol_spectrum
+                weight_sum += weight
             else:
                 print("Skip Cell since there is a NaN in the local spectrum")
                 print(np.isnan(interpol_spectrum).all())
                 print(f"Weight is nan: {weight}")
                 print(f"v_c_tot: {v_c_tot}")
-                
+            
+    
+    print(f"DIVIDE BY TOTAL WEIGHT {weight_sum}")
+    total_spectrum /= weight_sum
 
     return rest_wavelength, total_spectrum, v_total
 
