@@ -1595,10 +1595,19 @@ def measure_bisector_on_line(wave, spec, line):
     
     return bis_wave, bis_v, bis
 
+
+def oversampled_wave_interpol(rest_wave, wave, spec):
+    """ Take a shifted wave, spec array pair, oversample it and interpolate back onto
+        a rest_wave
+    """
+    # Define a fine wavegrid in the shifted frame
+    fine_wave = np.arange(wave[0], wave[-1], 0.001)
+    # Calc the oversampled shifted spec
+    cs_raw = CubicSpline(wave, spec)
+    fine_spec = cs_raw(fine_wave)
+    spec_interpol = np.interp(rest_wave, fine_wave, fine_spec)
     
-    
-    
-    
+    return spec_interpol
     
 
 
