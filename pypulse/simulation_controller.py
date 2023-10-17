@@ -421,7 +421,16 @@ class SimulationController():
         convective_blueshift = bool(int(self.conf.get("convective_blueshift", 0)))
         
         convective_blueshift_model = str(self.conf.get("convective_blueshift_model", "alpha_boo"))
-        allowed_conv_blue_models = ["alpha_boo", "sun"]
+        allowed_conv_blue_models = ['alpha_boo', 'alpha_ari', 'alpha_sct',
+                                    'alpha_ser', 'alpha_uma', 'beta_boo',
+                                    'beta_cet', 'beta_gem', 'beta_oph',
+                                    'delta_dra', 'epsilon_cyg', 'epsilon_hya',
+                                    'epsilon_vir', 'eta_cyg', 'eta_dra', 
+                                    'eta_her', 'eta_ser', 'gamma_psc', 
+                                    'gamma_tau', 'iota_cep', 'kappa_cyg',
+                                    'kappa_per', 'mu_peg', 'nu_oph', 
+                                    'nu_uma', 'rho_boo', 'xi_her', 
+                                    'zeta_cyg', "sun"]
         assert convective_blueshift_model in allowed_conv_blue_models, f"convective_blueshift_model must be in {allowed_conv_blue_models} but is {convective_blueshift_model}"
         v_macro = float(self.conf.get("v_macro", 0))
         v_rot = self.conf["v_rot"]
