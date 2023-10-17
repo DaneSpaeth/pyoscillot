@@ -441,8 +441,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                             v_c=v_c_tot)
 
             # Interpolate the spectrum to the same rest wavelength grid
-            # interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
-            interpol_spectrum = oversampled_wave_interpol(rest_wavelength, local_wavelength, local_spectrum)
+            interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
+            # interpol_spectrum = oversampled_wave_interpol(rest_wavelength, local_wavelength, local_spectrum)
             if limb_dark:
                 _, interpol_spectrum = add_limb_darkening(rest_wavelength, interpol_spectrum, mu)
             # Also add in the weight (if cell is only partially on the star)
