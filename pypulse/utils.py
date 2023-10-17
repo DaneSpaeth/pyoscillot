@@ -13,7 +13,6 @@ import cfg
 from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials, continuum
 from physics import delta_relativistic_doppler
 import copy
-from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model
 
 
 import matplotlib as mpl

@@ -158,8 +158,9 @@ def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
 if __name__ == "__main__":
     root = Path().cwd() / "tickets"
     
-    # ticket = root / "NGC4349_smallfine_tests" / "test_oversampled.ini"
-    # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    ticket = root / "NGC4349_smallfine_tests" / "test_max_real_Tvar.ini"
+    main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    exit()
     grid_folder = root / "NGC4349_CB_model_grid"
     tickets = sorted(list(grid_folder.glob("NGC4349_CB_model_grid*.ini")))
 
