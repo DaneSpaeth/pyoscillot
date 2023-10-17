@@ -166,6 +166,7 @@ if __name__ == "__main__":
     for idx, ticket in enumerate(tickets):
         try:
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+            exit()
         except:
             continue
         
