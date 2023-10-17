@@ -298,13 +298,13 @@ def continuum(Teff, logg, feh, wavelength_range=None):
     if feh == 0.0:
         feh = -0.0000001
 
-    filestem = f"{int(Teff):05d}K-{logg:.2f}{feh:+.1f}"
+    filestem = f"{Teff:.1f}K-{logg:.2f}{feh:+.1f}"
     T_round = int(np.floor(Teff/100)*100)
     subfolder = f"{T_round:05d}K_{logg:.2f}_{feh:+.1f}"
     wave_file = folder / "wave.npy"
     cont_file = folder / subfolder / (filestem + "_cont.npy")
     
-    print(f"Load continuum file {cont_file}")
+    print(f"Load continuum file {cont_file} for Teff={Teff}")
     
     if not cont_file.is_file():
         print(f"{cont_file} does not yet exist! You need to precompute!")
@@ -331,6 +331,21 @@ def V_band_filter():
 
 
 if __name__ == "__main__":
-    wave, percentage = V_band_filter()
+    fig, ax = plt.subplots(1, figsize=(16,9))
+    wave, spec, header = phoenix_spectrum(4000, 3.0, 0.0, wavelength_range=(3000, 12000))
     
-    print(wave, percentage)
+    ax.plot(wave, spec, lw=0.2, label="T=4000K")
+    
+    wave, spec, header = phoenix_spectrum(5000, 3.0, 0.0, wavelength_range=(3000, 12000))
+    
+    ax.plot(wave, spec, lw=0.2, label="T=5000K")
+    
+    wave, spec, header = phoenix_spectrum(6000, 3.0, 0.0, wavelength_range=(3000, 12000))
+    
+    ax.plot(wave, spec, lw=0.2, label="T=6000K")
+    
+    ax.set_xlabel(r"Wavelength [$\AA$]")
+    ax.set_ylabel("Flux [erg/s/cm^2/cm]")
+    ax.legend()
+    fig.set_tight_layout(True)
+    plt.savefig("PHOENIX_spec.png", dpi=300)

@@ -5,7 +5,7 @@ from plapy.constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
 from dataloader import Zhao_bis_polynomials
-from utils import remove_phoenix_bisector, add_bisector, calc_mean_limb_dark
+from utils import remove_phoenix_bisector, add_bisector, calc_mean_limb_dark, oversampled_wave_interpol
 from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model, simple_ngc4349_CB_model
 import copy
 import cfg
@@ -149,7 +149,7 @@ class GridSpectrumSimulator():
                 plt.savefig("LD_profile.png", dpi=600)
             
 
-        T_precision_decimals = 0
+        T_precision_decimals = 1
         weights = self.projector.weights
         rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
                                                                      self.rotation,
@@ -440,7 +440,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                             v_c=v_c_tot)
 
             # Interpolate the spectrum to the same rest wavelength grid
-            interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
+            # interpol_spectrum = np.interp(rest_wavelength, local_wavelength, local_spectrum)
+            interpol_spectrum = oversampled_wave_interpol(rest_wavelength, local_wavelength, local_spectrum)
             if limb_dark:
                 _, interpol_spectrum = add_limb_darkening(rest_wavelength, interpol_spectrum, mu)
             # Also add in the weight (if cell is only partially on the star)
