@@ -17,11 +17,11 @@ cutoff_px = 200
 poly_order = 3
 
 # Define stellar parameters
-logg = 4.5
+logg = 2.0
 feh = 0.0
 
-min_T = 4486
-max_T = 4530
+min_T = 4450
+max_T = 4550
 step = 0.1
 
 wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
