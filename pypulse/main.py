@@ -158,16 +158,16 @@ def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
 if __name__ == "__main__":
     root = Path().cwd() / "tickets"
     
-    ticket = root / "NGC4349_smallfine_tests" / "test_oversampled.ini"
-    main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
-    # grid_folder = root / "NGC4349_smallfine_grid"
-    # tickets = sorted(list(grid_folder.glob("*_smallfine_grid_*.ini")))
+    # ticket = root / "NGC4349_smallfine_tests" / "test_oversampled.ini"
+    # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    grid_folder = root / "NGC4349_CB_model_grid"
+    tickets = sorted(list(grid_folder.glob("NGC4349_CB_model_grid*.ini")))
 
-    # for idx, ticket in enumerate(tickets):
-    #     try:
-    #         main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
-    #     except:
-    #         continue
+    for idx, ticket in enumerate(tickets):
+        try:
+            main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+        except:
+            continue
         
     # i = 24
     # ticket = root / "NGC4349-127" / f"test{i}.ini"
