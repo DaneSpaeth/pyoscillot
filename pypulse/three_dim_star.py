@@ -140,7 +140,7 @@ class ThreeDimStar():
     
         
         # Calculate the displacement without any amplitude (we only need it for the T later)
-        displ = harm * np.exp(1j * 2 * np.pi * nu * t) / self.normalization
+        displ = harm * np.exp(1j * 2 * np.pi * nu * t)
 
         # Add a factor of 1j. as the pulsations are yet the radial displacements
         # you need to differentiate the displacements wrt t which introduces
@@ -148,7 +148,7 @@ class ThreeDimStar():
         # but we absorb the  2 * np.pi * nu part in the v_p constant
         # See Kochukhov et al. (2004)
         # v_p is now the amplitude of the pulsation in radial direction
-        pulsation = 1j * v_p * displ
+        pulsation = 1j * v_p / self.normalization * displ
 
         self.displacement_rad += displ
         self.pulsation_rad += pulsation
@@ -157,6 +157,7 @@ class ThreeDimStar():
         # temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         
         # Discuss with Sabine
+        # TODO check here that you have the correct max
         temp_variation = T_var * (displ * np.exp(1j * np.radians(T_phase)) / np.max(harm)).real
 
         self.temperature += temp_variation
@@ -177,9 +178,9 @@ class ThreeDimStar():
         
         # You need the partial derivative wrt to phi
         part_deriv =  1j * m * harmonic
-        displ = 1 / np.sin(self.theta) * part_deriv * np.exp(1j * 2 * np.pi * nu * t) / self.normalization
+        displ = 1 / np.sin(self.theta) * part_deriv * np.exp(1j * 2 * np.pi * nu * t)
 
-        pulsation = 1j * k * v_p * displ
+        pulsation = 1j * k * v_p / self.normalization * displ
 
 
         self.displacement_phi += displ
@@ -212,9 +213,9 @@ class ThreeDimStar():
             # The spherical harmonic
             part_deriv = m * 1 / np.tan(self.theta) * harmonic
         
-        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t) / self.normalization
+        displ = part_deriv * np.exp(1j * 2 * np.pi * nu * t)
 
-        pulsation = 1j * k * v_p * displ
+        pulsation = 1j * k * v_p / self.normalization * displ
 
         self.displacement_theta += displ
         self.pulsation_theta += pulsation
@@ -252,8 +253,6 @@ class ThreeDimStar():
             self.normalization = np.max(np.abs(harmonic))
         else:
             raise NotImplementedError
-            
-        # print(self.normalization)
             
         
         
@@ -696,7 +695,7 @@ if __name__ == "__main__":
     star.add_pulsation(normalization="None", v_p=1/0.34545999660276927)
     
     star2 = ThreeDimStar()
-    star2.add_pulsation(normalization="max_imaginary", v_p=33.3)
+    star2.add_pulsation(normalization="max_imaginary", v_p=0.6)
     
     # print((star2.pulsation_rad - star.pulsation_rad))
     # print((star2.pulsation_rad == star.pulsation_rad).all())
