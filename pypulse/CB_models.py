@@ -3,91 +3,51 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from numpy.polynomial import Polynomial
+import pandas as pd
+from cfg import conf_dict
 
-def simple_Pollux_CB_model():
+CB_Gray_dir = conf_dict["datapath"] / "CB_Gray05"
+
+def Gray_CB_model_names():
+    """ Return a list of all Gray CB models."""
+    all_files = CB_Gray_dir.glob("*.csv")
+    models = [f.stem for f in all_files]
+    models = sorted(models)
+    return models
+
+def Gray_CB_model(model, debug_plot=False):
     """ Fit a simple Pollux model. There is no deconvolution applied yet."""
-    # df = pd.read_csv("/home/dspaeth/pypulse/data/CB_Pollux/Gray14.csv")
     
     # Take data from Gray05 table 4
-    flux = np.arange(0.92, 0.24, -0.02)
-    bis = np.array([28, 26, 20, 12, 6, 
-                    0, -5, -9, -12, -14,
-                    -15,-16, -16, -15, -14,
-                    -12,-10, -8, -5, -1,
-                    4,9, 14, 21, 29,
-                    37,47, 59, 73, 90,
-                    111,136, 169, 211])
+    model_file = CB_Gray_dir / f"{model}.csv"
+    if not model_file.is_file():
+        print(f"{model_file} does not exist as a CB model.")
+        print(f"model must be in {Gray_CB_model_names()}")
+        exit()
+        
+    df = pd.read_csv(model_file)
+    flux = np.array(df["flux"])
+    bis = np.array(df["bis"])
+    bise = np.array(df["bise"])
     
-    bise = np.array([4, 3, 3, 2, 2,
-                     2, 2, 2, 1, 1, 
-                     1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 1,
-                     1, 2, 2, 2, 2, 
-                     3, 3, 4, 5])
     assert len(flux) == len(bise)
     assert len(flux) == len(bis)
-    # print(flux)
-    # exit()
-    
-
-    pfit = np.polynomial.Polynomial.fit(flux, bis, w=1/bise, deg=4) * 3
-
-
-    lin_flux = np.linspace(0, 1, 100)
-
-    fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
-
-    ax.errorbar(bis, flux, xerr=bise, linestyle="None", marker=".", color="tab:blue")
-    ax.plot(pfit(lin_flux), lin_flux, color="tab:red")
-    ax.set_xlabel("Velocity [m/s]")
-    ax.set_ylabel("Relative Flux")
-    fig.set_tight_layout(True)
-    plt.savefig("CB_Pollux_fit.png", dpi=600)
-    
-    
-    mu_dict = {1.0:pfit}
-    return mu_dict
-
-def simple_alpha_boo_CB_model():
-    flux = np.arange(0.9, 0.18, -0.02)
-    bis = np.array([201, 196, 185, 171, 146,
-                    140, 124, 109, 95, 81,
-                    69, 57, 46, 37, 28,
-                    19, 12, 5, -1, -7,
-                    -11, -15, -18, -21, -23,
-                    -23, -23, -22, -19, -14,
-                    -7, 3, 16, 37, 48,
-                    32])
-    
-    bise = np.array([3, 2, 2, 2, 2,
-                     1, 1, 1, 1, 1,
-                     1, 1, 1, 1, 0.5,
-                     0.5, 0.5, 0.5, 0.5, 0.5,
-                     0.5, 0.5, 0.5, 0.5, 0.5,
-                     0.5, 1, 1, 1, 1,
-                     1, 1, 1, 1, 2, 
-                     23])
-    assert len(flux) == len(bise)
-    assert len(flux) == len(bis)
-    # print(flux)
-    # exit()
     
 
     pfit = np.polynomial.Polynomial.fit(flux, bis, w=1/bise, deg=4)
 
 
-    lin_flux = np.linspace(0, 1, 100)
+    if debug_plot:
+        lin_flux = np.linspace(0, 1, 100)
 
-    fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
-
-    ax.errorbar(bis, flux, xerr=bise, linestyle="None", marker=".", color="tab:blue")
-    ax.plot(pfit(lin_flux), lin_flux, color="tab:red")
-    ax.set_xlabel("Velocity [m/s]")
-    ax.set_ylabel("Relative Flux")
-    fig.set_tight_layout(True)
-    plt.savefig("CB_alpha_boo_fit.png", dpi=600)
-    plt.close()
+        fig, ax = plt.subplots(1, figsize=(7.16, 4.0275))
+        ax.errorbar(bis, flux, xerr=bise, linestyle="None", marker=".", color="tab:blue")
+        ax.plot(pfit(lin_flux), lin_flux, color="tab:red")
+        ax.set_xlabel("Velocity [m/s]")
+        ax.set_ylabel("Relative Flux")
+        fig.set_tight_layout(True)
+        plt.savefig(CB_Gray_dir / "plots" / f"CB_{model}_fit.png", dpi=600)
+        plt.close()
     
     
     mu_dict = {1.0:pfit}
@@ -158,7 +118,7 @@ def deconvolved_Pollux_CB_model():
     print(R_grid)
     
 def simple_ngc4349_CB_model():
-    """ Retunrn a simple 2nd order polynomial model for the ngc4349-127 CB"""
+    """ Returnn a simple 2nd order polynomial model for the ngc4349-127 CB"""
     
     # Values were fitted from mean BIS of NGC4349-127
     poly_fit = Polynomial([-2.71849303, -275.15450218, 368.28014225])
@@ -174,4 +134,9 @@ def simple_ngc4349_CB_model():
     
 
 if __name__ == "__main__":
-    simple_alpha_boo_CB_model()
+    models = Gray_CB_model_names()
+    print(models)
+    exit()
+    for model in models:
+        print(model)
+        Gray_CB_model(model, debug_plot=True)

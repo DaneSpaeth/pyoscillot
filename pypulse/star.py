@@ -6,7 +6,7 @@ from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
 from dataloader import Zhao_bis_polynomials
 from utils import remove_phoenix_bisector, add_bisector, calc_mean_limb_dark, oversampled_wave_interpol
-from CB_models import simple_Pollux_CB_model, simple_alpha_boo_CB_model, simple_ngc4349_CB_model
+from CB_models import Gray_CB_model, simple_ngc4349_CB_model
 import copy
 import cfg
 import photometry
@@ -31,7 +31,7 @@ class GridSpectrumSimulator():
             :param int Teff: Effective Temperature [K] (must be available)
             :param int v_rot: V*sin(i) [m/s]
             :param bool convective_blueshift: Add in the conv blueshift Bisectors
-            :param str convective_blueshift_model: Which convective blueshift model to use. At the moment [alpha_boo, sun]
+            :param str convective_blueshift_model: Which convective blueshift model to use. At the moment [sun, or any of the Gray05 class III models]
             :param int v_macro: (Isotropic) macroturbulent velocity [m/s]
         """
         self.three_dim_star = ThreeDimStar(Teff=Teff, v_rot=v_rot)
@@ -276,10 +276,11 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
     # The mu values that are available for the BIS calculations of convective_blueshift
     if change_bis:
         # available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
-        if convective_blueshift_model == "alpha_boo":
-            available_mus = np.array(list(ref_spectra[list(ref_spectra.keys())[0]].keys()))
-        elif convective_blueshift_model == "sun":
+        if convective_blueshift_model == "sun":
             available_mus = np.array([0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.85, 0.90, 0.95, 1.00])
+        else:
+            # For all models from Gray
+            available_mus = np.array(list(ref_spectra[list(ref_spectra.keys())[0]].keys()))
         print(f"Available mus = {available_mus}")
         rounded_mus = [available_mus[np.argmin(np.abs(m - available_mus))] for m in sorted_mus]
         rounded_mus = np.array(rounded_mus)
@@ -394,10 +395,10 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                                    logg,
                                                                    feh,
                                                                    limb_dark_continuum=mean_limb_dark)
-                if convective_blueshift_model == "alpha_boo":
-                    bis_polynomial_dict = simple_alpha_boo_CB_model()
-                elif convective_blueshift_model == "sun":
+                if convective_blueshift_model == "sun":
                     bis_polynomial_dict = Zhao_bis_polynomials()
+                else:
+                    bis_polynomial_dict = Gray_CB_model(convective_blueshift_model)
                 # spec_corr = fine_ref_spectra_dict[rounded_mu]
                 
                 for mu in fine_ref_spectra_dict.keys():
