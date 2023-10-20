@@ -162,7 +162,7 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     grid_folder = root / "NGC4349_lm_grid"
-    tickets = sorted(list(grid_folder.glob("NGC4349_lm_grid*.ini")))
+    tickets = sorted(list(grid_folder.glob("NGC4349_lm_grid_25.ini")))
 
     for idx, ticket in enumerate(tickets):
         try:
