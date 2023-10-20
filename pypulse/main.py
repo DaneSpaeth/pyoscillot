@@ -161,8 +161,8 @@ if __name__ == "__main__":
     # ticket = root / "NGC4349_smallfine_tests" / "test_max_real_Tvar.ini"
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
-    grid_folder = root / "NGC4349_lm_grid"
-    tickets = sorted(list(grid_folder.glob("NGC4349_lm_grid_25.ini")))
+    grid_folder = root / "NGC4349_improved_fine_grid"
+    tickets = sorted(list(grid_folder.glob("NGC4349_improved_fine_grid_*.ini")))
 
     for idx, ticket in enumerate(tickets):
         try:
