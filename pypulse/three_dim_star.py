@@ -247,7 +247,12 @@ class ThreeDimStar():
             self.normalization = np.max(harmonic.real)
         elif normalization == "max_imaginary":
             self.normalization = np.max(harmonic.imag)
+            # Fix for m=0 mode
+            if self.normalization == 0:
+                self.normalization = np.max(harmonic.real)
             print(self.normalization)
+            # print(harmonic)
+            # exit()
         elif normalization == "max_abs":
             raise NotImplementedError
             self.normalization = np.max(np.abs(harmonic))
@@ -303,7 +308,6 @@ class TwoDimProjector():
                                                     component=None,
                                                     return_grid_points=True)
         self.weights = geo.percentage_within_circle(xx, zz)
-        print(self.weights)
         
 
 
@@ -695,7 +699,7 @@ if __name__ == "__main__":
     star.add_pulsation(normalization="None", v_p=1/0.34545999660276927)
     
     star2 = ThreeDimStar()
-    star2.add_pulsation(normalization="max_imaginary", v_p=0.6)
+    star2.add_pulsation(l=1, m=0, normalization="max_imaginary", v_p=0.6)
     
     # print((star2.pulsation_rad - star.pulsation_rad))
     # print((star2.pulsation_rad == star.pulsation_rad).all())
