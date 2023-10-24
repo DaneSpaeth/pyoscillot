@@ -17,7 +17,7 @@ baseticket = TICKETROOT / gridname / "base.ini"
 # v_macro = np.arange(4000, 6000, 1000, dtype=int)
 v_p = np.arange(0.20727599796-0.03, 0.20727599796+0.04, 0.01)
 # K = np.arange(2528-100, 2528+150, 50)
-dT = np.arange(3.0, 6.0, 1.0)
+dT = np.arange(2.0, 3.0, 1.0)
 T_phase = np.arange(0, 30, 5)
 
 v_ps, dTs, T_phases = np.meshgrid(v_p, dT, T_phase)
@@ -28,6 +28,7 @@ print(T_phases)
 
 for idx, (v_p, dT, T_phase) in enumerate(zip(v_ps.flatten(), dTs.flatten(), T_phases.flatten())):
     idx_plus = idx + 1
+    idx_plus += 144
     print(idx)
     
     config = configparser.ConfigParser()

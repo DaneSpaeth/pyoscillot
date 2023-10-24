@@ -165,6 +165,8 @@ if __name__ == "__main__":
     tickets = sorted(list(grid_folder.glob("NGC4349_improved_fine_grid_*.ini")))
 
     for idx, ticket in enumerate(tickets):
+        if idx <= 145:
+            continue
         try:
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         except:
