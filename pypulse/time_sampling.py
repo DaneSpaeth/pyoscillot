@@ -130,4 +130,4 @@ def load_presampled_times(savename):
 
 
 if __name__ == "__main__":
-    presample_times(40, 3, 674.5, "uniform", start=datetime.strptime("2005-03-20T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f")- timedelta(days=200))
+    presample_times(120, 9, 674.5, "uniform", start=datetime.strptime("2005-02-03T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f"))
