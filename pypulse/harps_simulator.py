@@ -19,7 +19,9 @@ def interpolate(spectrum, wavelength):
         :param np.array wavelength: The calculated wavelength to interpolate to HARPS
     """
     # Load the template spectra and wavelength
-    (tmpl_spec, tmpl_wave, tmpl_blaze) = harps_template(spec_filename="HARPS_template_ngc4349_127_e2ds_A.fits")
+    (tmpl_spec, tmpl_wave, tmpl_blaze) = harps_template(spec_filename="HARPS_template_ngc4349_127_e2ds_A.fits",
+                                                        wave_filename="HARPS_template_ngc4349_127_wave_A.fits",
+                                                        blaze_filename="HARPS_template_ngc4349_127_blaze_A.fits")
 
     interpol_spec = []
     R_real = 115000

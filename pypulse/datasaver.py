@@ -48,7 +48,7 @@ class DataSaver():
             if not name.endswith("fits"):
                 name += ".fits"
         elif instrument == "HARPS":
-            template = self.dataroot / "HARPS_template_e2ds_A.fits"
+            template = self.dataroot / "HARPS_template_ngc4349_127_e2ds_A.fits"
             if not name.endswith("_e2ds_A.fits"):
                 if name.endswith(".fits"):
                     name = name.replace(".fits", "_e2ds_A.fits")

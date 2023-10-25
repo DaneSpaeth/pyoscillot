@@ -96,7 +96,7 @@ then
 
     # Now create a blazefile list
     # TODO: Test if that is reasonable
-    BLAZEFILEPATH=/data/dspaeth/pypulse_data/HARPS_template_blaze_A.fits
+    BLAZEFILEPATH=/data/dspaeth/pypulse_data/HARPS_template_ngc4349_127_blaze_A.fits
     BLAZETXTFILE=$fits_dir/blazefiles.txt
     FILES=$(find $DATAPATH/$SIMNAME/$INST/ -name '*.fits')
     for file in $FILES
