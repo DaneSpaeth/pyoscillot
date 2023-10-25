@@ -158,19 +158,21 @@ def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
 if __name__ == "__main__":
     root = Path().cwd() / "tickets"
     
-    # ticket = root / "NGC4349_smallfine_tests" / "test_max_real_Tvar.ini"
-    # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    ticket = root / "NGC4349_fine_tuning" / "NGC4349_improved_fine_grid_163+2.ini"
+    main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    ticket = root / "NGC4349_fine_tuning" / "NGC4349_improved_fine_grid_163+3.ini"
+    main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
-    grid_folder = root / "NGC4349_improved_fine_grid"
-    tickets = sorted(list(grid_folder.glob("NGC4349_improved_fine_grid_*.ini")))
+    # grid_folder = root / "NGC4349_improved_fine_grid"
+    # tickets = sorted(list(grid_folder.glob("NGC4349_improved_fine_grid_*.ini")))
 
-    for idx, ticket in enumerate(tickets):
-        if idx <= 145:
-            continue
-        try:
-            main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
-        except:
-            continue
+    # for idx, ticket in enumerate(tickets):
+    #     if idx <= 145:
+    #         continue
+    #     try:
+    #         main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
+    #     except:
+    #         continue
         
           
         
