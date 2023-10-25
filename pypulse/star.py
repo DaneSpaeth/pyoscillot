@@ -149,7 +149,7 @@ class GridSpectrumSimulator():
                 plt.savefig("LD_profile.png", dpi=600)
             
 
-        T_precision_decimals = 0
+        T_precision_decimals = 1
         weights = self.projector.weights
         rest_wavelength, total_spectrum, v_total = _compute_spectrum(self.temperature,
                                                                      self.rotation,
