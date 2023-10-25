@@ -20,8 +20,8 @@ poly_order = 3
 logg = 2.0
 feh = 0.0
 
-min_T = 4450
-max_T = 4550
+min_T = 4390
+max_T = 4410
 step = 0.1
 
 wave, ref_spectra, ref_headers = get_ref_spectra(np.array([min_T, max_T]), logg=logg, feh=feh, wavelength_range=(WAVE_START, WAVE_STOP))
