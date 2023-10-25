@@ -21,7 +21,7 @@ def plot_normalization(wave, spec, cont, Teff, logg, feh, out_root):
     fig.subplots_adjust(hspace=0, left=0.1, right=.99, top=0.99, bottom=0.12)
     ax[1].set_xlim(3500, 17500)
     
-    plt.savefig(out_root / f"{Teff}K_{logg}_{feh}_norm.png", dpi=500)
+    plt.savefig(out_root / f"{Teff:.1f}K_{logg}_{feh}_norm.png", dpi=500)
     
     
 def interpolate_continuum(T_local, logg, feh, wavelength_range=None):
