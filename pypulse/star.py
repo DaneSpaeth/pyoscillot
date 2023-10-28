@@ -408,7 +408,7 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                                                         fine_ref_temperature, 
                                                         logg, 
                                                         feh, 
-                                                        debug_plot=True,
+                                                        debug_plot=False,
                                                         mu=mu)
                     
                     fine_ref_spectra_dict[mu] = spec_add
