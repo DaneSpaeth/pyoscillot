@@ -164,11 +164,11 @@ if __name__ == "__main__":
     # exit()
     root = Path().cwd() / "tickets"
     grid_folder = root / "NGC4349_improved_fine_grid_smalldT"
-    tickets = sorted(list(grid_folder.glob("NGC4349_*.ini")))
+    tickets = sorted(list(grid_folder.glob("NGC4349_*+02.ini")))
     
-    second_grid_folder = root / "NGC4349_l1m0_broad_grid"
-    second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
-    tickets = tickets + second_tickets
+    # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
+    # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
+    # tickets = tickets + second_tickets
     
     for idx, ticket in enumerate(tickets):
         try:
