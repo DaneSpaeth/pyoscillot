@@ -163,8 +163,8 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     root = Path().cwd() / "tickets"
-    grid_folder = root / "NGC4349_improved_fine_grid_smalldT"
-    tickets = sorted(list(grid_folder.glob("NGC4349_*+02.ini")))
+    grid_folder = root / "NGC4349_improved_fine_grid_match_RV"
+    tickets = sorted(list(grid_folder.glob("NGC4349_*.ini")))
     
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
