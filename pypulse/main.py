@@ -164,7 +164,7 @@ if __name__ == "__main__":
     # exit()
     root = Path().cwd() / "tickets"
     grid_folder = root / "NGC4349_improved_fine_grid_match_RV"
-    tickets = sorted(list(grid_folder.glob("NGC4349_*.ini")))
+    tickets = sorted(list(grid_folder.glob("NGC4349_*+01.ini")))
     
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
