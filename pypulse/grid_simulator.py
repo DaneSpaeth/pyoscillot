@@ -8,7 +8,7 @@ global_dict = parse_global_ini()
 TICKETROOT = global_dict["ticketpath"]
 
 #### INSERT YOUR NAMES ETC HERE ####
-gridname = "NGC4349_improved_fine_grid_match_RV"
+gridname = "NGC4349_very_fine_RV_grid"
 baseticket = TICKETROOT / gridname / "base.ini"
 
 #### DEFINE THE RANGES THAT YOU WANT TO SIMULATE ####
@@ -20,9 +20,9 @@ baseticket = TICKETROOT / gridname / "base.ini"
 # dT = np.arange(1.0, 5.0, 1.0)
 # T_phase = np.arange(0, 75+15, 15)
 # inclination = np.arange(0.0, 105, 15)
-step = 0.01
-v_p = np.arange(0.28247640045, 0.28247640045+11*step, 0.01)
-v_rot = np.arange(2000, 3200, 200)
+step = 0.001
+v_p = np.arange(0.28247640045, 0.28247640045+30*step, step)
+v_rot = np.arange(1700, 2050, 50)
 
 vps, v_rots = np.meshgrid(v_p, v_rot)
 # print(T_phases)
