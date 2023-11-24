@@ -163,16 +163,14 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     root = Path().cwd() / "tickets"
-    grid_folder = root / "NGC4349_very_fine_RV_grid"
-    tickets = sorted(list(grid_folder.glob("NGC4349_*022+0*.ini")))
+    grid_folder = root / "NGC4349_lm_inclination_grid"
+    tickets = sorted(list(grid_folder.glob("NGC4349_*.ini")))
     
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
     # tickets = tickets + second_tickets
     
     for idx, ticket in enumerate(tickets):
-        if ticket.name.endswith("+01.ini"):
-            continue
         try:
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         except:
