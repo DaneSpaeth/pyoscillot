@@ -26,7 +26,7 @@ class ThreeDimStar():
             :param int Teff: effective Temperature [K] of star
 
         """
-        (pphi,
+        (self.phi,
          self.theta,
          self.x,
          self.y,
