@@ -8,7 +8,7 @@ global_dict = parse_global_ini()
 TICKETROOT = global_dict["ticketpath"]
 
 #### INSERT YOUR NAMES ETC HERE ####
-gridname = "NGC4349_lm_inclination_grid"
+gridname = "NGC4349_l2_m-2_grid"
 baseticket = TICKETROOT / gridname / "base.ini"
 
 #### DEFINE THE RANGES THAT YOU WANT TO SIMULATE ####
@@ -24,46 +24,50 @@ baseticket = TICKETROOT / gridname / "base.ini"
 # v_p = np.arange(0.28247640045, 0.28247640045+30*step, step)
 # v_rot = np.arange(1700, 2050, 50)
 
-ms = []
-ls = []
-for l in range(1, 5):
-    for m in range(-l, l+1):
-        ms.append(m)
-        ls.append(l)
+# ms = []
+# ls = []
+# for l in range(1, 5):
+#     for m in range(-l, l+1):
+#         ms.append(m)
+#         ls.append(l)
 
-inclinations = [0.0, 23.9, 31.1, 40.9, 45.0, 54.7, 60., 90.]
+# inclinations = [0.0, 23.9, 31.1, 40.9, 45.0, 54.7, 60., 90.]
 
 # ms, v_rots = np.meshgrid(v_p, v_rot)
 # print(T_phases)
 # v_rots, vps, Ks = np.meshgrid(v_rot, v_p, K)
 # CB_models = ['alpha_boo', 'alpha_ari', 'alpha_sct', 'alpha_ser', 'alpha_uma', 'beta_boo', 'beta_cet', 'beta_gem', 'beta_oph', 'delta_dra', 'epsilon_cyg', 'epsilon_hya', 'epsilon_vir', 'eta_cyg', 'eta_dra', 'eta_her', 'eta_ser', 'gamma_psc', 'gamma_tau', 'iota_cep', 'kappa_cyg', 'kappa_per', 'mu_peg', 'nu_oph', 'nu_uma', 'rho_boo', 'xi_her', 'zeta_cyg']
 
+
+dTs = [0., 10.0, 20.0, 30.0, 40.0, 49.9]
 idx_plus = 0
-for idx, (l, m) in enumerate(zip(ls, ms)):
+for idx, dT in enumerate(dTs):
     
     config = configparser.ConfigParser()
     config.read(baseticket)
-    for inclination in inclinations:
-        idx_plus +=1
-        simname = f"{gridname}_{idx_plus:03d}"
-        config["GLOBAL"]["name"] = simname
-        config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
-        # config["GLOBAL"]["v_rot"] = str(v_rot)
-        # config["pulsation"]["v_p"] = str(v_p)
-        config["GLOBAL"]["inclination"] = str(inclination)
-        # config["pulsation"]["dt"] = str(round(dT, 1))
-        # config["pulsation"]["t_phase"] = str(T_phase)
-        config["pulsation"]["l"] = str(l)
-        config["pulsation"]["m"] = str(m)
+    
+    idx_plus +=1
+    simname = f"{gridname}_{idx_plus:02d}"
+    config["GLOBAL"]["name"] = simname
+    config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
+    # config["GLOBAL"]["v_rot"] = str(v_rot)
+    # config["pulsation"]["v_p"] = str(v_p)
+    # config["GLOBAL"]["inclination"] = str(inclination)
+    config["pulsation"]["dt"] = str(round(dT, 1))
+    # config["pulsation"]["t_phase"] = str(T_phase)
+    # config["pulsation"]["l"] = str(l)
+    # config["pulsation"]["m"] = str(m)
     
     # config["pulsation"]["v_p"] = str(v_p)
     
     
-        outfile = TICKETROOT / gridname / f"{simname}.ini"
-        with open(outfile, "w") as f:
-            config.write(f)
-
+    outfile = TICKETROOT / gridname / f"{simname}.ini"
+    with open(outfile, "w") as f:
+        config.write(f)
+    # print(simname, l, m, inclination)
+# 
 # Save the settings
-est_time = idx_plus * timedelta(minutes=25)
-print(est_time)
+# est_time = idx_plus * timedelta(minutes=25)
+# print(est_time)
+
 
