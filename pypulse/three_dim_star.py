@@ -26,7 +26,7 @@ class ThreeDimStar():
             :param int Teff: effective Temperature [K] of star
 
         """
-        (self.phi,
+        (pphi,
          self.theta,
          self.x,
          self.y,
@@ -250,7 +250,7 @@ class ThreeDimStar():
             # Fix for m=0 mode
             if self.normalization == 0:
                 self.normalization = np.max(harmonic.real)
-            print(self.normalization)
+            print(f"NORM={self.normalization}")
             # print(harmonic)
             # exit()
         elif normalization == "max_abs":
@@ -598,12 +598,20 @@ def plot_3d(x, y, z, value, scale_down=1):
     plt.show()
 
 
-def plot_for_phd(l=1, m=1):
+def plot_for_phd(t=300, l=1, m=1, inclination=90):
+    from pathlib import Path
+    out_dir = Path(f"/home/dspaeth/pypulse/PhD_plots/l{l}_incl{inclination}_nonorm")
+    if not out_dir.is_dir():
+        out_dir.mkdir()
+    outfile = out_dir / f"pulsation_components_l{l}_m{m}_t{t}.png"
+    if outfile.is_file():
+        print(f"Skip File {outfile}")
+        return None
     plt.rcParams.update({'font.size': 8})
     star = ThreeDimStar(N=1000)
-    star.add_pulsation(l=l, m=m, v_p=1, k=1, nu=1/600, t=300)
-    projector = TwoDimProjector(star, N=151, border=3, inclination=90, line_of_sight=False)
-    projector_los = TwoDimProjector(star, N=151, border=3, inclination=90, line_of_sight=True)
+    star.add_pulsation(l=l, m=m, v_p=1, k=1, nu=1/600, t=t, normalization="None")
+    projector = TwoDimProjector(star, N=151, border=3, inclination=inclination, line_of_sight=False)
+    projector_los = TwoDimProjector(star, N=151, border=3, inclination=inclination, line_of_sight=True)
     
     fig = plt.figure(figsize=(6.5, 6.0))
     ax0 = fig.add_subplot(331, projection="3d")
@@ -635,13 +643,15 @@ def plot_for_phd(l=1, m=1):
                    projector_los.pulsation_rad(),
                    projector_los.pulsation_theta(),
                    projector_los.pulsation_phi()]
-    for ax, values in zip(two_d_axes, values_list):
-        print(values.shape)
+    for idx, (ax, values) in enumerate(zip(two_d_axes, values_list)):
         img = ax.imshow(values, vmin=-1, vmax=1, cmap=cmap, origin="lower")
         
         ax.set_xlabel("X'")
         ax.set_ylabel("Y'")
         
+        if idx in (3, 4, 5):
+            ax.set_title(f"SUM={round(np.nansum(values),1)}")
+            
     cbar_ax = fig.add_axes([0.88, 0.70, 0.02, 0.20])
     fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
     
@@ -650,10 +660,13 @@ def plot_for_phd(l=1, m=1):
     
     cbar_ax = fig.add_axes([0.88, 0.10, 0.02, 0.20])
     fig.colorbar(img, cax=cbar_ax, label=r"RV (proj.) [m/s]")
+    
+    fig.suptitle(f"i={inclination}, l={l}, m={m}, t={t}")
         
         
     fig.subplots_adjust(left=0.08, right=0.78, top=0.95, bottom=0.06, wspace=0.45, hspace=0.1)
-    plt.savefig("PhD_plots/pulsation_components.png", dpi=300)
+    plt.savefig(outfile, dpi=300)
+    plt.close()
     
     
 def plot_T_variation():
@@ -693,15 +706,38 @@ def plot_rotation():
     
         
 if __name__ == "__main__":
+    # star = ThreeDimStar(N=1000)
+    # star.add_pulsation(l=1,m=0)
+    # star2 = ThreeDimStar(N=1000)
+    # star2.add_pulsation(l=2, m=1)
+    # exit()
     
-    import matplotlib.pyplot as plt
-    star = ThreeDimStar()
-    star.add_pulsation(normalization="None", v_p=1/0.34545999660276927)
+    # import matplotlib.pyplot as plt
+    # star = ThreeDimStar()
+    # star.add_pulsation(normalization="None", v_p=1/0.34545999660276927)
     
-    star2 = ThreeDimStar()
-    star2.add_pulsation(l=1, m=0, normalization="max_imaginary", v_p=0.6)
+    # star2 = ThreeDimStar()
+    # star2.add_pulsation(l=1, m=0, normalization="max_imaginary", v_p=0.6)
     
-    # print((star2.pulsation_rad - star.pulsation_rad))
-    # print((star2.pulsation_rad == star.pulsation_rad).all())
-    print(np.max(star2.pulsation_rad.real))
+    # # print((star2.pulsation_rad - star.pulsation_rad))
+    # # print((star2.pulsation_rad == star.pulsation_rad).all())
+    # print(np.max(star2.pulsation_rad.real))
+    inclinations = [0., 45., 90.]
+    # for l in range(2, 3):
+    #     for m in range(1, l+1):
+    #         for inclination in inclinations:
+    #             for t in [0, 75, 150, 225, 300, 375, 450, 525]:
+    #                 plot_for_phd(t, l, m, inclination)
+    # for l in range(2, 5):
+    #     for m in range(-l, l+1):
+    #         for inclination in inclinations:
+    #             for t in [0, 75, 150, 225, 300, 375, 450, 525]:
+    #                 plot_for_phd(t, l, m, inclination)
+    
+    inclination = 90.0
+    # for t in [0, 75, 150, 225, 300, 375, 450, 525]:
+    for t in [450, 525]:
+        # for l in range(1, 3):
+        l = 3
+        plot_for_phd(t, l, l, inclination)
 
