@@ -171,6 +171,8 @@ if __name__ == "__main__":
     # tickets = tickets + second_tickets
     
     for idx, ticket in enumerate(tickets):
+        if idx <= 6:
+            continue
         # try:
         main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         # except:

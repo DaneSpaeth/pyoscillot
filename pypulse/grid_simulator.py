@@ -40,7 +40,7 @@ baseticket = TICKETROOT / gridname / "base.ini"
 
 
 dTs = [0., 10.0, 20.0, 30.0, 40.0, 49.9]
-idx_plus = 0
+idx_plus = 6
 for idx, dT in enumerate(dTs):
     
     config = configparser.ConfigParser()
@@ -54,7 +54,7 @@ for idx, dT in enumerate(dTs):
     # config["pulsation"]["v_p"] = str(v_p)
     # config["GLOBAL"]["inclination"] = str(inclination)
     config["pulsation"]["dt"] = str(round(dT, 1))
-    # config["pulsation"]["t_phase"] = str(T_phase)
+    config["pulsation"]["t_phase"] = str(180.)
     # config["pulsation"]["l"] = str(l)
     # config["pulsation"]["m"] = str(m)
     
