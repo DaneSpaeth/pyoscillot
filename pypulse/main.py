@@ -163,16 +163,15 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     root = Path().cwd() / "tickets"
-    grid_folder = root / "NGC4349_l2_m-2_grid"
-    tickets = sorted(list(grid_folder.glob("NGC4349_l2_m-2_grid*.ini")))
+    gridname = "NGC4349_l2_m-2_20K_grid"
+    grid_folder = root / gridname
+    tickets = sorted(list(grid_folder.glob(f"{gridname}*.ini")))
     
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
     # tickets = tickets + second_tickets
     
     for idx, ticket in enumerate(tickets):
-        if idx <= 6:
-            continue
         # try:
         main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         # except:
