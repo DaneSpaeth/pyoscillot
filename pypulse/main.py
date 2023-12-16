@@ -172,7 +172,7 @@ if __name__ == "__main__":
     # tickets = tickets + second_tickets
     
     for idx, ticket in enumerate(tickets):
-        if idx <= 6:
+        if idx <= 13:
             print(f"SKIP {ticket}")
             continue
         # try:

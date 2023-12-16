@@ -16,7 +16,11 @@ v_ps = [0.29847640045 + i*0.05 for i in range(-2, 5)]
 
 # Second round, based of 01 but still slightly smaller
 v_p = 0.18
-v_rots = [2000 + i*250 for i in range(7)]
+v_rots = [3750 + i*250 for i in range(10)]
+
+dTs = np.array([10, 15, 20])
+
+dTs, v_rots = np.meshgrid(dTs, v_rots)
 
 # print(v_ps)
 # exit()
@@ -50,9 +54,9 @@ v_rots = [2000 + i*250 for i in range(7)]
 
 
 
-idx_plus = 7
+idx_plus = 14
 
-for idx, v_rot in enumerate(v_rots):
+for idx, (v_rot, dT) in enumerate(zip(v_rots.flatten(), dTs.flatten())):
     
     config = configparser.ConfigParser()
     config.read(baseticket)
@@ -64,7 +68,7 @@ for idx, v_rot in enumerate(v_rots):
     config["GLOBAL"]["v_rot"] = str(v_rot)
     config["pulsation"]["v_p"] = str(v_p)
     # config["GLOBAL"]["inclination"] = str(inclination)
-    # config["pulsation"]["dt"] = str(round(dT, 1))
+    config["pulsation"]["dt"] = str(round(dT, 1))
     # config["pulsation"]["t_phase"] = str(180.)
     # config["pulsation"]["l"] = str(l)
     # config["pulsation"]["m"] = str(m)
