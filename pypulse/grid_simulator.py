@@ -11,7 +11,12 @@ TICKETROOT = global_dict["ticketpath"]
 gridname = "NGC4349_l2_m-2_20K_grid"
 baseticket = TICKETROOT / gridname / "base.ini"
 
+# First round
 v_ps = [0.29847640045 + i*0.05 for i in range(-2, 5)]
+
+# Second round, based of 01 but still slightly smaller
+v_p = 0.18
+v_rots = [2000 + i*250 for i in range(7)]
 
 # print(v_ps)
 # exit()
@@ -45,9 +50,9 @@ v_ps = [0.29847640045 + i*0.05 for i in range(-2, 5)]
 
 
 
-idx_plus = 0
+idx_plus = 7
 
-for idx, v_p in enumerate(v_ps):
+for idx, v_rot in enumerate(v_rots):
     
     config = configparser.ConfigParser()
     config.read(baseticket)
@@ -56,7 +61,7 @@ for idx, v_p in enumerate(v_ps):
     simname = f"{gridname}_{idx_plus:02d}"
     config["GLOBAL"]["name"] = simname
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
-    # config["GLOBAL"]["v_rot"] = str(v_rot)
+    config["GLOBAL"]["v_rot"] = str(v_rot)
     config["pulsation"]["v_p"] = str(v_p)
     # config["GLOBAL"]["inclination"] = str(inclination)
     # config["pulsation"]["dt"] = str(round(dT, 1))
