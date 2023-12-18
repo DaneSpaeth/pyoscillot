@@ -8,10 +8,10 @@ from dataloader import harps_template
 from utils import adjust_resolution_per_pixel, _gauss_continuum, bisector_on_line, rebin
 import cfg
 from pathlib import Path
+from PyAstronomy import pyasl
 
 
-
-def interpolate(spectrum, wavelength):
+def interpolate(spectrum, wavelength, debug_plot=False):
     """ Interpolate to the HARPS spectrum.
 
 
@@ -28,13 +28,16 @@ def interpolate(spectrum, wavelength):
     # R_test = 130000
     print("Adjusting Resolution")
     spectrum_HARPS = adjust_resolution_per_pixel(wavelength, spectrum, R=R_real)
+    
+    # HARPS works in air wavelengths
+    wavelength_air = pyasl.vactoair2(wavelength)
     for order in range(len(tmpl_wave)):
 
         # Cut the calculated wavelengths and spectra to the order
-        local_wave_mask = np.logical_and(wavelength > tmpl_wave[order][0] - 100,
-                                         wavelength < tmpl_wave[order][-1] + 100)
+        local_wave_mask = np.logical_and(wavelength_air > tmpl_wave[order][0] - 100,
+                                         wavelength_air < tmpl_wave[order][-1] + 100)
 
-        local_wavelength = wavelength[local_wave_mask]
+        local_wavelength = wavelength_air[local_wave_mask]
         local_spectrum = spectrum[local_wave_mask]
         local_spectrum_HARPS = spectrum_HARPS[local_wave_mask]
         
@@ -43,12 +46,13 @@ def interpolate(spectrum, wavelength):
         # This will use one kernel per order
         # local_spectrum_HARPS = adjust_resolution(local_wavelength, local_spectrum, R=R_real)
         # DEBUG PLOT
-        debug_line = 5728.65
-        if debug_line > local_wavelength[0] and debug_line < local_wavelength[-1]:
-            debug_plot(local_wavelength.copy(), 
-                       local_spectrum.copy(), 
-                       local_spectrum_HARPS.copy(), 
-                       debug_line)
+        if debug_plot:
+            debug_line = 5728.65
+            if debug_line > local_wavelength[0] and debug_line < local_wavelength[-1]:
+                debug_plot(local_wavelength.copy(), 
+                        local_spectrum.copy(), 
+                        local_spectrum_HARPS.copy(), 
+                        debug_line)
 
         # Interpolate the calculated spectra onto the tmpl_wave grid
         # func = interp1d(local_wavelength, local_spectrum_HARPS, kind="linear")
@@ -179,29 +183,44 @@ def get_new_header(time, bc=None, bjd=None):
     return header_dict, comment_dict
 
 if __name__ == "__main__":
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
+    pass
+    # import matplotlib as mpl
+    # import matplotlib.pyplot as plt
 
-    num = 1000000
-    wave = np.linspace(3000, 9000, num)
-    spec = np.ones_like(wave)
+    # num = 1000000
+    # wave = np.linspace(3000, 9000, num)
+    # spec = np.ones_like(wave)
 
-    interval = 100
-    peak_idx = np.arange(int(0 + interval / 2), num, interval)
-    spec[peak_idx] -= 0.5
+    # interval = 100
+    # peak_idx = np.arange(int(0 + interval / 2), num, interval)
+    # spec[peak_idx] -= 0.5
 
-    interpol_spec, tmpl_wave = interpolate(spec, wave)
+    # interpol_spec, tmpl_wave = interpolate(spec, wave)
 
-    order = 30
-    plt.figure(dpi=300)
-    plt.plot(tmpl_wave[order], interpol_spec[order])
+    # order = 30
+    # plt.figure(dpi=300)
+    # plt.plot(tmpl_wave[order], interpol_spec[order])
 
-    w = tmpl_wave[order]
-    s = interpol_spec[order]
+    # w = tmpl_wave[order]
+    # s = interpol_spec[order]
 
-    mins_idx = s < 0.973
+    # mins_idx = s < 0.973
 
-    plt.plot(w[mins_idx], s[mins_idx])
-    plt.show()
+    # plt.plot(w[mins_idx], s[mins_idx])
+    # plt.show()
+    
+    # wavefile = "/data/dspaeth/pypulse_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/wavelength/2453404.7841431363.npy"
+    # specfile = "/data/dspaeth/pypulse_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/spectrum/2453404.7841431363.npy"
+    
+    # wave = np.load(wavefile)
+    # spec = np.load(specfile)
+    
+    # print(np.min(wave), np.max(wave))
+    # print(wave.shape)
+    # print(np.any(wave < 3000.) or np.any(wave > 16900.))
+    # # exit()
+    # interpolate(spec, wave)
+    
+    
 
 
