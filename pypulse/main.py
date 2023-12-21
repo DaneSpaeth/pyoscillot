@@ -172,8 +172,8 @@ if __name__ == "__main__":
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
     # tickets = tickets + second_tickets
-    gridname = "combined_modes"
-    tickets = sorted(list((root / gridname).glob("*.ini")))
+    gridname = "NGC4349_p_modes"
+    tickets = sorted(list((root / gridname).glob("*02.ini")))
     
     for idx, ticket in enumerate(tickets):
         # if idx <= 13:
