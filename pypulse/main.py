@@ -167,7 +167,7 @@ if __name__ == "__main__":
     # grid_folder = root / gridname
     # tickets = sorted(list(grid_folder.glob(f"{gridname}*.ini")))
     
-    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+01.ini")]
+    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+02.ini")]
     
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
