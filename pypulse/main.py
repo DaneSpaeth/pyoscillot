@@ -163,11 +163,11 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     root = Path().cwd() / "tickets"
-    gridname = "NGC4349_l2_m-2_20K_grid"
-    # grid_folder = root / gridname
-    # tickets = sorted(list(grid_folder.glob(f"{gridname}*.ini")))
+    gridname = "combined_modes"
+    grid_folder = root / gridname
+    tickets = sorted(list(grid_folder.glob(f"NGC4349_{gridname}_01_m*.ini")))
     
-    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+10.ini")]
+    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+10.ini")]
     
     
     # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_04.ini")]

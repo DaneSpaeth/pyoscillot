@@ -690,16 +690,36 @@ def plot_rotation():
     fig = plt.figure(figsize=(16,9))
     cmap = "seismic"
     
-    ax0 = fig.add_subplot(121, projection="3d")
-    ax1 = fig.add_subplot(122)
+    ax0 = fig.add_subplot(232, projection="3d")
+    ax1 = fig.add_subplot(234)
+    ax2 = fig.add_subplot(235)
+    ax3 = fig.add_subplot(236)
     
     star = ThreeDimStar(N=1000, v_rot=3000)
     star.create_rotation()
-    projector = TwoDimProjector(star, N=151)
     ax0.scatter(star.x, star.y, star.z, c=star.rotation,
                 vmin=-3000, vmax=3000, marker=".", cmap=cmap)
     
-    ax1.imshow(projector.rotation(), origin="lower", vmin=-3000, vmax=3000, cmap=cmap)
+    projector = TwoDimProjector(star, N=151, inclination=90)
+    img = ax1.imshow(projector.rotation(), origin="lower", vmin=-3000, vmax=3000, cmap=cmap)
+    print(np.nanmax(projector.rotation()))
+    print(np.nanmin(projector.rotation()))
+    
+    
+    projector = TwoDimProjector(star, N=151, inclination=60)
+    ax2.imshow(projector.rotation(), origin="lower", vmin=-3000, vmax=3000, cmap=cmap)
+    print(np.nanmax(projector.rotation()))
+    print(np.nanmin(projector.rotation()))
+    
+    
+    projector = TwoDimProjector(star, N=151, inclination=30)
+    ax3.imshow(projector.rotation(), origin="lower", vmin=-3000, vmax=3000, cmap=cmap)
+    print(np.nanmax(projector.rotation()))
+    print(np.nanmin(projector.rotation()))
+    
+    plt.colorbar(img)
+    
+    
     
     plt.savefig("PhD_plots/rotation_check.png", dpi=300)   
         
@@ -722,7 +742,7 @@ if __name__ == "__main__":
     # # print((star2.pulsation_rad - star.pulsation_rad))
     # # print((star2.pulsation_rad == star.pulsation_rad).all())
     # print(np.max(star2.pulsation_rad.real))
-    inclinations = [0., 45., 90.]
+    # inclinations = [0., 45., 90.]
     # for l in range(2, 3):
     #     for m in range(1, l+1):
     #         for inclination in inclinations:
@@ -734,10 +754,12 @@ if __name__ == "__main__":
     #             for t in [0, 75, 150, 225, 300, 375, 450, 525]:
     #                 plot_for_phd(t, l, m, inclination)
     
-    inclination = 90.0
-    # for t in [0, 75, 150, 225, 300, 375, 450, 525]:
-    for t in [450, 525]:
-        # for l in range(1, 3):
-        l = 3
-        plot_for_phd(t, l, l, inclination)
+    # inclination = 90.0
+    # # for t in [0, 75, 150, 225, 300, 375, 450, 525]:
+    # for t in [450, 525]:
+    #     # for l in range(1, 3):
+    #     l = 3
+    #     plot_for_phd(t, l, l, inclination)
+    
+    plot_rotation()
 
