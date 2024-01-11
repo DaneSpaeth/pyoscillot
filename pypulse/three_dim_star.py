@@ -598,7 +598,8 @@ def plot_3d(x, y, z, value, scale_down=1):
     plt.show()
 
 
-def plot_for_phd(t=300, l=1, m=1, inclination=90):
+def plot_for_phd(t=300, l=1, m=1, inclination=90, vmax=1):
+    vmin = -vmax
     from pathlib import Path
     out_dir = Path(f"/home/dspaeth/pypulse/PhD_plots/l{l}_incl{inclination}_nonorm")
     if not out_dir.is_dir():
@@ -626,7 +627,7 @@ def plot_for_phd(t=300, l=1, m=1, inclination=90):
     cmap = "seismic"
     for ax, values in zip(three_d_axes, values_list):
         print("Plot 3D")
-        ax.scatter(star.x, star.y, star.z, c=values, vmin=-1, vmax=1, marker=".", cmap=cmap)
+        ax.scatter(star.x, star.y, star.z, c=values, vmin=vmin, vmax=vmax, marker=".", cmap=cmap)
         ax.set_box_aspect((1, 1, 1))
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -644,7 +645,7 @@ def plot_for_phd(t=300, l=1, m=1, inclination=90):
                    projector_los.pulsation_theta(),
                    projector_los.pulsation_phi()]
     for idx, (ax, values) in enumerate(zip(two_d_axes, values_list)):
-        img = ax.imshow(values, vmin=-1, vmax=1, cmap=cmap, origin="lower")
+        img = ax.imshow(values, vmin=vmin, vmax=vmax, cmap=cmap, origin="lower")
         
         ax.set_xlabel("X'")
         ax.set_ylabel("Y'")
@@ -819,8 +820,8 @@ if __name__ == "__main__":
     
     # plot_rotation()
     
-    l = 1
-    m = -1
+    l = 2
+    m = -2
     for t in [0, 75, 150, 225, 300, 375, 450, 525]:
-        plot_temp_map(t, l, m)
+        plot_for_phd(t, l, m, vmax=2)
 

@@ -168,7 +168,7 @@ if __name__ == "__main__":
     tickets = sorted(list(grid_folder.glob(f"{gridname}_17.ini")))
     tickets += sorted(list(grid_folder.glob(f"{gridname}_18.ini")))
     
-    
+    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_05.ini")]
     # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+10.ini")]
     
     
