@@ -670,6 +670,7 @@ def plot_for_phd(t=300, l=1, m=1, inclination=90):
     
     
 def plot_T_variation():
+    
     fig = plt.figure(figsize=(16,9))
     cmap = "seismic"
     
@@ -723,7 +724,62 @@ def plot_rotation():
     
     plt.savefig("PhD_plots/rotation_check.png", dpi=300)   
         
+def plot_temp_map(t=300, l=1, m=1, inclination=90.0):
+    from pathlib import Path
+    out_dir = Path(f"/home/dspaeth/pypulse/PhD_plots/l{l}_incl{inclination}")
+    if not out_dir.is_dir():
+        out_dir.mkdir()
+    outfile = out_dir / f"temp_{l}_m{m}_t{t}.png"
+    if outfile.is_file():
+        print(f"Skip File {outfile}")
+        return None
+    plt.rcParams.update({'font.size': 8})
+    star = ThreeDimStar(N=1000, Teff=4500)
+    star.add_pulsation(l=l, m=m, v_p=1, k=1, nu=1/600, t=t, normalization="None", T_var=100)
+    projector = TwoDimProjector(star, N=151, border=3, inclination=inclination, line_of_sight=False)
+    projector_los = TwoDimProjector(star, N=151, border=3, inclination=inclination, line_of_sight=True)
     
+    fig = plt.figure(figsize=(6.5, 6.0))
+    ax0 = fig.add_subplot(211, projection="3d")
+    
+    
+    three_d_axes = [ax0]
+    values_list = [star.temperature]
+    
+    cmap = "seismic"
+    for ax, values in zip(three_d_axes, values_list):
+        print("Plot 3D")
+        ax.scatter(star.x, star.y, star.z, c=values, vmin=4500-100, vmax=4500+100, marker=".", cmap=cmap)
+        ax.set_box_aspect((1, 1, 1))
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        
+    ax0.set_title(r"Temperature")
+    
+        
+    two_d_axes = [fig.add_subplot(210+i) for i in range(2, 3)]
+    values_list = [projector.temperature()]
+    for idx, (ax, values) in enumerate(zip(two_d_axes, values_list)):
+        img = ax.imshow(values, vmin=4500-100, vmax=4500+100, cmap=cmap, origin="lower")
+        
+        ax.set_xlabel("X'")
+        ax.set_ylabel("Y'")
+    
+            
+    # cbar_ax = fig.add_axes([0.88, 0.70, 0.02, 0.20])
+    # fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
+    
+    # cbar_ax = fig.add_axes([0.88, 0.40, 0.02, 0.20])
+    # fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
+    
+    
+    fig.suptitle(f"i={inclination}, l={l}, m={m}, t={t}")
+        
+        
+    fig.subplots_adjust(left=0.08, right=0.78, top=0.95, bottom=0.06, wspace=0.45, hspace=0.1)
+    plt.savefig(outfile, dpi=300)
+    plt.close()
         
 if __name__ == "__main__":
     # star = ThreeDimStar(N=1000)
@@ -761,5 +817,10 @@ if __name__ == "__main__":
     #     l = 3
     #     plot_for_phd(t, l, l, inclination)
     
-    plot_rotation()
+    # plot_rotation()
+    
+    l = 1
+    m = -1
+    for t in [0, 75, 150, 225, 300, 375, 450, 525]:
+        plot_temp_map(t, l, m)
 
