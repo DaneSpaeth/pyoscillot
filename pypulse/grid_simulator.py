@@ -8,7 +8,8 @@ global_dict = parse_global_ini()
 TICKETROOT = global_dict["ticketpath"]
 
 #### INSERT YOUR NAMES ETC HERE ####
-gridname = "NGC4349_l2_m-2_20K_grid"
+# gridname = "NGC4349_l2_m-2_20K_grid"
+gridname = "NGC4349_l2_m-2_small_rot_dT_testgrid"
 baseticket = TICKETROOT / gridname / "base.ini"
 
 # First round
@@ -18,7 +19,9 @@ v_ps = [0.29847640045 + i*0.05 for i in range(-2, 5)]
 v_p = 0.18
 v_rots = [3750 + i*250 for i in range(10)]
 
-dTs = np.array([10, 15, 20])
+# New test grid, based on 15 -> smaller dTs and smaller v_rot
+v_rots = [500+i*500 for i in range(7)]
+dTs = np.array([5, 10])
 
 dTs, v_rots = np.meshgrid(dTs, v_rots)
 
@@ -54,7 +57,7 @@ dTs, v_rots = np.meshgrid(dTs, v_rots)
 
 
 
-idx_plus = 14
+idx_plus = 0
 
 for idx, (v_rot, dT) in enumerate(zip(v_rots.flatten(), dTs.flatten())):
     

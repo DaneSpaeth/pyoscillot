@@ -163,12 +163,13 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     root = Path().cwd() / "tickets"
-    gridname = "understand_l1_CRX_diff"
+    gridname = "NGC4349_l2_m-2_small_rot_dT_testgrid"
     grid_folder = root / gridname
-    tickets = sorted(list(grid_folder.glob(f"{gridname}_17.ini")))
-    tickets += sorted(list(grid_folder.glob(f"{gridname}_18.ini")))
+    tickets = sorted(list(grid_folder.glob(f"{gridname}_*.ini")))
+    # print(tickets)
+    # exit()
     
-    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_05.ini")]
+    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_05.ini")]
     # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+10.ini")]
     
     
@@ -180,6 +181,9 @@ if __name__ == "__main__":
     # tickets = sorted(list((root / gridname).glob("*.ini")))
     
     for idx, ticket in enumerate(tickets):
+        print("=======================================")
+        print(f"RUN TICKET {ticket.stem}")
+        print("=======================================")
         # if idx <= 13:
         #     print(f"SKIP {ticket}")
         #     continue
