@@ -20,7 +20,9 @@ v_p = 0.18
 v_rots = [3750 + i*250 for i in range(10)]
 
 # New test grid, based on 15 -> smaller dTs and smaller v_rot
-v_rots = [500+i*500 for i in range(7)]
+
+# Only continue with dT = 5
+v_rots = [500+i*500 for i in range(7, 12)]
 dTs = np.array([5, 10])
 
 dTs, v_rots = np.meshgrid(dTs, v_rots)
@@ -57,14 +59,17 @@ dTs, v_rots = np.meshgrid(dTs, v_rots)
 
 
 
-idx_plus = 0
+idx_plus = 14
 
 for idx, (v_rot, dT) in enumerate(zip(v_rots.flatten(), dTs.flatten())):
+    idx_plus +=1
+    if dT == 10:
+        # No need to run these models 
+        continue
     
     config = configparser.ConfigParser()
     config.read(baseticket)
     
-    idx_plus +=1
     simname = f"{gridname}_{idx_plus:02d}"
     config["GLOBAL"]["name"] = simname
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")

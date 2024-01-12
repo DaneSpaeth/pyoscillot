@@ -181,6 +181,8 @@ if __name__ == "__main__":
     # tickets = sorted(list((root / gridname).glob("*.ini")))
     
     for idx, ticket in enumerate(tickets):
+        if idx < 14:
+            continue
         print("=======================================")
         print(f"RUN TICKET {ticket.stem}")
         print("=======================================")
