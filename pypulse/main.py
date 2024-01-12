@@ -163,7 +163,7 @@ if __name__ == "__main__":
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
     root = Path().cwd() / "tickets"
-    gridname = "NGC4349_l2_m-2_small_rot_dT_testgrid"
+    gridname = "NGC4349_l2_m-2_small_rot_dT_grid"
     grid_folder = root / gridname
     tickets = sorted(list(grid_folder.glob(f"{gridname}_*.ini")))
     # print(tickets)
@@ -181,8 +181,8 @@ if __name__ == "__main__":
     # tickets = sorted(list((root / gridname).glob("*.ini")))
     
     for idx, ticket in enumerate(tickets):
-        if idx < 14:
-            continue
+        # if idx < 14:
+        #     continue
         print("=======================================")
         print(f"RUN TICKET {ticket.stem}")
         print("=======================================")

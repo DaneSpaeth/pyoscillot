@@ -9,7 +9,7 @@ TICKETROOT = global_dict["ticketpath"]
 
 #### INSERT YOUR NAMES ETC HERE ####
 # gridname = "NGC4349_l2_m-2_20K_grid"
-gridname = "NGC4349_l2_m-2_small_rot_dT_testgrid"
+gridname = "NGC4349_l2_m-2_small_rot_dT_grid"
 baseticket = TICKETROOT / gridname / "base.ini"
 
 # First round
@@ -22,8 +22,8 @@ v_rots = [3750 + i*250 for i in range(10)]
 # New test grid, based on 15 -> smaller dTs and smaller v_rot
 
 # Only continue with dT = 5
-v_rots = [500+i*500 for i in range(7, 12)]
-dTs = np.array([5, 10])
+v_rots = [500+i*500 for i in range(2, 12)]
+dTs = np.array([1, 2, 3, 4, 5, 6])
 
 dTs, v_rots = np.meshgrid(dTs, v_rots)
 
@@ -59,13 +59,13 @@ dTs, v_rots = np.meshgrid(dTs, v_rots)
 
 
 
-idx_plus = 14
+idx_plus = 0
 
 for idx, (v_rot, dT) in enumerate(zip(v_rots.flatten(), dTs.flatten())):
     idx_plus +=1
-    if dT == 10:
-        # No need to run these models 
-        continue
+    # if dT == 10:
+    #     # No need to run these models 
+    #     continue
     
     config = configparser.ConfigParser()
     config.read(baseticket)
