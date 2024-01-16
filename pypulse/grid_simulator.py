@@ -9,23 +9,24 @@ TICKETROOT = global_dict["ticketpath"]
 
 #### INSERT YOUR NAMES ETC HERE ####
 # gridname = "NGC4349_l2_m-2_20K_grid"
-gridname = "NGC4349_l2_m-2_small_rot_dT_grid"
+gridname = "NGC4349_l2_m-2_vp_grid"
 baseticket = TICKETROOT / gridname / "base.ini"
 
 # First round
-v_ps = [0.29847640045 + i*0.05 for i in range(-2, 5)]
+# Now based on nr 40 before
+v_ps = [0.18 + i*0.005 for i in range(20)]
 
 # Second round, based of 01 but still slightly smaller
-v_p = 0.18
-v_rots = [3750 + i*250 for i in range(10)]
+# v_p = 0.18
+# v_rots = [3750 + i*250 for i in range(10)]
 
-# New test grid, based on 15 -> smaller dTs and smaller v_rot
+# # New test grid, based on 15 -> smaller dTs and smaller v_rot
 
-# Only continue with dT = 5
-v_rots = [500+i*500 for i in range(2, 12)]
-dTs = np.array([1, 2, 3, 4, 5, 6])
+# # Only continue with dT = 5
+# v_rots = [500+i*500 for i in range(2, 12)]
+# dTs = np.array([1, 2, 3, 4, 5, 6])
 
-dTs, v_rots = np.meshgrid(dTs, v_rots)
+# dTs, v_rots = np.meshgrid(dTs, v_rots)
 
 # print(v_ps)
 # exit()
@@ -61,7 +62,7 @@ dTs, v_rots = np.meshgrid(dTs, v_rots)
 
 idx_plus = 0
 
-for idx, (v_rot, dT) in enumerate(zip(v_rots.flatten(), dTs.flatten())):
+for idx, (v_p) in enumerate(v_ps):
     idx_plus +=1
     # if dT == 10:
     #     # No need to run these models 
@@ -73,10 +74,10 @@ for idx, (v_rot, dT) in enumerate(zip(v_rots.flatten(), dTs.flatten())):
     simname = f"{gridname}_{idx_plus:02d}"
     config["GLOBAL"]["name"] = simname
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
-    config["GLOBAL"]["v_rot"] = str(v_rot)
-    config["pulsation"]["v_p"] = str(v_p)
+    # config["GLOBAL"]["v_rot"] = str(v_rot)
+    config["pulsation"]["v_p"] = str(round(v_p,3))
     # config["GLOBAL"]["inclination"] = str(inclination)
-    config["pulsation"]["dt"] = str(round(dT, 1))
+    # config["pulsation"]["dt"] = str(round(dT, 1))
     # config["pulsation"]["t_phase"] = str(180.)
     # config["pulsation"]["l"] = str(l)
     # config["pulsation"]["m"] = str(m)
