@@ -156,17 +156,24 @@ def reduce_HARPS(global_dict, name, star, serval=True, raccoon=True):
 
 
 if __name__ == "__main__":
+    import time
     
     # ticket = root / "NGC4349_fine_tuning" / "NGC4349_improved_fine_grid_163+10.ini"
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # ticket = root / "NGC4349_fine_tuning" / "NGC4349_improved_fine_grid_163+3.ini"
     # main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
     # exit()
-    root = Path().cwd() / "tickets"
-    gridname = "NGC4349_l2_m-2_vp_grid"
+    root = Path().cwd() / "tickets" 
+    # gridname = "NGC4349_l2_m-2_vp_grid"
+    
+    gridname = "PhD_param_grid"
     grid_folder = root / gridname
-    tickets = sorted(list(grid_folder.glob(f"{gridname}_*.ini")))
-    # print(tickets)
+    grid_folder = root / "PhD_parameter_grids"
+    
+        
+        
+    tickets = (sorted(list(grid_folder.rglob(f"{gridname}_*.ini")), reverse=True))
+    # print(len(tickets))
     # exit()
     
     # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_05.ini")]
@@ -182,7 +189,7 @@ if __name__ == "__main__":
     
     # tickets = [grid_folder / "NGC4349_l2_m-2_vp_grid_04+01.ini"]
     
-    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
+    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
     for idx, ticket in enumerate(tickets):
         # if idx < 14:
@@ -190,6 +197,7 @@ if __name__ == "__main__":
         print("=======================================")
         print(f"RUN TICKET {ticket.stem}")
         print("=======================================")
+        time.sleep(2)
         # if idx <= 13:
         #     print(f"SKIP {ticket}")
         #     continue

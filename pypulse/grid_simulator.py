@@ -7,24 +7,39 @@ import configparser
 global_dict = parse_global_ini()
 TICKETROOT = global_dict["ticketpath"]
 
+
+
 #### INSERT YOUR NAMES ETC HERE ####
 # gridname = "NGC4349_l2_m-2_20K_grid"
 gridname = "NGC4349_l2_m-2_vp_grid"
+    # gridname = "NGC4349_l2_m-2_vp_grid"
+    
+PhD_root = TICKETROOT / "PhD_parameter_grids"
+gridname = "PhD_param_grid_Tphase"
+grid_folder = PhD_root / gridname
+if not grid_folder.is_dir():
+    grid_folder.mkdir()
+    
 baseticket = TICKETROOT / gridname / "base.ini"
+baseticket = PhD_root / "base_ngc4349_127.ini"
+
+ROOT = PhD_root
 
 # First round
 # Now based on nr 40 before
-v_ps = [0.18 + i*0.005 for i in range(20)]
+# v_ps = [0.1 + i*0.1 for i in range(10)]
 
 # Second round, based of 01 but still slightly smaller
 # v_p = 0.18
-# v_rots = [3750 + i*250 for i in range(10)]
+v_rots = [500 + i*500 for i in range(12)]
 
 # # New test grid, based on 15 -> smaller dTs and smaller v_rot
 
 # # Only continue with dT = 5
 # v_rots = [500+i*500 for i in range(2, 12)]
-# dTs = np.array([1, 2, 3, 4, 5, 6])
+dTs = np.array([0.0 + i*1.0 for i in range(16)])
+
+T_phases = [0. + i*30. for i in range(12)]
 
 # dTs, v_rots = np.meshgrid(dTs, v_rots)
 
@@ -62,7 +77,7 @@ v_ps = [0.18 + i*0.005 for i in range(20)]
 
 idx_plus = 0
 
-for idx, (v_p) in enumerate(v_ps):
+for idx, (T_phase) in enumerate(T_phases):
     idx_plus +=1
     # if dT == 10:
     #     # No need to run these models 
@@ -75,17 +90,17 @@ for idx, (v_p) in enumerate(v_ps):
     config["GLOBAL"]["name"] = simname
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
     # config["GLOBAL"]["v_rot"] = str(v_rot)
-    config["pulsation"]["v_p"] = str(round(v_p,3))
+    # config["pulsation"]["v_p"] = str(round(v_p,3))
     # config["GLOBAL"]["inclination"] = str(inclination)
     # config["pulsation"]["dt"] = str(round(dT, 1))
-    # config["pulsation"]["t_phase"] = str(180.)
+    config["pulsation"]["t_phase"] = str(T_phase)
     # config["pulsation"]["l"] = str(l)
     # config["pulsation"]["m"] = str(m)
     
     # config["pulsation"]["v_p"] = str(v_p)
     
     
-    outfile = TICKETROOT / gridname / f"{simname}.ini"
+    outfile = ROOT / gridname / f"{simname}.ini"
     with open(outfile, "w") as f:
         config.write(f)
     # print(simname, l, m, inclination)
