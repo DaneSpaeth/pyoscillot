@@ -180,7 +180,9 @@ if __name__ == "__main__":
     # gridname = "NGC4249_l1_dT0"
     # tickets = sorted(list((root / gridname).glob("*.ini")))
     
-    tickets = [grid_folder / "NGC4349_l2_m-2_vp_grid_04+01.ini"]
+    # tickets = [grid_folder / "NGC4349_l2_m-2_vp_grid_04+01.ini"]
+    
+    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/combined_modes/NGC4349_combined_modes_06.ini")]
     
     for idx, ticket in enumerate(tickets):
         # if idx < 14:
