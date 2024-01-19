@@ -129,5 +129,29 @@ def load_presampled_times(savename):
     return time_sample
 
 
+def calc_N40_sampling_for_NGC4349_sims():
+    start_bjd = 2453449.783795919
+    stop_bjd = 2455036.5042521493
+    period = 674.1
+    
+    n_periods = 2.5
+    # stop_bjd + x - (start_bjd - x) = n_periods * period
+    x = (n_periods * period - stop_bjd + start_bjd) / 2
+    
+    shifted_start_bjd = start_bjd - x
+    # print(shifted_start_bjd)
+    # At midnight Chile -> UTC=03:00:00
+    shifted_start_datetime = datetime.strptime("2005-01-30T03:00:00.00000", "%Y-%m-%dT%H:%M:%S.%f")
+    presample_times(40, 2.5, 674.1, start=shifted_start_datetime)
+    
+
 if __name__ == "__main__":
-    presample_times(120, 3, 674.5, "uniform", start=datetime.strptime("2005-02-03T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f"),)
+    # presample_times(120, 3, 674.5, "uniform", start=datetime.strptime("2005-02-03T06:48:39.967000", "%Y-%m-%dT%H:%M:%S.%f"),)
+    
+    # presample_times(40, )
+    calc_N40_sampling_for_NGC4349_sims()
+    
+    
+    # Calc the sampling for the NGC 4349 simulations
+    
+    # "2005-03-20 06:48:40"
