@@ -182,7 +182,7 @@ if __name__ == "__main__":
     
     # tickets = [grid_folder / "NGC4349_l2_m-2_vp_grid_04+01.ini"]
     
-    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/combined_modes/NGC4349_combined_modes_06.ini")]
+    tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
     for idx, ticket in enumerate(tickets):
         # if idx < 14:
