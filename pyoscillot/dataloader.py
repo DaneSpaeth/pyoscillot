@@ -218,7 +218,7 @@ def plot_central_order_intensitites():
     for star, color in color_dict.items():
         if star == "fake":
             directory = Path(
-                f"/home/dane/Documents/PhD/pypulse/data/fake_spectra/hip16335_talk_refined_highres")
+                f"/home/dane/Documents/PhD/pyoscillot/data/fake_spectra/hip16335_talk_refined_highres")
         else:
             directory = Path(
                 f"/home/dane/Documents/PhD/pyCARM/data/by_hip/{star}")

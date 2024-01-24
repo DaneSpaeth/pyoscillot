@@ -24,7 +24,7 @@ def V_band_flux(wave, spec):
 if __name__ == "__main__":
     from pathlib import Path
     import matplotlib.pyplot as plt
-    root = Path("/data/dspaeth/pypulse_fake_spectra/NGC4349_very_fine_RV_grid_022+02+10/arrays")
+    root = Path("/data/dspaeth/pyoscillot_fake_spectra/NGC4349_very_fine_RV_grid_022+02+10/arrays")
     
     wave_files = sorted(list((root / "wavelength").glob("*npy")))
     spec_files =  sorted(list((root / "spectrum").glob("*npy")))
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     V_fluxes /= np.mean(V_fluxes)
     total_fluxes = np.array(total_fluxes)
     total_fluxes /= np.mean(total_fluxes)
-    # root = Path("/data/dspaeth/pypulse_fake_spectra/NGC4349_very_fine_RV_grid_022+02+10")
+    # root = Path("/data/dspaeth/pyoscillot_fake_spectra/NGC4349_very_fine_RV_grid_022+02+10")
     # bjds, V_fluxes = np.loadtxt(root / "V_flux.txt", unpack=True)
     # V_fluxes /= np.mean(V_fluxes)
     # bjds, total_fluxes = np.loadtxt(root / "flux.txt", unpack=True)

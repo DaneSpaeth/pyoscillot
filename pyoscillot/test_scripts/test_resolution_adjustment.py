@@ -11,7 +11,7 @@ from scipy.interpolate import CubicSpline, interp1d
 plt.rcParams['axes.formatter.useoffset'] = False
 
 
-LB_root = Path("/data/dspaeth/pypulse_data/resolution_tests")
+LB_root = Path("/data/dspaeth/pyoscillot_data/resolution_tests")
 df = pd.read_csv(LB_root / "LB_R700000.csv")
 
 wave_LB_700000 = np.array(df["x"])
@@ -39,10 +39,10 @@ lin_spec_70000 = cs_700000(lin_wave)
 
 
 spec_res_dane  = adjust_resolution_per_pixel(lin_wave, lin_spec_70000, R=100000)
-ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pypulse)")
+ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pyoscillot)")
 
 # spec_res_per_pixel = adjust_resolution_per_pixel(lin_wave, lin_spec_70000, R=100000)
-# ax.plot(lin_wave, spec_res_dane, color="tab:red", lw=1, label="R=100000 (pypulse, per pixel)")
+# ax.plot(lin_wave, spec_res_dane, color="tab:red", lw=1, label="R=100000 (pyoscillot, per pixel)")
 
 ax.legend()
 ax.set_ylabel("Normalized Intensity")

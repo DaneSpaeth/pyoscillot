@@ -681,14 +681,14 @@ def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, d
     # Now create the Rassine fit
     if run:
         spec_df = pd.DataFrame({'wave':wave,'flux':spec})
-        pickle_path = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
+        pickle_path = "/home/dspaeth/pyoscillot/pyoscillot/phoenix_spec_rassine.p"
         spec_df.to_pickle(pickle_path)
         subprocess.run(["python3",
                     "/home/dspaeth/Rassine_public/Rassine.py",
                     pickle_path],
                     timeout=60)
 
-        rassine_df = pd.read_pickle("/home/dspaeth/pypulse/pypulse/RASSINE_phoenix_spec_rassine.p")
+        rassine_df = pd.read_pickle("/home/dspaeth/pyoscillot/pyoscillot/RASSINE_phoenix_spec_rassine.p")
     else:
         rassine_df = Rassine_outputs(Teff, logg, feh)
     continuum = rassine_df["output"]["continuum_linear"]
@@ -1357,7 +1357,7 @@ def calc_mean_limb_dark(wave, mu_array, load_precalc=True, N=150):
 #         if cfg.debug_dir is not None:
 #             out_root = cfg.debug_dir
 #         else:
-#             out_root = Path("/home/dspaeth/pypulse/data/plots/macroturbulence/")
+#             out_root = Path("/home/dspaeth/pyoscillot/data/plots/macroturbulence/")
 #         savename = f"macroturbulence.png"
 #         outfile = out_root / savename
 #         # Only save one debug plot (otherwise you would have that for every cell)

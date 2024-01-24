@@ -41,4 +41,4 @@ ax.set_xlim(0, P_rot)
 
 ax.legend()
 fig.set_tight_layout(True)
-plt.savefig("/home/dane/Documents/PhD/pypulse/plots/EV_Lac_15_spots_flux.png")
+plt.savefig("/home/dane/Documents/PhD/pyoscillot/plots/EV_Lac_15_spots_flux.png")

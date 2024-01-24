@@ -4,8 +4,8 @@ from pathlib import Path
 import matplotlib as mpl
 mpl.use('Qt5Agg')
 
-temp_directory = Path("/home/dane/Documents/PhD/pypulse/mounted_data/fake_spectra/GRANULATION_MEDRES/arrays/temperature/")
-velocity_directory = Path("/home/dane/Documents/PhD/pypulse/mounted_data/fake_spectra/GRANULATION_MEDRES/arrays/granulation_velocity/")
+temp_directory = Path("/home/dane/Documents/PhD/pyoscillot/mounted_data/fake_spectra/GRANULATION_MEDRES/arrays/temperature/")
+velocity_directory = Path("/home/dane/Documents/PhD/pyoscillot/mounted_data/fake_spectra/GRANULATION_MEDRES/arrays/granulation_velocity/")
 temp_files = sorted(list(temp_directory.glob("*npy")))
 velocity_files = sorted(list(velocity_directory.glob("*npy")))
 

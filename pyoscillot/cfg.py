@@ -9,7 +9,7 @@ def parse_global_ini():
         Return parameters as dictionary.
     """
     config = configparser.ConfigParser()
-    config.read("/home/dspaeth/pypulse/pypulse/global.ini")
+    config.read("/home/dspaeth/pyoscillot/pyoscillot/global.ini")
     conf_dict = {}
     conf = config["DEFAULT"]
     for key in conf:

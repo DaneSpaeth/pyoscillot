@@ -22,7 +22,7 @@ def main(ticket, run=True, serval=True, raccoon=True, run_laptop=False):
 
     global_dict = parse_global_ini()
     if laptop:
-        global_dict["datapath"] = "/home/dane/Documents/Phd/pypulse/mounted_data"
+        global_dict["datapath"] = "/home/dane/Documents/Phd/pyoscillot/mounted_data"
     conf_dict = parse_ticket(ticket)
     name = str(conf_dict["name"])
 
@@ -176,11 +176,11 @@ if __name__ == "__main__":
     # print(len(tickets))
     # exit()
     
-    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_05.ini")]
-    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+10.ini")]
+    # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/NGC4349_p_modes/NGC4349_p_mode_05.ini")]
+    # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/NGC4349_very_fine_RV_grid/NGC4349_very_fine_RV_grid_022+02+10.ini")]
     
     
-    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/NGC4349_p_modes/NGC4349_p_mode_04.ini")]
+    # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/NGC4349_p_modes/NGC4349_p_mode_04.ini")]
     # second_grid_folder = root / "NGC4349_l1m0_broad_grid"
     # second_tickets = sorted(list(second_grid_folder.glob("NGC4349_*.ini")))
     # tickets = tickets + second_tickets
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     
     # tickets = [grid_folder / "NGC4349_l2_m-2_vp_grid_04+01.ini"]
     
-    # tickets = [Path("/home/dspaeth/pypulse/pypulse/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
+    # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
     for idx, ticket in enumerate(tickets):
         # if idx < 14:

@@ -10,7 +10,7 @@ from spline_interpolation import interpolate_on_temperature
 from utils import get_ref_spectra
 
     
-out_root = Path("/data/dspaeth/pypulse_data/continuum_fits")
+out_root = Path("/data/dspaeth/pyoscillot_data/continuum_fits")
 WAVE_START = 3550
 WAVE_STOP = 17550
 cutoff_px = 200

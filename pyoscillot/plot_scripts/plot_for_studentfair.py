@@ -13,7 +13,7 @@ global_dict = parse_global_ini()
 instruments = ["CARMENES_VIS"]
 
 mode = "temperature"
-ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0_m-1/talk_ticket3.ini"
+ticket = "/home/dane/Documents/PhD/pyoscillot/data/fake_spectra/TALK_0_m-1/talk_ticket3.ini"
 conf = parse_ticket(ticket)
 sim_star = conf["name"]
 

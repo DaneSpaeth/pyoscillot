@@ -6,7 +6,7 @@ import plapy.rv.dataloader as load
 import shutil
 
 RAW_DIRECTORY = Path("/home/dane/Documents/PhD/pyCARM/data/by_hip")
-OUT_DIRECTORY = Path("/home/dane/Documents/PhD/pypulse/data/")
+OUT_DIRECTORY = Path("/home/dane/Documents/PhD/pyoscillot/data/")
 stars = load.star_list()
 
 

@@ -3,10 +3,10 @@
 source ${PYENV_ROOT}/versions/raccoon-venv/bin/activate
 
 RACCOONDATADIR="/home/dspaeth/raccoon/raccoon/data"
-RVLIBPATH="/home/dspaeth/pypulse/data/reduced"
+RVLIBPATH="/home/dspaeth/pyoscillot/data/reduced"
 
 i=84
-fits_dir="/home/dspaeth/pypulse/data/fake_spectra/NGC4349_Test${i}/HARPS/fits"
+fits_dir="/home/dspaeth/pyoscillot/data/fake_spectra/NGC4349_Test${i}/HARPS/fits"
 BLAZETXTFILE=$fits_dir/"blazefiles.txt"
 
 raccoonccf \

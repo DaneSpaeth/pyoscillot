@@ -81,7 +81,7 @@ def read_in_saved_arrays_pulsation_old():
 
 def read_in_saved_arrays_pulsation():
     path = Path(
-        f"/home/dane/Documents/PhD/pypulse/data/fake_spectra/{PULSATION_NAME}/arrays/pulsation")
+        f"/home/dane/Documents/PhD/pyoscillot/data/fake_spectra/{PULSATION_NAME}/arrays/pulsation")
     array_paths = path.glob("*npy")
     pulse_maps = []
     bjds = []

@@ -1,5 +1,5 @@
-RVLIBPATH=/data/dspaeth/pypulse_reduced
-DATAPATH=/data/dspaeth/pypulse_fake_spectra
+RVLIBPATH=/data/dspaeth/pyoscillot_reduced
+DATAPATH=/data/dspaeth/pyoscillot_fake_spectra
 # activate the venv for racconf
 source ${PYENV_ROOT}/versions/raccoon-venv/bin/activate
 

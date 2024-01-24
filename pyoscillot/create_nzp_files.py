@@ -114,9 +114,9 @@ def create_ascii_file(file):
 
 
 if __name__ == "__main__":
-    # file = Path("/home/dspaeth/pypulse/data/reduced/serval/SIMULATION/NGC4349_Test2/CARMENES_VIS/NGC4349_Test2.rvc.dat")
+    # file = Path("/home/dspaeth/pyoscillot/data/reduced/serval/SIMULATION/NGC4349_Test2/CARMENES_VIS/NGC4349_Test2.rvc.dat")
 
     for i in range(82,85):
-        file = Path(f"/home/dspaeth/pypulse/data/reduced/raccoon/SIMULATION/NGC4349_Test{i}_ngcmask/HARPS_pre2015_CCF/None.par.dat")
+        file = Path(f"/home/dspaeth/pyoscillot/data/reduced/raccoon/SIMULATION/NGC4349_Test{i}_ngcmask/HARPS_pre2015_CCF/None.par.dat")
         csv_file = create_nzp_file(file, raccoon=True)
         create_ascii_file(csv_file)

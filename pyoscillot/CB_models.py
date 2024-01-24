@@ -55,7 +55,7 @@ def Gray_CB_model(model, debug_plot=False):
 
 def deconvolved_Pollux_CB_model():
     """ Fit a simple Pollux model. There is no deconvolution applied yet."""
-    df = pd.read_csv("/home/dspaeth/pypulse/data/CB_Pollux/Fe6253.csv")
+    df = pd.read_csv("/home/dspaeth/pyoscillot/data/CB_Pollux/Fe6253.csv")
     
     wv = np.array(df["wave"])
     sp = np.array(df[" flux"])
@@ -81,7 +81,7 @@ def deconvolved_Pollux_CB_model():
     bis_v = (bis_wave - line) / bis_wave * 3e8
     bis_v -= bis_v[~np.isnan(bis_v)][0]
     
-    df = pd.read_csv("/home/dspaeth/pypulse/data/CB_Pollux/Gray14.csv")
+    df = pd.read_csv("/home/dspaeth/pyoscillot/data/CB_Pollux/Gray14.csv")
 
     Gray14_flux = np.array(df[" y"])
     Gray14_v = np.array(df["x"])

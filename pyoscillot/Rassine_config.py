@@ -29,8 +29,8 @@ cwd = os.getcwd()
 #spectrum_name = '/Users/yinanzhao/SOAP2_with_spectrum/StarSpot/GPU_SOAP/GPU_SOAP_V2/Sun_5678.p' # full path of your spectrum pickle/csv file
 #output_dir  = cwd                            # directory where output files are written
 
-spectrum_name = "/home/dspaeth/pypulse/pypulse/phoenix_spec_rassine.p"
-output_dir = "/home/dspaeth/pypulse/pypulse"
+spectrum_name = "/home/dspaeth/pyoscillot/pyoscillot/phoenix_spec_rassine.p"
+output_dir = "/home/dspaeth/pyoscillot/pyoscillot"
 
 #synthetic_spectrum = False   # True if working with a noisy-free synthetic spectra
 synthetic_spectrum = True   # True if working with a noisy-free synthetic spectra

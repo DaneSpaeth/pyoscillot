@@ -56,7 +56,7 @@ def plot_bis_corr_star():
     plot_line_and_bis(wave_cb, spec_cb, ax, color="tab:red", line=line, label="Changed BIS")
     
     # Simply to get the wavelength regime right
-    spec_harps, wave_harps, blaze = harps_template(spec_filename="/home/dspaeth/pypulse/data/fake_spectra/NGC4349_Test88/HARPS/fits/ADP.2005-02-03T06:48:39.967_e2ds_A.fits")
+    spec_harps, wave_harps, blaze = harps_template(spec_filename="/home/dspaeth/pyoscillot/data/fake_spectra/NGC4349_Test88/HARPS/fits/ADP.2005-02-03T06:48:39.967_e2ds_A.fits")
     order = 62
     # interval = 0.25
     wave_harps = wave_harps[order]
@@ -79,7 +79,7 @@ def plot_bis_corr_star():
     wave_R_cb = wave_cb[mask_harps_order]
     plot_line_and_bis(wave_R_cb, spec_R_cb, ax, color="purple", line=line, label="Changed BIS, R=115000")
     
-    spec, wave, blaze = harps_template(spec_filename="/home/dspaeth/pypulse/data/fake_spectra/NGC4349_Test89/HARPS/fits/ADP.2005-02-03T06:48:39.967_e2ds_A.fits")
+    spec, wave, blaze = harps_template(spec_filename="/home/dspaeth/pyoscillot/data/fake_spectra/NGC4349_Test89/HARPS/fits/ADP.2005-02-03T06:48:39.967_e2ds_A.fits")
     order = 62
     interval = 0.25
     wave = wave[order]
@@ -91,7 +91,7 @@ def plot_bis_corr_star():
     ax[0].set_ylabel("Flux")
     ax[1].set_xlabel("Doppler Velocity [m/s]")
     fig.set_tight_layout(True)
-    plt.savefig("/home/dspaeth/pypulse/data/plots/BIS_tests/BIS_N=150_vrot3900_inclination60.png")
+    plt.savefig("/home/dspaeth/pyoscillot/data/plots/BIS_tests/BIS_N=150_vrot3900_inclination60.png")
 
 def plot_bis_corr_oneline():
     Teff = 4500

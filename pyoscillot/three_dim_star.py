@@ -601,7 +601,7 @@ def plot_3d(x, y, z, value, scale_down=1):
 def plot_for_phd(t=300, l=1, m=1, inclination=90, vmax=1):
     vmin = -vmax
     from pathlib import Path
-    out_dir = Path(f"/home/dspaeth/pypulse/PhD_plots/l{l}_incl{inclination}_nonorm")
+    out_dir = Path(f"/home/dspaeth/pyoscillot/PhD_plots/l{l}_incl{inclination}_nonorm")
     if not out_dir.is_dir():
         out_dir.mkdir()
     outfile = out_dir / f"pulsation_components_l{l}_m{m}_t{t}.png"
@@ -727,7 +727,7 @@ def plot_rotation():
         
 def plot_temp_map(t=300, l=1, m=1, inclination=90.0):
     from pathlib import Path
-    out_dir = Path(f"/home/dspaeth/pypulse/PhD_plots/l{l}_incl{inclination}")
+    out_dir = Path(f"/home/dspaeth/pyoscillot/PhD_plots/l{l}_incl{inclination}")
     if not out_dir.is_dir():
         out_dir.mkdir()
     outfile = out_dir / f"temp_{l}_m{m}_t{t}.png"

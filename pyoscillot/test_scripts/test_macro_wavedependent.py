@@ -170,7 +170,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         if cfg.debug_dir is not None:
             out_root = cfg.debug_dir
         else:
-            out_root = Path("/home/dspaeth/pypulse/data/plots/macroturbulence/")
+            out_root = Path("/home/dspaeth/pyoscillot/data/plots/macroturbulence/")
         savename = f"macroturbulence.png"
         outfile = out_root / savename
         # Only save one debug plot (otherwise you would have that for every cell)

@@ -143,7 +143,7 @@ def debug_plot(wave, spec, spec_HARPS, line):
     if cfg.debug_dir is not None:
         out_root = cfg.debug_dir
     else:
-        out_root = Path("/home/dspaeth/pypulse/data/plots/phoenix_bisectors/")
+        out_root = Path("/home/dspaeth/pyoscillot/data/plots/phoenix_bisectors/")
     savename = f"bis_HARPS.png"
     fig.set_tight_layout(True)
     plt.savefig(f"{out_root}/{savename}", dpi=600)
@@ -209,8 +209,8 @@ if __name__ == "__main__":
     # plt.plot(w[mins_idx], s[mins_idx])
     # plt.show()
     
-    # wavefile = "/data/dspaeth/pypulse_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/wavelength/2453404.7841431363.npy"
-    # specfile = "/data/dspaeth/pypulse_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/spectrum/2453404.7841431363.npy"
+    # wavefile = "/data/dspaeth/pyoscillot_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/wavelength/2453404.7841431363.npy"
+    # specfile = "/data/dspaeth/pyoscillot_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/spectrum/2453404.7841431363.npy"
     
     # wave = np.load(wavefile)
     # spec = np.load(specfile)

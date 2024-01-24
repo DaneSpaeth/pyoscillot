@@ -442,5 +442,5 @@ if __name__ == "__main__":
     # print("Here")
     exit()
 
-    # ticket = "/home/dane/Documents/PhD/pypulse/data/fake_spectra/TALK_0/pulsation.ini"
+    # ticket = "/home/dane/Documents/PhD/pyoscillot/data/fake_spectra/TALK_0/pulsation.ini"
     animate_pulse(ticket, mode="pulsation")

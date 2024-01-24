@@ -11,7 +11,7 @@ def plot_1():
     root = Path("/home/dane/mounted_srv/simulations/fake_spectra/EV_Lac_2SPOTS_SAME_SIZE_EQUATOR_CLOSER/CARMENES_VIS")
     files = sorted(list(root.glob("*.fits")))
 
-    dataloader.DATAROOT = Path("/home/dane/Documents/PhD/pypulse/data")
+    dataloader.DATAROOT = Path("/home/dane/Documents/PhD/pyoscillot/data")
     (templ_spec, templ_cont, templ_sig, templ_wave) = carmenes_template(template_file, serval_output=True)
     file = files[1]
     (spec, cont, sig, wave) = carmenes_template(file)
@@ -40,7 +40,7 @@ def plot_planck(T_star=2900, T_spot=1900):
     lin_wave = np.linspace(520, 960, 1000)
     lin_wave = lin_wave*1e-9
 
-    order_file = Path("/home/dane/Documents/PhD/pypulse/data/WaveRange_VIS.txt")
+    order_file = Path("/home/dane/Documents/PhD/pyoscillot/data/WaveRange_VIS.txt")
     data = np.loadtxt(order_file)
     order_idx = data[:,0].astype(int)
     order = data[:, 1].astype(int)
