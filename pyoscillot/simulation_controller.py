@@ -1,6 +1,5 @@
 from datetime import timedelta
 import numpy as np
-from barycorrpy import utc_tdb
 from astropy.time import Time
 from concurrent.futures import ProcessPoolExecutor
 from constants import C
@@ -12,7 +11,6 @@ import cfg
 from time_sampling import sample_phase, load_presampled_times
 import carmenes_simulator as carmenes
 import harps_simulator as harps
-from pyoscillot.sideprojects_scripts.theoretical_rvs import calc_theoretical_results
 
 
 class SimulationController():
@@ -197,7 +195,7 @@ class SimulationController():
 
         K_sample = K * np.sin(2 * np.pi * phase_sample)
 
-        bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
+        bjds = self.get_bjd(time_sample)
         bcs = np.zeros(len(bjds))
 
         # Load one rest_spectrum, all units in Angstrom
@@ -227,7 +225,6 @@ class SimulationController():
 
             self._save_to_disk(shift_wavelength, spectrum, time, bc, bjd, v)
 
-        # calc_theoretical_results(shift_wavelengths, spectra, bjds)
 
     def simulate_spot(self):
         """ Simulate the spot spectra."""
@@ -267,7 +264,7 @@ class SimulationController():
         # At the moment assume that there is no planetary signal present
         # But still create K_sample for barycentric correction
         K_sample = np.zeros(len(time_sample))
-        bjds = self.get_bjd(time_sample, self.conf["hip"])
+        bjds = self.get_bjd(time_sample)
         bcs = np.zeros(len(bjds))
 
 
@@ -370,7 +367,7 @@ class SimulationController():
 
         K_sample = np.zeros(len(time_sample))
 
-        bjds = self.get_bjd(time_sample, int(self.conf["hip"]))
+        bjds = self.get_bjd(time_sample)
         bcs = np.zeros(len(bjds))
 
         return N, N_local_min, N_local_max, rand_day_min, rand_day_max, N_periods, N_processes, P, K_sample, time_sample, bjds, bcs

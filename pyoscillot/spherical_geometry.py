@@ -291,6 +291,9 @@ def percentage_within_circle(x, y):
     
     percentages[edge_mask] = pct_border
     return percentages
+
+
+#### PLOT Functions to test the above ####
     
     
 def plot_test_weighting(phi, theta, xx, yy, zz, savename):

@@ -1,4 +1,3 @@
-from dataloader import phoenix_spectrum
 from utils import normalize_phoenix_spectrum_Rassine
 from pathlib import Path
 import matplotlib.pyplot as plt
