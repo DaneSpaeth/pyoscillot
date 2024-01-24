@@ -12,7 +12,7 @@ import cfg
 from time_sampling import sample_phase, load_presampled_times
 import carmenes_simulator as carmenes
 import harps_simulator as harps
-from theoretical_rvs import calc_theoretical_results
+from pyoscillot.sideprojects_scripts.theoretical_rvs import calc_theoretical_results
 
 
 class SimulationController():
@@ -43,9 +43,6 @@ class SimulationController():
 
     def create_rv_series(self):
         """ Create a fake RV series."""
-        # TODO later make that as a loop
-        # TODO: decide where to coadd different effects and loop over different
-        # mechanisms
         mode = self.conf[self.simulation_keys[0]]["mode"]
         if mode == "planet":
             self.simulate_planet()
@@ -82,9 +79,6 @@ class SimulationController():
 
 
 
-            # TODO REMOVE
-            # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
-
             global_dict = cfg.parse_global_ini()
             snr_directory = Path(
                 global_dict["datapath"]) / "CARMENES_VIS_SNR_profiles"
@@ -94,7 +88,7 @@ class SimulationController():
             except FileNotFoundError:
                 snr_profile = None
 
-            # TODO REMOVE
+            # Disable SNR profiles for the moment
             snr_profile = None
 
             order_levels = self.conf.get("order_levels", "star")
@@ -139,7 +133,6 @@ class SimulationController():
 
 
 
-            # TODO REMOVE
             # fits_template = global_dict["datapath"] / "CARMENES_template.fits"
 
             # global_dict = cfg.parse_global_ini()
@@ -151,7 +144,7 @@ class SimulationController():
             # except FileNotFoundError:
             #     snr_profile = None
 
-            # TODO REMOVE
+            # Disable SNR profiles for the moment
             snr_profile = None
 
             order_levels = self.conf.get("order_levels", "star")

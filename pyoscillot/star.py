@@ -204,8 +204,6 @@ class GridSpectrumSimulator():
         
             Also adjust the phase here.
         """
-        # TODO make these values adjustable
-        # t = phase / self.three_dim_star.nu
         # Adjust the phase, i.e. reftime corresponds to phase 0
         t -= refbjd
         self.three_dim_star.add_pulsation(t=t, l=l, m=m, nu=nu, v_p=v_p, k=k,

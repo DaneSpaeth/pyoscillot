@@ -4,13 +4,9 @@ from cfg import parse_global_ini, parse_ticket
 from datasaver import DataSaver
 import socket
 from datetime import datetime
-from theoretical_rvs import theoretical_main
 from create_nzp_files import create_nzp_file, create_ascii_file
 from pathlib import Path
-try:
-    from check_time_series import check_time_series
-except ModuleNotFoundError:
-    pass
+
 laptop = socket.gethostname() == "dane-ThinkPad-E460"
 
 
@@ -78,8 +74,6 @@ def main(ticket, run=True, serval=True, raccoon=True, run_laptop=False):
         print("Flux could not be copied!")
         pass
 
-        # check_time_series(name, reduction="serval")
-        # check_time_series(name, reduction="raccoon")
     stop = datetime.now()
     timedelta = stop - start
     minutes = timedelta.total_seconds() / 60

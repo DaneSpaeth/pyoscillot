@@ -89,7 +89,6 @@ def project_line_of_sight(phi, theta, values, component, inclination):
          -np.cos(np.radians(90 - inclination)),
          np.sin(np.radians(90 - inclination))))
     
-    # TODO think about which unit vector to use. Why does it matter?
     # Previous LOS vector
     # los = np.array(
     #     (0,
