@@ -15,7 +15,7 @@ def Gray_CB_model_names():
     return models
 
 def Gray_CB_model(model, debug_plot=False):
-    """ Fit a simple Pollux model. There is no deconvolution applied yet."""
+    """ Get a simple CB model from Gray05. There is no deconvolution applied yet."""
     
     # Take data from Gray05 table 4
     model_file = CB_Gray_dir / f"{model}.csv"
@@ -53,6 +53,8 @@ def Gray_CB_model(model, debug_plot=False):
     return mu_dict
 
 def deconvolved_Pollux_CB_model():
+    """ Deprecated for the moment"""
+    raise NotImplementedError
     """ Fit a simple Pollux model. There is no deconvolution applied yet."""
     df = pd.read_csv("/home/dspaeth/pyoscillot/data/CB_Pollux/Fe6253.csv")
     
@@ -117,7 +119,7 @@ def deconvolved_Pollux_CB_model():
     print(R_grid)
     
 def simple_ngc4349_CB_model():
-    """ Returnn a simple 2nd order polynomial model for the ngc4349-127 CB"""
+    """ Return a simple 2nd order polynomial model for the ngc4349-127 CB"""
     
     # Values were fitted from mean BIS of NGC4349-127
     poly_fit = Polynomial([-2.71849303, -275.15450218, 368.28014225])
