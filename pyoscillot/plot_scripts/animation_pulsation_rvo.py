@@ -191,9 +191,7 @@ def update_plots(ax, index, rv_dict, crx_dict, rvo_dict, instruments, lims):
 if __name__ == "__main__":
     root = Path("/home/dane/mounted_srv/simulations/fake_spectra")
     name = "pulsation_dT50"
-    # ticket = root / "pulsation_dT100" / "pulsation_dT100.ini"
-    # name = "HIP16335_l1m1_dT100"
-    ticket = root / name / f"{name}.ini"
+    ticket = root / "pulsation_dT100" / "pulsation_dT100.ini"
 
     print(ticket)
     animate_rv_lambda(ticket)

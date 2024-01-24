@@ -210,42 +210,6 @@ def granulation_map():
         # break
 
     return intensity
-
-
-def plot_central_order_intensitites():
-    color_dict = {"HIP73620": "green",
-                  "fake": "purple"}
-    for star, color in color_dict.items():
-        if star == "fake":
-            directory = Path(
-                f"/home/dane/Documents/PhD/pyoscillot/data/fake_spectra/hip16335_talk_refined_highres")
-        else:
-            directory = Path(
-                f"/home/dane/Documents/PhD/pyCARM/data/by_hip/{star}")
-        files = directory.glob("*vis_A.fits")
-        overall_mean_spec = []
-        for file in files:
-            (spec, cont, sig, wave) = carmenes_template(file)
-            mid_idx = int(spec.shape[1] / 2)
-            # mean_spec = np.mean(spec[:, mid_idx - 10:mid_idx + 10], axis=1)
-            mean_spec = np.nanmean(spec, axis=1)
-            mean_wave = wave[:, mid_idx]
-            mean_spec = mean_spec / np.max(mean_spec)
-            overall_mean_spec.append(mean_spec)
-
-        # overall_mean_spec = np.array(overall_mean_spec)
-        # mean_spec = np.mean(overall_mean_spec, axis=0)
-
-            plt.plot(mean_wave, mean_spec, label=star, color=color)
-
-    (spec, cont, sig, wave) = carmenes_template(file)
-    mid_idx = int(spec.shape[1] / 2)
-    mean_spec = np.mean(spec[:, mid_idx - 10:mid_idx + 10], axis=1)
-    mean_wave = wave[:, mid_idx]
-    mean_spec = mean_spec / np.max(mean_spec)
-    plt.plot(mean_wave, mean_spec, label="template", color="black")
-    plt.legend()
-    plt.show()
     
 def Rassine_outputs(Teff, logg, feh):
     """ Load precalculated Rassine outputs."""
