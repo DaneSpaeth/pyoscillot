@@ -43,47 +43,6 @@ def planck_ratio(wav, T_1, T_2):
     int_2 = planck(wav, T_2)
     return int_1 / int_2
 
-
-# def get_interpolated_spectrum(T_local,
-#                               ref_wave,
-#                               ref_spectra,
-#                               ref_headers=None):
-#     """ Return a potentially interpolated spectrum. Returns the same format as
-#         the phoenix spectrum.
-#     """
-
-#     T_low = int(np.floor(T_local / 100) * 100)
-#     T_high = int(np.ceil(T_local / 100) * 100)
-
-#     if T_low == T_high:
-#         # print("No Temperature Interpolation")
-#         spec = ref_spectra[T_low]
-#         header = ref_headers[T_low]
-#         wave = ref_wave
-#         return wave, spec, header
-#     else:
-
-#         # print(f"Use the given Reference Spectra at T={T_close}")
-#         assert ref_wave is not None, "Please add a Reference Wavelength using the ref_wave param"
-#         assert ref_headers is not None, "Please add the Reference headers using the ref_headers param"
-#         wave = ref_wave
-#         spec_low = ref_spectra[T_low]
-#         spec_high = ref_spectra[T_high]
-#         header = ref_headers[T_low]
-
-#         # Now interpolate with the contrast given by the Planck curves
-
-#         ratio_high = 1 - (np.abs(T_high - T_local)) / 100
-#         ratio_low = 1 - (np.abs(T_low - T_local)) / 100
-#         spec_low_interpol = spec_low * \
-#             planck_ratio(wave * 1e-10, T_local, T_low)
-#         spec_high_interpol = spec_high * \
-#             planck_ratio(wave * 1e-10, T_local, T_low)
-#         spec = (spec_low_interpol * ratio_low +
-#                 spec_high_interpol * ratio_high)
-
-#     return wave, spec, header
-
 def get_interpolated_spectrum(T_local,
                               ref_wave=None,
                               ref_spectra=None,
