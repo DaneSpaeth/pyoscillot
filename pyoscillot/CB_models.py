@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from numpy.polynomial import Polynomial
-import pandas as pd
 from cfg import conf_dict
 
 CB_Gray_dir = conf_dict["datapath"] / "CB_Gray05"
