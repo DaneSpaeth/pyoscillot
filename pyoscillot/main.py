@@ -185,6 +185,8 @@ if __name__ == "__main__":
     
     # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
+    tickets = [root / "functionality_test" / "functionality_test1.ini"]
+    
     for idx, ticket in enumerate(tickets):
         # if idx < 14:
         #     continue

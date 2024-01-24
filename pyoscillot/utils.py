@@ -12,8 +12,6 @@ import cfg
 from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, continuum
 from physics import delta_relativistic_doppler
 import copy
-
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 

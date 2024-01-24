@@ -7,7 +7,7 @@ from scipy.special import sph_harm
 import spherical_geometry as geo
 from matplotlib import cm
 from constants import SIGMA
-from pyoscillot.sideprojects_scripts.astrometric_jitter import calc_photocenter
+from sideprojects_scripts.astrometric_jitter import calc_photocenter
 import copy
 
 
@@ -243,15 +243,12 @@ class ThreeDimStar():
             self.normalization = 1
         elif normalization == "max_real":
             raise NotImplementedError
-            self.normalization = np.max(harmonic.real)
         elif normalization == "max_imaginary":
             self.normalization = np.max(harmonic.imag)
             # Fix for m=0 mode
             if self.normalization == 0:
                 self.normalization = np.max(harmonic.real)
             print(f"NORM={self.normalization}")
-            # print(harmonic)
-            # exit()
         elif normalization == "max_abs":
             raise NotImplementedError
             self.normalization = np.max(np.abs(harmonic))
@@ -392,7 +389,6 @@ class TwoDimProjector():
         rotation_2d = self._project(self.star.rotation,
                                     line_of_sight=self.line_of_sight,
                                     component="phi")
-        # return np.rint(rotation_2d).astype(int)
         return rotation_2d
 
 
@@ -478,7 +474,6 @@ class TwoDimProjector():
 
             Caution: Returns only real part
         """
-        # los = line of sight
         p = self.star.phi.flatten()
         t = self.star.theta.flatten()
         if self.line_of_sight:

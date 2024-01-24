@@ -126,7 +126,8 @@ def project_2d(x, y, z, phi, theta, values, N,
                azimuth=0, line_of_sight=False, return_grid_points=False,
                edge_extrapolation="nearest"):
     """ Project the 3d geometry onto a 2d plane.
-
+    
+    Inspired by:
     https://math.stackexchange.com/questions/2305792/3d-projection-on-a-2d-plane-weak-maths-ressources/2306853
     """
 

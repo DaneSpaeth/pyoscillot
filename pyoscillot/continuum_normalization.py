@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from dataloader import phoenix_spectrum, continuum
+from dataloader import continuum
 from scipy.interpolate import CubicSpline
 
 
