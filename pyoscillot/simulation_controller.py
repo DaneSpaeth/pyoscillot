@@ -475,23 +475,6 @@ class SimulationController():
             self.conf["max_wave"] + 10,
             mode=mode)
 
-        # if not Path(f"{name}/spectrum_0.0_0.npy").is_file():
-        #     # TODO REFACTOR
-        #     ref_star = GridSpectrumSimulator(
-        #         N_star=N_star, N_border=3,
-        #         Teff=int(self.conf["teff"]),
-        #         logg=float(self.conf["logg"]),
-        #         feh=float(self.conf["feh"]),
-        #         v_rot=v_rot, inclination=inclination,
-        #         limb_darkening=limb_darkening)
-        #     ref_wave, ref_spec, v = ref_star.calc_spectrum(self.conf["min_wave"] - 10,
-        #                                                    self.conf["max_wave"] + 10)
-        #     np.save(f"{name}/wave_{v}_{0}.npy", ref_wave)
-        #     np.save(f"{name}/spectrum_{v}_{0}.npy", ref_spec)
-
-        # Add doppler shift due to barycentric correction
-        # shift_wavelength = rest_wavelength + v / C * rest_wavelength
-
         # Save the arrays
         array_dict = star.get_arrays()
         self.saver.save_arrays(array_dict, bjd)
@@ -593,7 +576,7 @@ class SimulationController():
 
         return(f"Star {idx+1}/{N} finished")
 
-    def get_bjd(self, time_list, star, t_exp=60):
+    def get_bjd(self, time_list, t_exp=60):
         """ Get the BJD for times in time_list as UTC.
 
             At the moment I decide to set the barycentric correction to 0.
@@ -612,27 +595,11 @@ class SimulationController():
 
         jds = [jd.value for jd in jdutc_times]
 
-        # # Define the Calar Alto Observatory
-        # caha = observatories.calar_alto
-        # lat = float(caha["lat"].replace(" N", ""))
-        # lon = -float((caha["lon"].replace(" W", "")))
-        # alt = 2168.
-        #
-        # bjds = []
-        # for jdutc in jdutc_times:
-        #     try:
-        #         star = f"HIP{int(star)}"
-        #     except ValueError:
-        #         star = star
-        #     bjd_result = utc_tdb.JDUTC_to_BJDTDB(JDUTC=jdutc, starname=star,
-        #                                          lat=lat, longi=lon,
-        #                                          alt=alt, ephemeris='de430')
-        #     bjds.append(float(bjd_result[0]))
-
         # Skip all that calculation of the real bjd
         # Just set the bjd to jd
         # In this way we will be regularly sampled in bjd although that means that in reality the times and the
-        # bjd do not add up (but that is not really defined anyway)
+        # bjd do not add up precisely (but that is not really defined anyway)
+        # The difference between jds and bjds is typically on the order of seconds to max minutes
 
         jds = np.array(jds)
         bjds = jds.copy()
