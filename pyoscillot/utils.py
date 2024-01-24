@@ -440,6 +440,9 @@ def rebin(wold, sold, wnew):
 
     Ported to from rebin.pro (IDL) to Python by Frank Grundahl (FG).
     Original program written by Jeff Valenti.
+    
+    Within pyoscillot this function was taken from pyodine:
+    https://gitlab.com/Heeren/pyodine
 
     IDL Edit History:
     ; 10-Oct-90 JAV Create.
@@ -499,8 +502,8 @@ def rebin(wold, sold, wnew):
 
         dw = 0.5 * (wnew[2:] - wnew[:-2])  # Local pixel scale
 
-        pre = np.float(2.0 * dw[0] - dw[1])
-        post = np.float(2.0 * dw[nnew - 3] - dw[nnew - 4])
+        pre = float(2.0 * dw[0] - dw[1])
+        post = float(2.0 * dw[nnew - 3] - dw[nnew - 4])
 
         dw = np.append(dw[::-1], pre)[::-1]
         dw = np.append(dw, post)
@@ -508,7 +511,7 @@ def rebin(wold, sold, wnew):
 
         # Loop thru subpixels
         for i in range(0, xfac):
-            w[:, i] = wnew + dw * (np.float(2 * i + 1) / (2 * xfac) - 0.5)  # pixel centers in W
+            w[:, i] = wnew + dw * (float(2 * i + 1) / (2 * xfac) - 0.5)  # pixel centers in W
 
         nig = nnew * xfac  # Elements in interpolation grid
         w = np.reshape(w, nig)  # Make into 1-D

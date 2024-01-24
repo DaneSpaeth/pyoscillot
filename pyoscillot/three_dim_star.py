@@ -365,7 +365,7 @@ class TwoDimProjector():
         """ Return a 2D projected starmask."""
         starmask_2d = self._project(self.star.starmask, line_of_sight=False)
         starmask_2d[np.isnan(starmask_2d)] = 0
-        starmask_2d = starmask_2d.astype(np.bool)
+        starmask_2d = starmask_2d.astype(bool)
 
         return starmask_2d
 
@@ -374,7 +374,7 @@ class TwoDimProjector():
         spotmask_2d = self._project(self.star.spotmask, line_of_sight=False)
         spotmask_2d[spotmask_2d > 0] = 1
         spotmask_2d[np.isnan(spotmask_2d)] = 0
-        spotmask_2d = spotmask_2d.astype(np.bool)
+        spotmask_2d = spotmask_2d.astype(bool)
         return spotmask_2d
 
     def temperature(self):

@@ -40,10 +40,12 @@ def main(ticket, run=True, serval=True, raccoon=True, run_laptop=False):
             exit()
 
     # Run Reduction
-    try:
-        star = f"HIP{int(conf_dict['hip'])}"
-    except ValueError:
-        star = conf_dict['hip']
+    # try:
+    #     star = f"HIP{int(conf_dict['hip'])}"
+    # except ValueError:
+    #     star = conf_dict['hip']
+    star = conf_dict.get("star", "ngc4349-127")
+        
     instruments = conf_dict["instrument"].upper()
     if instruments == "ALL":
         reduce_CARMENES_VIS(global_dict, name, star, serval=serval, raccoon=raccoon)
@@ -185,7 +187,7 @@ if __name__ == "__main__":
     
     # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
-    tickets = [root / "functionality_test" / "functionality_test1.ini"]
+    tickets = [root / "functionality_test" / "functionality_test2.ini"]
     
     for idx, ticket in enumerate(tickets):
         # if idx < 14:
