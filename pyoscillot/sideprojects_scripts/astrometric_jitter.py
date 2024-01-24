@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
-from plapy.constants import SUN_RAD, PARSEC
+from constants import SUN_RAD, PARSEC
 
 
 def calc_photocenter(intensity_2d):

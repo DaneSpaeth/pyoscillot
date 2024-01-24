@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from plapy.constants import C
+from constants import C
 from utils import interpolate_to_restframe
 from pathlib import Path
 from scipy.optimize import least_squares, curve_fit

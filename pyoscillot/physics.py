@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import plapy.constants as const
-from plapy.constants import C
+import constants as const
 from dataloader import phoenix_spectrum
 from spline_interpolation import interpolate_on_temperature
 
@@ -273,7 +272,7 @@ def distance_from_px(img, row, col):
 
 def delta_relativistic_doppler(wave, v=None, v_c=None):
     if v_c is None:
-        v_c = v / C
+        v_c = v / const.C
     
     rel_wave_shift = np.sqrt((1 + v_c) / (1 - v_c))
     wave_shifted = wave * rel_wave_shift

@@ -2,10 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cfg import parse_ticket, parse_global_ini
 from three_dim_star import ThreeDimStar, TwoDimProjector
-import plapy.rv.dataloader as load
 import matplotlib.animation as animation
 from pathlib import Path
-from animation_pulsation import (
+from pyoscillot.plot_scripts.animation_pulsation import (
     COLOR_DICT, DATADIR, SPECTRADIR, get_data_and_lims, create_layout)
 
 global_dict = parse_global_ini()

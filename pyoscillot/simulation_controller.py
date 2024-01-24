@@ -3,8 +3,7 @@ import numpy as np
 from barycorrpy import utc_tdb
 from astropy.time import Time
 from concurrent.futures import ProcessPoolExecutor
-from plapy.obs import observatories
-from plapy.constants import C
+from constants import C
 from dataloader import phoenix_spectrum, phoenix_spec_intensity
 from datasaver import DataSaver
 from star import GridSpectrumSimulator

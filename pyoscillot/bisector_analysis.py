@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 from utils import bisector_new
-from plapy.constants import C
+from constants import C
 from star import GridStar
 
 ARRAY_ROOT = Path("/home/dane/Documents/PhD/pyoscillot/pyoscillot/arrays")

@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import numpy as np
+
 def read_in_rvs(file):
     """ Read in the rvs for the file. Return as pandas DataFrame."""
     bjd = []

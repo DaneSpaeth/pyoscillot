@@ -6,8 +6,8 @@ from scipy.spatial.transform import Rotation as Rot
 from scipy.special import sph_harm
 import spherical_geometry as geo
 from matplotlib import cm
-from plapy.constants import SIGMA
-from astrometric_jitter import calc_photocenter
+from constants import SIGMA
+from pyoscillot.sideprojects_scripts.astrometric_jitter import calc_photocenter
 import copy
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import gaussian, get_ref_spectra, add_limb_darkening, add_isotropic_convective_broadening
-from plapy.constants import C
+from constants import C
 from three_dim_star import ThreeDimStar, TwoDimProjector
 from physics import get_interpolated_spectrum, delta_relativistic_doppler
 from dataloader import Zhao_bis_polynomials
