@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 from astropy.convolution import convolve_fft, convolve
 from astropy.convolution import Gaussian1DKernel
 from scipy.interpolate import CubicSpline, interp1d
-from scipy.signal import periodogram
 from scipy.optimize import curve_fit
 import subprocess
 import pandas as pd
 from numpy.polynomial.polynomial import Polynomial
 from pathlib import Path
 import cfg
-from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, Zhao_bis_polynomials, continuum
+from dataloader import phoenix_spectrum, telluric_mask, phoenix_spec_intensity, Rassine_outputs, continuum
 from physics import delta_relativistic_doppler
 import copy
 

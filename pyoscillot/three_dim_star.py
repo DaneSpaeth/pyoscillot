@@ -154,10 +154,9 @@ class ThreeDimStar():
         self.pulsation_rad += pulsation
 
         # Caution temperature is not reset
+        # Old version (no normalization)
         # temp_variation = (displ * np.exp(1j * np.radians(T_phase))).real
         
-        # Discuss with Sabine
-        # TODO check here that you have the correct max
         temp_variation = T_var * (displ * np.exp(1j * np.radians(T_phase)) / np.max(harm.real)).real
 
         self.temperature += temp_variation

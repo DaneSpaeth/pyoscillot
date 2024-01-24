@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
-from scipy.signal import deconvolve
 import matplotlib.pyplot as plt
 from astropy.time import Time
 from dataloader import harps_template

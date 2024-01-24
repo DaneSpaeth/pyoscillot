@@ -1,5 +1,4 @@
 import numpy as np
-from pathlib import Path
 from cfg import parse_global_ini
 from dataloader import phoenix_spectrum, phoenix_wave
 

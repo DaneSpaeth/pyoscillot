@@ -10,7 +10,6 @@ from CB_models import Gray_CB_model, simple_ngc4349_CB_model
 import copy
 import cfg
 import photometry
-# Try to solve the memory leak but not working?
 import matplotlib
 matplotlib.use('Agg')
 
