@@ -499,7 +499,7 @@ def rebin(wold, sold, wnew):
 
     # Verify that new wavelength scale is a subset of old wavelength scale.
     if (wnew[0] < wold[0]) or (wnew[nnew - 1] > wold[nold - 1]):
-        logging.warning('New wavelength scale not subset of old.')
+        print('New wavelength scale not subset of old.')
 
     # Select integration or interpolation depending on change in dispersion.
 
