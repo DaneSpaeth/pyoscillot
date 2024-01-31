@@ -168,7 +168,7 @@ if __name__ == "__main__":
     
         
         
-    tickets = (sorted(list(grid_folder.rglob(f"{gridname}_*.ini")), reverse=True))
+    # tickets = (sorted(list(grid_folder.rglob(f"{gridname}_*.ini")), reverse=True))
     # print(len(tickets))
     # exit()
     
@@ -187,9 +187,17 @@ if __name__ == "__main__":
     
     # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
-    tickets = [root / "functionality_test" / "functionality_test2.ini"]
+    tickets = [root / "PAPER_NGC4349-127.ini"]
+    
     
     for idx, ticket in enumerate(tickets):
+        simname = ticket.name.replace(".ini","")
+        if Path(f"/data/dspaeth/pyoscillot_reduced/serval/SIMULATION/{simname}").is_dir():
+            print(f"SKIP {simname}")
+            continue
+        
+        # print(f"RUN {simname}")
+        # continue
         # if idx < 14:
         #     continue
         print("=======================================")
