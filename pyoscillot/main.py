@@ -187,7 +187,8 @@ if __name__ == "__main__":
     
     # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
-    tickets = [root / "PAPER_NGC4349-127.ini"]
+    tickets = [root / "PAPER_NGC4349-127_K-1.ini",
+               root / "PAPER_NGC4349-127_K-1_N300.ini"]
     
     
     for idx, ticket in enumerate(tickets):
