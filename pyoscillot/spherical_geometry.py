@@ -36,9 +36,9 @@ def x_y_z_to_sph(x, y, z):
     if x > 0:
         phi = np.arctan2(y, x)
     elif x < 0 and y >= 0:
-        phi = np.arctan(y/ x) + np.pi
+        phi = np.arctan(y / x) + np.pi
     elif x < 0 and y < 0:
-        phi = np.arctan(y/x) - np.pi
+        phi = np.arctan(y / x) - np.pi
     elif x == 0 and y > 0:
         phi = np.pi / 2
     elif x == 0 and y < 0:

@@ -245,6 +245,8 @@ class ThreeDimStar():
             raise NotImplementedError
         elif normalization == "max_imaginary":
             self.normalization = np.max(harmonic.imag)
+            # That the same as writing, tested 2024-01-31
+            # self.normalization = np.max((1j*harmonic).real))
             # Fix for m=0 mode
             if self.normalization == 0:
                 self.normalization = np.max(harmonic.real)
@@ -814,8 +816,23 @@ if __name__ == "__main__":
     
     # plot_rotation()
     
-    l = 2
-    m = -2
-    for t in [0, 75, 150, 225, 300, 375, 450, 525]:
-        plot_for_phd(t, l, m, vmax=2)
-
+    # l = 2
+    # m = -2
+    # for t in [0, 75, 150, 225, 300, 375, 450, 525]:
+    #     plot_for_phd(t, l, m, vmax=2)
+    
+    
+    # star = ThreeDimStar(N=1000)
+    # star.add_pulsation(l=1,m=1)
+    # exit()
+    
+    N = 1000
+    (phi,
+    theta,
+    _, _, _) = geo.get_spherical_phi_theta_x_y_z(N=N)
+    
+    for l in range(1, 10):
+        for m in range(-l, l+1):
+            print(l, m)
+            harm = sph_harm(m, l, phi, theta)
+            assert np.max(harm.imag) == np.max((1j*harm).real)
