@@ -24,7 +24,6 @@ def interpolate(spectrum, wavelength, debug_plot=False):
 
     interpol_spec = []
     R_real = 115000
-    # R_test = 130000
     print("Adjusting Resolution")
     spectrum_HARPS = adjust_resolution_per_pixel(wavelength, spectrum, R=R_real)
     
