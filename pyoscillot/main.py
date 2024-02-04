@@ -187,8 +187,17 @@ if __name__ == "__main__":
     
     # tickets = [Path("/home/dspaeth/pyoscillot/pyoscillot/tickets/PhD_parameter_grids/base_ngc4349_127.ini")]
     
-    tickets = [root / "PAPER_NGC4349-127_K-1.ini",
-               root / "PAPER_NGC4349-127_K-1_N300.ini"]
+    tickets = [root / "PAPER_NGC4349-127_K-1_phase_full_dT2p5_vp03.ini",
+               root / "PAPER_NGC4349-127_K-1_phase_full_dT0_vp03.ini"]
+    
+    lm_tickets = sorted(list((root / "UPDATED_PAPER_lm_grid").glob("*.ini")))
+    
+    tickets = tickets + lm_tickets
+    
+    # print(tickets)
+    # exit()
+    
+    tickets = [Path(                                                                                                                                                                                                                                                "/home/dspaeth/pyoscillot/pyoscillot/tickets/UPDATED_PAPER_lm_grid/updated_paper_lm_grid_l1m0_dT0.ini")]
     
     
     for idx, ticket in enumerate(tickets):
