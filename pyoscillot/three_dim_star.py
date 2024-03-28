@@ -831,8 +831,11 @@ if __name__ == "__main__":
     theta,
     _, _, _) = geo.get_spherical_phi_theta_x_y_z(N=N)
     
-    for l in range(1, 10):
-        for m in range(-l, l+1):
-            print(l, m)
-            harm = sph_harm(m, l, phi, theta)
-            assert np.max(harm.imag) == np.max((1j*harm).real)
+    l = 1
+    for m in range(-l, l+1):
+        print(l, m)
+        harm = sph_harm(m, l, phi, theta)
+        # print(np.max(harm.imag))
+        # print(np.max(harm.real))
+        print(np.max((1j*harm).real))
+        assert np.max(harm.imag) == np.max((1j*harm).real)

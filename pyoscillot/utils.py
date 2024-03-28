@@ -48,11 +48,11 @@ def bisector(wavelength, spectrum):
     search_for = np.linspace(np.max(spectrum) - 0.05 * np.abs((np.max(spectrum) - np.min(spectrum))),
                              np.min(spectrum) + 0.01, 50)
     max_idx = np.argmin(spectrum)
-    left_spectrum = spectrum[0:max_idx]
+    left_spectrum = spectrum[0:max_idx-2]
     # print(wavelength[max_idx])
-    left_wavelength = wavelength[0:max_idx]
-    right_spectrum = spectrum[max_idx:]
-    right_wavelength = wavelength[max_idx:]
+    left_wavelength = wavelength[0:max_idx-2]
+    right_spectrum = spectrum[max_idx+2:]
+    right_wavelength = wavelength[max_idx+2:]
     for s in search_for:
         # print(s)
         # diff_left = np.abs(left_spectrum - s)
@@ -117,7 +117,7 @@ def bisector_new(wave, spec, skip=2):
 def _gauss_continuum(x, mu, sigma, amplitude, continuum):
     return continuum - (amplitude * np.exp(-(x - mu) ** 2 / 2 / sigma ** 2))
 
-def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1, continuum=1.0, cutoff_high=0.97):
+def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1, continuum=1.0, cutoff_high=0.97, low_lim=0.03, continuum_lim=0.9, expected_width=0.05, num_widths=2.5, nr_points=75):
     """ Calculate the bisector of a line centered around line_center with width width.
 
         :param np.array wave: Array of wavelengths. Same unit as line_center and outlier_clip
@@ -130,7 +130,6 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     bisector_waves = []
     bisector_flux = []
 
-    num_widths = 2.5
 
     mask = np.logical_and(wave >= line_center - num_widths * np.abs(width),
                           wave <= line_center + num_widths * np.abs(width))
@@ -147,9 +146,10 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     # Let's fit the minimum again to cut off the lower 10%
     # Try to only fit the very center of the line
     cutoff = 0.2
-    expected = (line_center, 0.05, cutoff, cutoff)
+    expected = (line_center, expected_width, cutoff, cutoff)
     min_sp = np.min(spec_line)
     mask = spec_line < min_sp + cutoff
+    
     try:
         params, cov = curve_fit(_gauss_continuum, wave_line[mask], spec_line[mask], expected)
     
@@ -158,14 +158,15 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
         center = params[0]
     except RuntimeError:
         min_flux = np.min(spec_line)
+        
     center = line_center
-    
 
     # Amount of datapoints to skip from the bottom
     left_wave = wave_line[wave_line < center]
     left_spec = spec_line[wave_line < center]
     right_wave = wave_line[wave_line > center]
     right_spec = spec_line[wave_line > center]
+    
 
     # make both array strictly increasing for the right part
     incr_mask = np.diff(right_spec) > 0
@@ -198,7 +199,7 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     elif interpolation == "linear":
         left_cs = interp1d(np.flip(left_spec), np.flip(left_wave), fill_value="extrapolate")
         right_cs = interp1d(right_spec, right_wave, fill_value="extrapolate")
-    lin_sp = np.linspace(np.min(spec_line), np.max(spec_line), 75)
+    lin_sp = np.linspace(np.min(spec_line), np.max(spec_line), nr_points)
     # lin_sp = np.flip(left_wave)
 
     left = left_cs(lin_sp)
@@ -212,7 +213,7 @@ def bisector_on_line(wave, spec, line_center, width=1, skip=0, outlier_clip=0.1,
     bisector_waves[~outlier_mask] = np.nan
     bisector_flux[~outlier_mask] = np.nan
     
-    mask = np.logical_and(bisector_flux >= min_flux +  0.03, bisector_flux < 0.9 * continuum)
+    mask = np.logical_and(bisector_flux >= min_flux +  low_lim, bisector_flux < continuum_lim * continuum)
     bisector_waves[~mask] = np.nan
     bisector_waves[~mask] = np.nan
 

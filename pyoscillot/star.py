@@ -98,20 +98,45 @@ class GridSpectrumSimulator():
                                        wavelength_range=wavelength_range,
                                        spec_intensity=True)
         elif mode == "gaussian":
-            print("Gaussian mode")
+            print("Gaussian mode. Just meant for testing!")
             # Does not work with Temperature variations at the moment
             center = 7000  # A
+            
+            T_grid = copy.deepcopy(self.temperature)
+            T_grid = T_grid[~np.isnan(T_grid)]
+            T_grid = T_grid[T_grid > 0]
+            T_grid = np.round(T_grid, -2)
+            T_unique = np.unique(T_grid)
+            T_unique = T_unique.astype(int)
+            
 
-            rest_wavelength = np.linspace(
-                center - 0.7, center + 0.7, 10000)
-            spec = 1 - gaussian(rest_wavelength, center, 0.2)
-            ref_spectra = {self.Teff: spec}
-            ref_headers = {self.Teff: []}
+            # Append the next lowest and next highest values as well
+            T_unique = np.insert(T_unique, 0, T_unique[0] - 100)
+            T_unique = np.append(T_unique, T_unique[-1] + 100)
+            
+
+            # And now define a grid from the lowest to the highest value with all full 100s
+
+            T_unique = np.linspace(np.min(T_unique), np.max(T_unique), int(
+                (np.max(T_unique) - np.min(T_unique)) / 100) + 1, dtype=int)
+
+            rest_wavelength = np.arange(
+                center - 5, center + 5, 0.012)
+            spec = 1 - gaussian(rest_wavelength, center, 0.1/2.3548)
+            
+            # plt.plot(rest_wavelength, spec, color="red")
+            # plt.savefig("dbug.png")
+            # exit()
+            ref_spectra = {}
+            ref_headers = {}
+            for T in T_unique:
+                ref_spectra[T] = spec
+                ref_headers[T] = []
             ref_mu = None
 
         return rest_wavelength, ref_spectra, ref_headers, ref_mu
 
-    def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix"):
+    def calc_spectrum(self, min_wave=5000, max_wave=12000, mode="phoenix", skip_V_flux=False):
         """ Return Spectrum (potentially Doppler broadened) from min to max.
 
             :param float min_wave: Minimum Wavelength (Angstrom)
@@ -166,13 +191,15 @@ class GridSpectrumSimulator():
                                                                      limb_dark=self.limb_dark,
                                                                      v_macro=self.v_macro,
                                                                      mean_limb_dark=self.mean_limb_dark,
-                                                                     weights=weights)
+                                                                     weights=weights,
+                                                                     mode=mode)
         self.spectrum = total_spectrum
         self.wavelength = rest_wavelength
 
         # Also calculate the fluxes
-        self.calc_flux()
-        self.calc_V_flux()
+        if mode == "phoenix" and not skip_V_flux:
+            self.calc_flux()
+            self.calc_V_flux()
 
         return rest_wavelength, total_spectrum, v_total
 
@@ -229,7 +256,8 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
                       rest_wavelength, ref_spectra, ref_headers, T_precision_decimals,
                       logg, feh, 
                       change_bis=False, convective_blueshift_model="alpha_boo", 
-                      limb_dark=False, v_macro=0, mean_limb_dark=None, weights=None):
+                      limb_dark=False, v_macro=0, mean_limb_dark=None, weights=None,
+                      mode="phoenix"):
     """ Compute the spectrum.
 
         Does all the heavy lifting
@@ -333,14 +361,18 @@ def _compute_spectrum(temperature, rotation, pulsation, granulation, mu,
             print(f"Needed mu angles for temperature {fine_ref_temperature}={needed_mus}")
             # print(f"Compute new fine_ref_spectrum for Temp={temp}K")
             # We get a dictionary of {mu:spec} for each temperature
-            _, fine_ref_spectra_dict, _ = get_interpolated_spectrum(temp,
-                                                                    ref_wave=rest_wavelength,
-                                                                    ref_spectra=ref_spectra,
-                                                                    ref_headers=ref_headers,
-                                                                    mu_angles=needed_mus,
-                                                                    logg=logg,
-                                                                    feh=feh,
-                                                                    interpolation_mode="cubic_spline")
+            
+            if mode == "phoenix":
+                _, fine_ref_spectra_dict, _ = get_interpolated_spectrum(temp,
+                                                                        ref_wave=rest_wavelength,
+                                                                        ref_spectra=ref_spectra,
+                                                                        ref_headers=ref_headers,
+                                                                        mu_angles=needed_mus,
+                                                                        logg=logg,
+                                                                        feh=feh,
+                                                                        interpolation_mode="cubic_spline")
+            elif mode == "gaussian":
+                fine_ref_spectra_dict = {1.0: ref_spectra[temp]}
             
             # We now have T interpolated PHOENIX spectra
             # We choose to apply the LD correction after the T interpolation to allow
@@ -465,11 +497,15 @@ if __name__ == "__main__":
     Teff = 4500
     logg = 2
     feh = 0.0
-    star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=True, v_macro=0)
-    star.add_pulsation()
-    wave, spec, _ = star.calc_spectrum(min_wave=3600, max_wave=7150)
+    star = GridSpectrumSimulator(N_star=150, Teff=Teff, logg=logg, feh=feh, limb_darkening=False, convective_blueshift=False, v_macro=0)
+    star.add_pulsation(v_p=100, k=0.15, T_var=0)
+    wave, spec, _ = star.calc_spectrum(min_wave=3600, max_wave=7150, mode="gaussian")
     
-    print(spec)
+    from utils import bisector_on_line
+    plt.plot(wave, spec)
+    bisector_waves, bisector_flux, left_wave, left_spec, right_wave, right_spec = bisector_on_line(wave, spec, 7000, 1.0)
+    plt.plot(bisector_waves, bisector_flux)
+    plt.savefig("dbug.png")
     
     
     #### To TEST the Limb Darkening ####
