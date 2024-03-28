@@ -15,23 +15,27 @@ gridname = "NGC4349_l2_m-2_vp_grid"
     # gridname = "NGC4349_l2_m-2_vp_grid"
     
 PhD_root = TICKETROOT / "PhD_parameter_grids"
-gridname = "PhD_param_grid_Tphase"
+gridname = "PhD_param_grid_k"
 grid_folder = PhD_root / gridname
 if not grid_folder.is_dir():
     grid_folder.mkdir()
     
-baseticket = TICKETROOT / gridname / "base.ini"
+# baseticket = TICKETROOT / gridname / "base.ini"
+# pyoscillot/tickets/TICKETS_USED_FOR_PAPER/PAPER_NGC4349-127_K-1_phase_full_dT2p5_vp03.ini was copied
 baseticket = PhD_root / "base_ngc4349_127.ini"
 
 ROOT = PhD_root
 
 # First round
 # Now based on nr 40 before
-# v_ps = [0.1 + i*0.1 for i in range(10)]
+v_ps = [0.1 + i*0.1 for i in range(10)]
 
 # Second round, based of 01 but still slightly smaller
 # v_p = 0.18
 v_rots = [500 + i*500 for i in range(12)]
+v_macros = [500 + i*500 for i in range(16)]
+
+ks = [0 + i*500 for i in range(10)]
 
 # # New test grid, based on 15 -> smaller dTs and smaller v_rot
 
@@ -40,6 +44,7 @@ v_rots = [500 + i*500 for i in range(12)]
 dTs = np.array([0.0 + i*1.0 for i in range(16)])
 
 T_phases = [0. + i*30. for i in range(12)]
+inclinations = [0 + i*15 for i in range(0, 7)]
 
 # dTs, v_rots = np.meshgrid(dTs, v_rots)
 
@@ -77,7 +82,7 @@ T_phases = [0. + i*30. for i in range(12)]
 
 idx_plus = 0
 
-for idx, (T_phase) in enumerate(T_phases):
+for idx, (k) in enumerate(ks):
     idx_plus +=1
     # if dT == 10:
     #     # No need to run these models 
@@ -90,12 +95,14 @@ for idx, (T_phase) in enumerate(T_phases):
     config["GLOBAL"]["name"] = simname
     config["GLOBAL"]["date"] = datetime.today().strftime("%d.%m.%Y")
     # config["GLOBAL"]["v_rot"] = str(v_rot)
+    # config["GLOBAL"]["v_macro"] = str(v_macro)
     # config["pulsation"]["v_p"] = str(round(v_p,3))
-    # config["GLOBAL"]["inclination"] = str(inclination)
+    # config["GLOBAL"]["inclination"] = str(i)
     # config["pulsation"]["dt"] = str(round(dT, 1))
-    config["pulsation"]["t_phase"] = str(T_phase)
+    # config["pulsation"]["t_phase"] = str(T_phase)
     # config["pulsation"]["l"] = str(l)
     # config["pulsation"]["m"] = str(m)
+    config["pulsation"]["k"] = str(k)
     
     # config["pulsation"]["v_p"] = str(v_p)
     
