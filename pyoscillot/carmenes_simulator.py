@@ -2,7 +2,7 @@ import numpy as np
 from astropy.time import Time
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter1d
-from utils import adjust_resolution, rebin
+from utils import adjust_resolution, rebin, adjust_resolution_per_pixel
 from dataloader import carmenes_template
 from physics import energy_flux_to_photon_flux
 
@@ -30,32 +30,31 @@ def interpolate(spectrum, wavelength, template_file=None,
         snr_per_order = snr_profile * target_max_snr
 
     # Convert from Energy flux to photon flux
-    spectrum = energy_flux_to_photon_flux(wavelength, spectrum)
+    # spectrum = energy_flux_to_photon_flux(wavelength, spectrum)
 
     new_spec = []
     # if channel == "VIS":
     #     spectrum = adjust_resolution(wavelength, spectrum, R=94600, w_sample=5)
     # else:
     #     spectrum = adjust_resolution(wavelength, spectrum, R=80400, w_sample=5)
+    if channel == "VIS":
+        spectrum_CARM = adjust_resolution_per_pixel(wavelength, spectrum, R=94600)
+    elif channel == "NIR":
+        spectrum_CARM = adjust_resolution_per_pixel(wavelength, spectrum, R=80400)
+    else:
+        raise ValueError(f"channel must be one of (VIS, NIR)")
     for order in range(len(wave_templ)):
-
-        # print(f"Order={order}")
-        # print(
-        #    f"Wavelength Range=({np.min(wave_templ[order]), np.max(wave_templ[order])})")
 
         order_spec = []
         # func = interp1d(wavelength, spectrum, kind="cubic")
         # order_spec = func(wave_templ[order])
-        print("Adjust resolution for each order")
         min_wave = np.min(wave_templ[order]) - 5
         max_wave = np.max(wave_templ[order]) + 5
         mask_low = wavelength > min_wave
         mask_high = wavelength < max_wave
         mask = np.logical_and(mask_low, mask_high)
         wave_order = wavelength[mask]
-        spec_order = spectrum[mask]
-        spec_order = adjust_resolution(wave_order, spec_order, R=94600, w_sample=5)
-        print("Rebin instead of interpolating")
+        spec_order = spectrum_CARM[mask]
         order_spec = rebin(wave_order, spec_order, wave_templ[order])
 
         if order_levels == "star":

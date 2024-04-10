@@ -199,7 +199,10 @@ class GridSpectrumSimulator():
         # Also calculate the fluxes
         if mode == "phoenix" and not skip_V_flux:
             self.calc_flux()
-            self.calc_V_flux()
+            try:
+                self.calc_V_flux()
+            except AssertionError as e:
+                print(f"V band flux could not be calculated due to {e}")
 
         return rest_wavelength, total_spectrum, v_total
 

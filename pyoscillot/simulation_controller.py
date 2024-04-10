@@ -38,6 +38,9 @@ class SimulationController():
 
         self.simulation_keys = simulation_keys
         self.instrument = config_dict["instrument"]
+        allowed_instruments = ("HARPS", "CARMENES_VIS", "CARMENES_NIR", "CARMENES", "ALL", "RAW")
+        msg = f"instrument parameter must be one of {allowed_instruments}. Make sure to not use quotes in the instrument definition"
+        assert self.instrument in allowed_instruments, msg
 
     def create_rv_series(self):
         """ Create a fake RV series."""
@@ -61,30 +64,32 @@ class SimulationController():
             # Determine the template and SNR file from the star name
             # NOTE: AT THE MOMENT ONLY THE NAME IS CHECKED AND NOT THE
             # TEMPERATURE OR SO
-            try:
-                hip = int(self.conf["hip"])
-                star = f"HIP{hip}"
-            except ValueError:
-                star = self.conf["hip"]
+            # try:
+            #     hip = int(self.conf["hip"])
+            #     star = f"HIP{hip}"
+            # except ValueError:
+            #     star = self.conf["hip"]
 
             global_dict = cfg.parse_global_ini()
-            template_directory = Path(
-                global_dict["datapath"]) / "CARMENES_VIS_templates"
-            fits_template = template_directory / \
-                f"CARMENES_template_{star}.fits"
-            if not fits_template.is_file():
-                fits_template = None
+            # template_directory = Path(
+            #     global_dict["datapath"]) / "CARMENES_VIS_templates"
+            # fits_template = template_directory / \
+            #     f"CARMENES_template_{star}.fits"
+            # if not fits_template.is_file():
+            #     fits_template = None
+            
+            fits_template = global_dict["datapath"] / "CARMENES_VIS_template.fits"
 
 
 
-            global_dict = cfg.parse_global_ini()
-            snr_directory = Path(
-                global_dict["datapath"]) / "CARMENES_VIS_SNR_profiles"
-            snr_file = snr_directory / f"{star}.npy"
-            try:
-                snr_profile = np.load(snr_file)
-            except FileNotFoundError:
-                snr_profile = None
+            # global_dict = cfg.parse_global_ini()
+            # snr_directory = Path(
+            #     global_dict["datapath"]) / "CARMENES_VIS_SNR_profiles"
+            # snr_file = snr_directory / f"{star}.npy"
+            # try:
+            #     snr_profile = np.load(snr_file)
+            # except FileNotFoundError:
+            #     snr_profile = None
 
             # Disable SNR profiles for the moment
             snr_profile = None
@@ -115,19 +120,21 @@ class SimulationController():
             # Determine the template and SNR file from the star name
             # NOTE: AT THE MOMENT ONLY THE NAME IS CHECKED AND NOT THE
             # TEMPERATURE OR SO
-            try:
-                hip = int(self.conf["hip"])
-                star = f"HIP{hip}"
-            except ValueError:
-                star = self.conf["hip"]
+            # try:
+            #     hip = int(self.conf["hip"])
+            #     star = f"HIP{hip}"
+            # except ValueError:
+            #     star = self.conf["hip"]
 
-            global_dict = cfg.parse_global_ini()
-            template_directory = Path(
-                global_dict["datapath"]) / "CARMENES_NIR_templates"
-            fits_template = template_directory / \
-                f"CARMENES_template_{star}.fits"
-            if not fits_template.is_file():
-                fits_template = Path(global_dict["datapath"] / "CARMENES_NIR_template.fits")
+            # global_dict = cfg.parse_global_ini()
+            # template_directory = Path(
+            #     global_dict["datapath"]) / "CARMENES_NIR_templates"
+            # fits_template = template_directory / \
+            #     f"CARMENES_template_{star}.fits"
+            # if not fits_template.is_file():
+            #     fits_template = Path(global_dict["datapath"] / "CARMENES_NIR_template.fits")
+            
+            fits_template = global_dict["datapath"] / "CARMENES_NIR_template.fits"
 
 
 

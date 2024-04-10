@@ -295,21 +295,27 @@ def V_band_filter():
 
 
 if __name__ == "__main__":
-    fig, ax = plt.subplots(1, figsize=(16,9))
-    wave, spec, header = phoenix_spectrum(4000, 3.0, 0.0, wavelength_range=(3000, 12000))
+    # fig, ax = plt.subplots(1, figsize=(16,9))
+    # wave, spec, header = phoenix_spectrum(4000, 3.0, 0.0, wavelength_range=(3000, 12000))
     
-    ax.plot(wave, spec, lw=0.2, label="T=4000K")
+    # ax.plot(wave, spec, lw=0.2, label="T=4000K")
     
-    wave, spec, header = phoenix_spectrum(5000, 3.0, 0.0, wavelength_range=(3000, 12000))
+    # wave, spec, header = phoenix_spectrum(5000, 3.0, 0.0, wavelength_range=(3000, 12000))
     
-    ax.plot(wave, spec, lw=0.2, label="T=5000K")
+    # ax.plot(wave, spec, lw=0.2, label="T=5000K")
     
-    wave, spec, header = phoenix_spectrum(6000, 3.0, 0.0, wavelength_range=(3000, 12000))
+    # wave, spec, header = phoenix_spectrum(6000, 3.0, 0.0, wavelength_range=(3000, 12000))
     
-    ax.plot(wave, spec, lw=0.2, label="T=6000K")
+    # ax.plot(wave, spec, lw=0.2, label="T=6000K")
     
-    ax.set_xlabel(r"Wavelength [$\AA$]")
-    ax.set_ylabel("Flux [erg/s/cm^2/cm]")
-    ax.legend()
-    fig.set_tight_layout(True)
-    plt.savefig("PHOENIX_spec.png", dpi=300)
+    # ax.set_xlabel(r"Wavelength [$\AA$]")
+    # ax.set_ylabel("Flux [erg/s/cm^2/cm]")
+    # ax.legend()
+    # fig.set_tight_layout(True)
+    # plt.savefig("PHOENIX_spec.png", dpi=300)
+    
+    
+    (spec, cont, sig, wave) = carmenes_template("CARMENES_NIR_template.fits")
+    
+    print(wave[0])
+    exit()

@@ -5,8 +5,8 @@ import numpy as np
 def V_band_flux(wave, spec):
     """ Calculate the flux in the Bessel V band"""
     filter_wave, filter_curve = V_band_filter()
-    assert wave[0] < filter_wave[0], "Your wavelength array starts before the V band range"
-    assert wave[-1] > filter_wave[-1], "Your wavelength array ends after the V band range"
+    assert wave[0] < filter_wave[0], "Your wavelength array starts after the V band range"
+    assert wave[-1] > filter_wave[-1], "Your wavelength array ends before the V band range"
     
     # Interpolate the filter range
     interp_filter = interp1d(filter_wave, filter_curve, kind="linear", fill_value=0.0)

@@ -904,7 +904,7 @@ def remove_phoenix_bisector(wave, spec, Teff, logg, FeH,
                                     logg, 
                                     FeH, 
                                     debug_plot=False,
-                                    bis_plot=True, 
+                                    bis_plot=False, 
                                     limb_dark_continuum=limb_dark_continuum)
     
     # First normalize the spectrum
