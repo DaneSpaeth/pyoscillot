@@ -15,20 +15,20 @@ if [ $INST = "CARMENES_VIS" ]
 then
 
   # First create the new mask using the SERVAL template
-  raccoonmask $RVLIBPATH/serval/SIMULATION/$SIMNAME/CARMENES_VIS/$SIMNAME.fits serval $STAR \
-    --inst CARM_VIS \
-    --tplrv 0 \
-    --cont poly \
-    --contfiltmed 1 \
-    --contfiltmax 400 \
-    --contpolyord 2 \
-    --line_fwhmmax 30.00 \
-    --line_contrastminmin 0.06 \
-    --line_depthw_percentdeepest 0.10 \
-    --line_depthw_depthmaxquantile 0.6 \
-    --dirout $RACCOONDATADIR/mask/CARM_VIS/$SIMNAME --verbose
+  # raccoonmask $RVLIBPATH/serval/SIMULATION/$SIMNAME/CARMENES_VIS/$SIMNAME.fits serval $STAR \
+  #   --inst CARM_VIS \
+  #   --tplrv 0 \
+  #   --cont poly \
+  #   --contfiltmed 1 \
+  #   --contfiltmax 400 \
+  #   --contpolyord 2 \
+  #   --line_fwhmmax 30.00 \
+  #   --line_contrastminmin 0.06 \
+  #   --line_depthw_percentdeepest 0.10 \
+  #   --line_depthw_depthmaxquantile 0.6 \
+  #   --dirout $RACCOONDATADIR/mask/CARM_VIS/$SIMNAME --verbose
   raccoonccf \
-      $DATAPATH/fake_spectra/$SIMNAME/$INST/*.fits \
+      $DATAPATH/$SIMNAME/$INST/*.fits \
       CARM_VIS \
       $RACCOONDATADIR/mask/CARM_VIS/$SIMNAME/$SIMNAME.mas \
       --filtell $RACCOONDATADIR/tellurics/CARM_VIS/telluric_mask_carm_short.dat \
@@ -56,7 +56,7 @@ then
     --dirout $RACCOONDATADIR/mask/CARM_NIR/$SIMNAME --verbose
 
   raccoonccf \
-      $DATAPATH/fake_spectra/$SIMNAME/$INST/*.fits \
+      $DATAPATH/$SIMNAME/$INST/*.fits \
       CARM_NIR \
       $RACCOONDATADIR/mask/CARM_NIR/$SIMNAME/$SIMNAME.mas \
       --filtell $RACCOONDATADIR/tellurics/CARM_NIR/telluric_mask_nir4.dat \

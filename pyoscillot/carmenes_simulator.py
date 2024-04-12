@@ -33,10 +33,6 @@ def interpolate(spectrum, wavelength, template_file=None,
     # spectrum = energy_flux_to_photon_flux(wavelength, spectrum)
 
     new_spec = []
-    # if channel == "VIS":
-    #     spectrum = adjust_resolution(wavelength, spectrum, R=94600, w_sample=5)
-    # else:
-    #     spectrum = adjust_resolution(wavelength, spectrum, R=80400, w_sample=5)
     if channel == "VIS":
         spectrum_CARM = adjust_resolution_per_pixel(wavelength, spectrum, R=94600)
     elif channel == "NIR":

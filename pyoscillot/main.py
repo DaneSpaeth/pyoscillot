@@ -197,9 +197,12 @@ if __name__ == "__main__":
     # tickets = [Path(                                                                                                                                                                                                                                                "/home/dspaeth/pyoscillot/pyoscillot/tickets/UPDATED_PAPER_lm_grid/updated_paper_lm_grid_l1m0_dT0.ini")]
     grid_folder = root / "PhD_parameter_grids"
     
-    tickets = list(sorted(grid_folder.rglob("*.ini")))
+    # tickets = [root / "CHECK_PHOTON_FLUX_NGC4349-127_K-1_phase_full_dT2p5_vp03.ini"]
     
+    tickets = []
+    # tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMVIS.ini")))
     
+    tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMNIR.ini")))
     
     
     for idx, ticket in enumerate(tickets):
@@ -221,7 +224,8 @@ if __name__ == "__main__":
         #     continue
         try:
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
-        except:
+        except Exception as e:
+            raise e
             print(f"TICKET {ticket.stem} failed!")
             continue
         

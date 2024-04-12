@@ -133,6 +133,7 @@ class SimulationController():
             #     f"CARMENES_template_{star}.fits"
             # if not fits_template.is_file():
             #     fits_template = Path(global_dict["datapath"] / "CARMENES_NIR_template.fits")
+            global_dict = cfg.parse_global_ini()
             
             fits_template = global_dict["datapath"] / "CARMENES_NIR_template.fits"
 

@@ -1230,12 +1230,15 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
         
         # The pixel scale is constant but has jumps at 5000, 10000 and 15000 A
         scale_jumps = [0, 5000, 10000, 15000, 20000]
+        # The Pixel scale dict always represents the diff of the wavelength of the PHOENIX spectrum
+        # up until the key, i.e. from between 5000 and 10000 AA, the pixel scale is 0.01
         pixel_scales_dict = {0: None,
                              5000: 0.006,
                              10000: 0.01,
-                             15000: 0.03,
-                             20000: None}
+                             15000: 0.02,
+                             20000: 0.03}
         scale_jumps = [sj for sj in scale_jumps if sj < wave[-1] + 5000 and sj > wave[0] - 5000]
+        print(f"scale_jumps to use={scale_jumps}")
         
         scale_jump_px = [(np.abs(wave-sj)).argmin() for sj in scale_jumps]
         
@@ -1250,6 +1253,9 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             wave_start=wave_local[0]
             wave_stop=wave_local[-1]
             pixel_scale_local = pixel_scales_dict[scale_jumps[jump_interval]]
+            
+            
+            print(f"Local Pixel scale={pixel_scale_local} for wavelength {wave_start}-{wave_stop}")
         
             
             delta_wave_local = delta_wave[last_idx:idx]
@@ -1432,26 +1438,30 @@ def oversampled_wave_interpol(rest_wave, wave, spec):
 
 
 if __name__ == "__main__":
-    wave, spec, header = phoenix_spectrum()
+    wave, spec, header = phoenix_spectrum(wavelength_range=(9000, 17300))
     
-    mask = np.logical_and(wave>4900, wave<5100)
+    add_isotropic_convective_broadening(wave, spec, v_macro=5000)
+    
+    
+    
+    # mask = np.logical_and(wave>4900, wave<5100)
+    # # wave = wave[mask]
+    # # spec = spec[mask]
+    # spec_R = add_isotropic_convective_broadening(wave, spec, v_macro=5000)
+    
+    # fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+    # ax.plot(wave, spec, "bx")
+    # ax.plot(wave, spec_R, "r*")
+    
+    # mask = np.logical_and(wave>4999, wave<5001)
     # wave = wave[mask]
     # spec = spec[mask]
-    spec_R = add_isotropic_convective_broadening(wave, spec, v_macro=5000)
+    # spec_R = spec_R[mask]
+    # print(wave[spec_R.argmin()])
+    # print(wave[spec.argmin()])
     
-    fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
-    ax.plot(wave, spec, "bx")
-    ax.plot(wave, spec_R, "r*")
-    
-    mask = np.logical_and(wave>4999, wave<5001)
-    wave = wave[mask]
-    spec = spec[mask]
-    spec_R = spec_R[mask]
-    print(wave[spec_R.argmin()])
-    print(wave[spec.argmin()])
-    
-    ax.set_xlim(4999, 5001)
+    # ax.set_xlim(4999, 5001)
     
     
     
-    plt.savefig("dbug.png", dpi=300)
+    # plt.savefig("dbug.png", dpi=300)
