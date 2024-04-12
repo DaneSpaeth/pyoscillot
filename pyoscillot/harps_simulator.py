@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from astropy.time import Time
 from dataloader import harps_template
 from utils import adjust_resolution_per_pixel, _gauss_continuum, bisector_on_line, rebin
+from physics import energy_flux_to_photon_flux
 import cfg
 from pathlib import Path
 from PyAstronomy import pyasl
@@ -22,10 +23,14 @@ def interpolate(spectrum, wavelength, debug_plot=False):
                                                         wave_filename="HARPS_template_ngc4349_127_wave_A.fits",
                                                         blaze_filename="HARPS_template_ngc4349_127_blaze_A.fits")
 
+    # TODO Test if it makes a difference
+    # spectrum = energy_flux_to_photon_flux(wavelength*1e-10, spectrum)
+    
     interpol_spec = []
     R_real = 115000
     print("Adjusting Resolution")
     spectrum_HARPS = adjust_resolution_per_pixel(wavelength, spectrum, R=R_real)
+    
     
     # HARPS works in air wavelengths
     wavelength_air = pyasl.vactoair2(wavelength)
@@ -210,14 +215,20 @@ if __name__ == "__main__":
     # wavefile = "/data/dspaeth/pyoscillot_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/wavelength/2453404.7841431363.npy"
     # specfile = "/data/dspaeth/pyoscillot_fake_spectra/NGC4349_very_fine_RV_grid_022+02/arrays/spectrum/2453404.7841431363.npy"
     
-    # wave = np.load(wavefile)
-    # spec = np.load(specfile)
     
-    # print(np.min(wave), np.max(wave))
+    wavefile = "/data/dspaeth/pyoscillot_fake_spectra/CHECK_PHOTON_FLUX_paper_ngc4349_127_K-1_phase_full_dT2p5_vp03/arrays/wavelength/2454436.625347222.npy"
+    specfile = "/data/dspaeth/pyoscillot_fake_spectra/CHECK_PHOTON_FLUX_paper_ngc4349_127_K-1_phase_full_dT2p5_vp03/arrays/spectrum/2454436.625347222.npy"
+    wave = np.load(wavefile)
+    spec = np.load(specfile)
+    
+    
     # print(wave.shape)
     # print(np.any(wave < 3000.) or np.any(wave > 16900.))
     # # exit()
-    # interpolate(spec, wave)
+    interpol_spec, interpol_wave = interpolate(spec, wave, factor=0)
+    interpol_spec_factor, interpol_wave = interpolate(spec, wave, factor=1e-10)
+    
+    print(np.mean(interpol_spec_factor - interpol_spec))
     
     
 

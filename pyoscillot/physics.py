@@ -7,8 +7,11 @@ from spline_interpolation import interpolate_on_temperature
 DIVIDING_TEMP = 5100
 
 def energy_flux_to_photon_flux(wavelength, spectrum):
-    """ Convert a sepctrum giben in energy flux (such as a PHOENIX spectrum) to a photon flux"""
-    energy_photon = const.H * const.C / wavelength
+    """ Convert a sepctrum given in energy flux (such as a PHOENIX spectrum) to a photon flux.
+    
+        Give wavenlength in units of m
+    """
+    energy_photon = const.H * const.C / (wavelength)
     spectrum_photon = spectrum / energy_photon
     return spectrum_photon
 
