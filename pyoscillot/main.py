@@ -202,7 +202,8 @@ if __name__ == "__main__":
     tickets = []
     # tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMVIS.ini")))
     
-    tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMVIS.ini")))
+    # tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMVIS.ini")))
+    tickets = list(sorted((root / "TICKETS_USED_FOR_PAPER_PHOTON_FLUX").glob("*.ini")))
     
     
     for idx, ticket in enumerate(tickets):
