@@ -30,7 +30,7 @@ def interpolate(spectrum, wavelength, template_file=None,
         snr_per_order = snr_profile * target_max_snr
 
     # Convert from Energy flux to photon flux
-    # spectrum = energy_flux_to_photon_flux(wavelength, spectrum)
+    spectrum = energy_flux_to_photon_flux(wavelength, spectrum)
 
     new_spec = []
     if channel == "VIS":

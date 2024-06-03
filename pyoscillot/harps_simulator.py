@@ -24,7 +24,7 @@ def interpolate(spectrum, wavelength, debug_plot=False):
                                                         blaze_filename="HARPS_template_ngc4349_127_blaze_A.fits")
 
     # TODO Test if it makes a difference
-    # spectrum = energy_flux_to_photon_flux(wavelength*1e-10, spectrum)
+    spectrum = energy_flux_to_photon_flux(wavelength*1e-10, spectrum)
     
     interpol_spec = []
     R_real = 115000
