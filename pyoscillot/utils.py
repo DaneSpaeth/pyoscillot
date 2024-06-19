@@ -1435,33 +1435,40 @@ def oversampled_wave_interpol(rest_wave, wave, spec):
     
     return spec_interpol
     
-
-
-if __name__ == "__main__":
-    wave, spec, header = phoenix_spectrum(wavelength_range=(9000, 17300))
-    
-    add_isotropic_convective_broadening(wave, spec, v_macro=5000)
-    
-    
-    
-    # mask = np.logical_and(wave>4900, wave<5100)
-    # # wave = wave[mask]
-    # # spec = spec[mask]
-    # spec_R = add_isotropic_convective_broadening(wave, spec, v_macro=5000)
-    
-    # fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
-    # ax.plot(wave, spec, "bx")
-    # ax.plot(wave, spec_R, "r*")
-    
-    # mask = np.logical_and(wave>4999, wave<5001)
+def plot_macro_for_thesis():
+    import plot_settings
+    wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4900, 5100))
+    mask = np.logical_and(wave>4900, wave<5100)
     # wave = wave[mask]
     # spec = spec[mask]
-    # spec_R = spec_R[mask]
-    # print(wave[spec_R.argmin()])
-    # print(wave[spec.argmin()])
+    spec_R = add_isotropic_convective_broadening(wave, spec, v_macro=5000)
     
-    # ax.set_xlim(4999, 5001)
+    fig, ax = plt.subplots(1, figsize=(plot_settings.THESIS_WIDTH, 3.5))
+    ax.plot(wave, spec, color="gray", linestyle="solid", marker=".", label="PHOENIX Spectrum", markersize=5)
+    ax.plot(wave, spec_R, color="tab:blue",marker="*", linestyle="solid", label="$v_{\mathrm{macro}}=5000\,\mathrm{ms^{-1}}$", markersize=5)
+    ax.set_xlabel(r"Wavelength [\AA]")
+    ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\,cm\,cm^2}} \right]$")
+    
+    ax.legend()
+    
+    mask = np.logical_and(wave>4999, wave<5001)
+    wave = wave[mask]
+    spec = spec[mask]
+    spec_R = spec_R[mask]
+    print(wave[spec_R.argmin()])
+    print(wave[spec.argmin()])
+    
+    ax.set_xlim(4999, 5001)
+    fig.set_tight_layout(True)
     
     
+    out_root = Path("/home/dspaeth/pyoscillot/PhD_plots")
+    plt.savefig(out_root / "v_macro_5000.pdf", dpi=300)
     
-    # plt.savefig("dbug.png", dpi=300)
+
+if __name__ == "__main__":
+    # wave, spec, header = phoenix_spectrum(wavelength_range=(9000, 17300))
+    
+    # add_isotropic_convective_broadening(wave, spec, v_macro=5000)
+    
+    pass
