@@ -9,6 +9,7 @@ import pandas as pd
 from pathlib import Path
 from scipy.interpolate import CubicSpline, interp1d
 plt.rcParams['axes.formatter.useoffset'] = False
+import plot_settings
 
 
 LB_root = Path("/data/dspaeth/pyoscillot_data/resolution_tests")
@@ -22,7 +23,7 @@ df = pd.read_csv(LB_root / "LB_R100000.csv")
 wave_LB_100000 = np.array(df["x"])
 spec_LB_100000 = np.array(df[" y"])
 
-fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
+fig, ax = plt.subplots(1, figsize=(plot_settings.THESIS_WIDTH, 3.5))
 
 lin_wave = np.linspace(wave_LB_700000.min(), wave_LB_700000.max(), 1000)
 
@@ -45,8 +46,8 @@ ax.plot(lin_wave, spec_res_dane, color="tab:orange", lw=1, label="R=100000 (pyos
 # ax.plot(lin_wave, spec_res_dane, color="tab:red", lw=1, label="R=100000 (pyoscillot, per pixel)")
 
 ax.legend()
-ax.set_ylabel("Normalized Intensity")
-ax.set_xlabel(r"Air wavelength [$\AA$]")
+ax.set_ylabel("Normalized Flux")
+ax.set_xlabel(r"Wavelength [\AA]")
 ax.set_xlim(6301.35, 6301.67)
 print(np.min(lin_spec_70000))
 print(np.min(spec_res_dane))
