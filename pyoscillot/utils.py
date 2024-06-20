@@ -14,6 +14,7 @@ from physics import delta_relativistic_doppler
 import copy
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import plot_settings
 
 
 def gaussian(x, mu=0, sigma=0.001):
@@ -694,7 +695,7 @@ def normalize_phoenix_spectrum_Rassine(wave, spec, Teff, logg, feh, run=False, d
             fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
             ax.plot(wave, spec, lw=0.25, color="tab:blue")
             ax.plot(wave, continuum_interp, lw=0.5, color="tab:red")
-            ax.set_xlabel(r"Wavelength [$\AA$]")
+            ax.set_xlabel(r"Wavelength [\AA]")
             ax.set_ylabel(r"Flux $\left[ \frac{\mathrm{erg}}{\mathrm{s\ cm\ cm^2}} \right]$")
             print(f"Save debug plot to {out_root}/{savename}")
             fig.set_tight_layout(True)
@@ -752,7 +753,7 @@ def normalize_phoenix_spectrum_precomputed(wave, spec, Teff, logg, feh,
             fig, ax = plt.subplots(1, figsize=(6.35, 3.5))
             ax.plot(wave, spec, lw=0.25, color="tab:blue")
             ax.plot(wave, cont, lw=0.5, color="tab:red")
-            ax.set_xlabel(r"Wavelength [$\AA$]")
+            ax.set_xlabel(r"Wavelength [\AA]")
             ax.set_ylabel("Flux [arb. units]")
             print(f"Save debug plot to {out_root}/{savename}")
             fig.set_tight_layout(True)
@@ -866,17 +867,17 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH,
     if bis_plot:
         if ax is None:
             _ax = None
-            fig, ax = plt.subplots(1, figsize=(6.35, 3.5), dpi=600)
+            fig, ax = plt.subplots(1, figsize=(plot_settings.THESIS_WIDTH, 3.5), dpi=600)
         colors = ["green", "cyan", "purple", "orange", "yellow"]
         for bis_v, bis, color, line in zip(bis_vs, biss, colors, Fe_lines): 
-            ax.plot(bis_v, bis, color=color, marker="o", markersize=5, label=rf"FeI {line}$\AA$")
+            ax.plot(bis_v, bis, color=color, marker="o", markersize=5, label=rf"FeI {line}\AA")
         ax.plot(avg_v, avg_bis, color="red", marker="o", markersize=7, linestyle="None")
 
         ax.plot(poly_v, lin_bis, color="blue", linewidth=8, alpha=0.7)
         
         ax.set_ylim(0, 1)
         ax.set_xlim(-200, 200)
-        ax.set_xlabel("Velocity [m/s]")
+        ax.set_xlabel(r"Velocity [$\mathrm{m\,s^{-1}}$]")
         ax.set_ylabel("Normalized Flux")
 
         fig.set_tight_layout(True)
@@ -885,7 +886,7 @@ def get_phoenix_bisector(wave, spec, Teff, logg, FeH,
             out_root = cfg.debug_dir
         else:
             out_root = cfg.conf_dict["datapath"] / "plots/phoenix_bisectors"
-        savename = f"{Teff}K_{logg}_{FeH}_bis_fit.png"
+        savename = f"{Teff}K_{logg}_{FeH}_bis_fit.pdf"
         plt.savefig(f"{out_root}/{savename}", dpi=600)
         plt.close()
     
@@ -1465,10 +1466,19 @@ def plot_macro_for_thesis():
     out_root = Path("/home/dspaeth/pyoscillot/PhD_plots")
     plt.savefig(out_root / "v_macro_5000.pdf", dpi=300)
     
+def plot_phoenix_bis_fit_for_thesis():
+    Teff = 4500
+    logg = 2.0
+    feh = 0.0
+    wave, spec, header = phoenix_spectrum(Teff, logg, feh, wavelength_range=(4900, 7000))
+    cfg.debug_dir = Path("/home/dspaeth/pyoscillot/PhD_plots")
+    # print(cfg.debug_dir)
+    get_phoenix_bisector(wave, spec, Teff, logg, feh, bis_plot=True)
+    
 
 if __name__ == "__main__":
     # wave, spec, header = phoenix_spectrum(wavelength_range=(9000, 17300))
     
     # add_isotropic_convective_broadening(wave, spec, v_macro=5000)
     
-    pass
+    plot_phoenix_bis_fit_for_thesis()
