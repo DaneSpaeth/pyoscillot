@@ -9,6 +9,7 @@ from matplotlib import cm
 from constants import SIGMA
 from sideprojects_scripts.astrometric_jitter import calc_photocenter
 import copy
+import plot_settings
 
 
 
@@ -588,29 +589,29 @@ def plot_3d(x, y, z, value, scale_down=1):
                     facecolors=cm.seismic(value),
                     rstride=1, cstride=1)
     ax.set_box_aspect((1, 1, 1))
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
     plt.show()
 
 
 def plot_for_phd(t=300, l=1, m=1, inclination=90, vmax=1):
     vmin = -vmax
     from pathlib import Path
-    out_dir = Path(f"/home/dspaeth/pyoscillot/PhD_plots/l{l}_incl{inclination}_nonorm")
+    out_dir = Path(f"/home/dspaeth/pyoscillot/PhD_plots/")
     if not out_dir.is_dir():
         out_dir.mkdir()
-    outfile = out_dir / f"pulsation_components_l{l}_m{m}_t{t}.png"
+    outfile = out_dir / f"pulsation_components_l{l}_m{m}_t{t}_latex.png"
     if outfile.is_file():
         print(f"Skip File {outfile}")
-        return None
+        # return None
     plt.rcParams.update({'font.size': 8})
     star = ThreeDimStar(N=1000)
-    star.add_pulsation(l=l, m=m, v_p=1, k=1, nu=1/600, t=t, normalization="None")
-    projector = TwoDimProjector(star, N=151, border=3, inclination=inclination, line_of_sight=False)
-    projector_los = TwoDimProjector(star, N=151, border=3, inclination=inclination, line_of_sight=True)
+    star.add_pulsation(l=l, m=m, v_p=1, k=1, nu=1/600, t=t, )
+    projector = TwoDimProjector(star, N=150, border=3, inclination=inclination, line_of_sight=False)
+    projector_los = TwoDimProjector(star, N=150, border=3, inclination=inclination, line_of_sight=True)
     
-    fig = plt.figure(figsize=(6.5, 6.0))
+    fig = plt.figure(figsize=(plot_settings.THESIS_WIDTH, 6.0))
     ax0 = fig.add_subplot(331, projection="3d")
     ax1 = fig.add_subplot(332, projection="3d")
     ax2 = fig.add_subplot(333, projection="3d")
@@ -625,13 +626,13 @@ def plot_for_phd(t=300, l=1, m=1, inclination=90, vmax=1):
         print("Plot 3D")
         ax.scatter(star.x, star.y, star.z, c=values, vmin=vmin, vmax=vmax, marker=".", cmap=cmap)
         ax.set_box_aspect((1, 1, 1))
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
         
-    ax0.set_title(r"radial-Component")
-    ax1.set_title(r"$\theta$-Component")
-    ax2.set_title(r"$\phi$-Component")
+    ax0.set_title(r"$r$-component")
+    ax1.set_title(r"$\theta$-component")
+    ax2.set_title(r"$\phi$-component")
         
     two_d_axes = [fig.add_subplot(330+i) for i in range(4, 10)]
     values_list = [projector.pulsation_rad(),
@@ -643,25 +644,25 @@ def plot_for_phd(t=300, l=1, m=1, inclination=90, vmax=1):
     for idx, (ax, values) in enumerate(zip(two_d_axes, values_list)):
         img = ax.imshow(values, vmin=vmin, vmax=vmax, cmap=cmap, origin="lower")
         
-        ax.set_xlabel("X'")
-        ax.set_ylabel("Y'")
+        ax.set_xlabel("x'")
+        ax.set_ylabel("z'")
         
-        if idx in (3, 4, 5):
-            ax.set_title(f"SUM={round(np.nansum(values),1)}")
+        # if idx in (3, 4, 5):
+            # ax.set_title(f"SUM={round(np.nansum(values),1)}")
             
     cbar_ax = fig.add_axes([0.88, 0.70, 0.02, 0.20])
-    fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
+    fig.colorbar(img, cax=cbar_ax, label=r"$v [\mathrm{m}\,\mathrm{s}^{-1}]$")
     
     cbar_ax = fig.add_axes([0.88, 0.40, 0.02, 0.20])
-    fig.colorbar(img, cax=cbar_ax, label=r"$v_p$ [m/s]")
+    fig.colorbar(img, cax=cbar_ax, label=r"$v [\mathrm{m}\,\mathrm{s}^{-1}]$")
     
     cbar_ax = fig.add_axes([0.88, 0.10, 0.02, 0.20])
-    fig.colorbar(img, cax=cbar_ax, label=r"RV (proj.) [m/s]")
+    fig.colorbar(img, cax=cbar_ax, label=r"RV (proj.) $[\mathrm{m}\,\mathrm{s}^{-1}]$")
     
-    fig.suptitle(f"i={inclination}, l={l}, m={m}, t={t}")
+    # fig.suptitle(f"i={inclination}, l={l}, m={m}, t={t}")
         
         
-    fig.subplots_adjust(left=0.08, right=0.78, top=0.95, bottom=0.06, wspace=0.45, hspace=0.1)
+    fig.subplots_adjust(left=0.10, right=0.78, top=0.97, bottom=0.04, wspace=0.47, hspace=0.0)
     plt.savefig(outfile, dpi=300)
     plt.close()
     
@@ -748,9 +749,9 @@ def plot_temp_map(t=300, l=1, m=1, inclination=90.0):
         print("Plot 3D")
         ax.scatter(star.x, star.y, star.z, c=values, vmin=4500-100, vmax=4500+100, marker=".", cmap=cmap)
         ax.set_box_aspect((1, 1, 1))
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
         
     ax0.set_title(r"Temperature")
     
@@ -760,8 +761,8 @@ def plot_temp_map(t=300, l=1, m=1, inclination=90.0):
     for idx, (ax, values) in enumerate(zip(two_d_axes, values_list)):
         img = ax.imshow(values, vmin=4500-100, vmax=4500+100, cmap=cmap, origin="lower")
         
-        ax.set_xlabel("X'")
-        ax.set_ylabel("Y'")
+        ax.set_xlabel("x'")
+        ax.set_ylabel("y'")
     
             
     # cbar_ax = fig.add_axes([0.88, 0.70, 0.02, 0.20])
@@ -825,6 +826,9 @@ if __name__ == "__main__":
     # star = ThreeDimStar(N=1000)
     # star.add_pulsation(l=1,m=1)
     # exit()
+    
+    plot_for_phd()
+    exit
     
     N = 1000
     (phi,
