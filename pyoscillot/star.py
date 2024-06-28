@@ -228,7 +228,7 @@ class GridSpectrumSimulator():
         return array_dict
 
     def add_pulsation(self, t=0, l=1, m=1, nu=1 / 600, v_p=1, k=100,
-                      T_var=0, T_phase=0, refbjd=0):
+                      T_var=0, T_phase=0, refbjd=0, normalization="max_imaginary"):
         """ Add a pulsation to the star.
         
             Also adjust the phase here.
@@ -236,7 +236,7 @@ class GridSpectrumSimulator():
         # Adjust the phase, i.e. reftime corresponds to phase 0
         t -= refbjd
         self.three_dim_star.add_pulsation(t=t, l=l, m=m, nu=nu, v_p=v_p, k=k,
-                                          T_var=T_var, T_phase=T_phase)
+                                          T_var=T_var, T_phase=T_phase, normalization=normalization)
 
     def calc_flux(self):
         """ Calculate the local flux of the star.
