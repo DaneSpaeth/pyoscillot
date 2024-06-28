@@ -48,7 +48,7 @@ for idx, l in enumerate((2, 4, 6)):
         
         # ax[0].plot(wave, spec)
         ax[idx].plot(bisectors_vs, bisector_flux, color=color, label=label)
-        ax[idx].set_title(rf"$l=m={l}$")
+        ax[idx].set_title(rf"$l={l}, m={-l}$")
     # ax[idx].legend()
     ax[0].set_xlim(-240, 240)
     ax[1].set_xlim(-115, 115)
