@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from three_dim_star import ThreeDimStar, TwoDimProjector
-from utils import calc_mean_limb_dark, add_limb_darkening
+from utils import calc_mean_limb_dark, add_limb_darkening, calc_limb_dark_intensity
 from dataloader import phoenix_spectrum
 from star import GridSpectrumSimulator
 from cfg import parse_global_ini
@@ -94,21 +94,26 @@ def plot_stellar_disk_comparison():
     plt.close()
     
 def plot_mu_comparison():
-    wavelengths = np.array([4500, 5500, 6500, 7500], dtype=float)
+    wavelengths = np.array([5345, 7400, 13350], dtype=float)
     
-    fig, ax = plt.subplots(1,1,figsize=(7.16, 4.0275))
-    mu = np.linspace(0,1,1000)
-    colors = ["tab:blue", "tab:green", "yellow", "tab:red"]
+    fig, ax = plt.subplots(1, 1, figsize=(plot_settings.THESIS_WIDTH, 3.0))
+    mu = np.linspace(0, 1, 1000)
+    colors = ["tab:blue", "tab:green", "tab:red"]
+    linestyles = ["solid", "dashdot", "dashed"]
     
-    for idx, (wavelength, color) in enumerate(zip(wavelengths, colors )):
+    for idx, (wavelength, color, l) in enumerate(zip(wavelengths, colors, linestyles )):
         
-        ax.plot(mu, [add_limb_darkening(wavelengths, None, m)[0][idx] for m in mu], color=color, label=f"{int(wavelength/10)}nm", lw=5)
+        intensity = calc_limb_dark_intensity(wavelength, mu)
+        print(intensity)
+        
+        # ax.plot(mu, [add_limb_darkening(wavelengths, None, m)[0][idx] for m in mu], color=color, label=f"{int(wavelength/10)}nm", lw=5)
+        ax.plot(mu, intensity, label=f"{int(wavelength/10)} nm", lw=2.5, color=color, linestyle=l)
     ax.set_xlabel("µ")
     ax.set_ylabel("Relative Intensity")
-    ax.legend()
+    ax.legend(handlelength=4)
     ax.set_xlim(0,1)
     fig.set_tight_layout(True)
-    plt.savefig("limb_dark_comparison.png", dpi=600)
+    plt.savefig("limb_dark_comparison.pdf", dpi=600)
     
 def plot_spectral_change():
     wave, spec, header = phoenix_spectrum(4500, 2.0, 0.0, wavelength_range=(4200, 10000))
@@ -163,5 +168,7 @@ def plot_summed_spectral_change():
 if __name__ == "__main__":
     # plot_spectral_change()
     # plot_summed_spectral_change()
-    plot_stellar_disk_comparison()
+    # plot_stellar_disk_comparison()
     # plot_mean_limb_dark()
+    
+    plot_mu_comparison()
