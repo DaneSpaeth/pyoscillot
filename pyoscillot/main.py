@@ -210,6 +210,9 @@ if __name__ == "__main__":
     
     # tickets = 
     
+    tickets = (grid_folder / "base_ngc4349_127_CARMNIR_noPHOT.ini",
+               grid_folder / "base_ngc4349_127_CARMVIS_noPHOT.ini")
+    
     
     for idx, ticket in enumerate(tickets):
         simname = ticket.name.replace(".ini","")
