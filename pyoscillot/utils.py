@@ -1114,12 +1114,13 @@ def calc_limb_dark_intensity(wave, mu):
     u = 1
     real_limit = 4160
     test_limit = 3570
-    mask_VIS = np.logical_and(wave >= test_limit, wave <= 10990)
+    # mask_VIS = np.logical_and(wave >= test_limit, wave <= 10990)
     
     # wave has to be given in µm but it currently in Angstroms
     # hence the factor 1e4
     alpha[mask_UV] = -0.507 + 0.441 * (1 / (wave[mask_UV] / 1e4))
-    alpha[mask_VIS] = -0.023 + 0.292 * (1 / (wave[mask_VIS] / 1e4)) 
+    # alpha[mask_VIS] = -0.023 + 0.292 * (1 / (wave[mask_VIS] / 1e4)) 
+    alpha = -0.023 + 0.292 * (1 / (wave / 1e4)) 
     intensity = 1 - u * (1 - mu**alpha)
     # intensity is now an array with the dimension of wave
     # i.e. going along the wavelength giving a multiplication factor
@@ -1188,8 +1189,6 @@ def calc_mean_limb_dark(wave, mu_array, load_precalc=True, N=150):
         
         
         for idx, (mu, count) in enumerate(zip(unique_mus, counts)):
-            print(idx, len(unique_mus))
-            print(count)
             ld_intensity = calc_limb_dark_intensity(wave, mu)
             ld_intensities += (ld_intensity * count)
             
@@ -1256,7 +1255,7 @@ def add_isotropic_convective_broadening(wave, spec, v_macro, wave_dependent=True
             pixel_scale_local = pixel_scales_dict[scale_jumps[jump_interval]]
             
             
-            print(f"Local Pixel scale={pixel_scale_local} for wavelength {wave_start}-{wave_stop}")
+            # print(f"Local Pixel scale={pixel_scale_local} for wavelength {wave_start}-{wave_stop}")
         
             
             delta_wave_local = delta_wave[last_idx:idx]
@@ -1456,8 +1455,6 @@ def plot_macro_for_thesis():
     wave = wave[mask]
     spec = spec[mask]
     spec_R = spec_R[mask]
-    print(wave[spec_R.argmin()])
-    print(wave[spec.argmin()])
     
     ax.set_xlim(4999, 5001)
     fig.set_tight_layout(True)
