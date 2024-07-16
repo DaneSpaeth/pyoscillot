@@ -108,7 +108,7 @@ def plot_mu_comparison():
         
         # ax.plot(mu, [add_limb_darkening(wavelengths, None, m)[0][idx] for m in mu], color=color, label=f"{int(wavelength/10)}nm", lw=5)
         ax.plot(mu, intensity, label=f"{int(wavelength/10)} nm", lw=2.5, color=color, linestyle=l)
-    ax.set_xlabel("µ")
+    ax.set_xlabel(r"$\mu$")
     ax.set_ylabel("Relative Intensity")
     ax.legend(handlelength=4)
     ax.set_xlim(0,1)
