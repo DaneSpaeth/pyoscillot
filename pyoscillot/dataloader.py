@@ -315,21 +315,24 @@ if __name__ == "__main__":
     # plt.savefig("PHOENIX_spec.png", dpi=300)
     
     
-    wave, spec, header = phoenix_spectrum(5000, 3.0, 0.0, wavelength_range=(16000, 16001))
+    # wave, spec, header = phoenix_spectrum(5000, 3.0, 0.0, wavelength_range=(16000, 16001))
     
     
-    (spec, cont, sig, wave) = carmenes_template(filename="CARMENES_NIR_template.fits")
+    # (spec, cont, sig, wave) = carmenes_template(filename="CARMENES_NIR_template.fits")
     
-    print(wave[-1])
-    exit()
-    diff_wave = np.round(wave[1:]-wave[0:-1], decimals=10)
+    # print(wave[-1])
+    # exit()
+    # diff_wave = np.round(wave[1:]-wave[0:-1], decimals=10)
     
-    print(diff_wave)
-    exit()
-    values, idx = np.unique(diff_wave, return_index=True)
+    # print(diff_wave)
+    # exit()
+    # values, idx = np.unique(diff_wave, return_index=True)
     
-    print(values)
-    print(wave[idx])
-    for w, v in zip(wave[idx], values):
-        print(w, v)
-    exit()
+    # print(values)
+    # print(wave[idx])
+    # for w, v in zip(wave[idx], values):
+    #     print(w, v)
+    # exit()
+    
+    wavelength, spec_int, mu, header = phoenix_spec_intensity()
+    print(wavelength)
