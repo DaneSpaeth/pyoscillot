@@ -200,10 +200,10 @@ if __name__ == "__main__":
     # tickets = [root / "CHECK_PHOTON_FLUX_NGC4349-127_K-1_phase_full_dT2p5_vp03.ini"]
     
     tickets = []
-    tickets = list(sorted(list(grid_folder.rglob("CARM_param_grid_vp_*.ini"))))
+    tickets = list(sorted(list(grid_folder.rglob("CARM_param_grid_K_*.ini"))))
     # print(len(tickets))
     # exit()
-    # tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMVIS.ini")))
+    tickets += list(sorted(grid_folder.rglob("CARM_param_grid_vrot_*.ini")))
     
     # tickets += list(sorted(grid_folder.rglob("base_ngc4349_127_CARMVIS.ini")))
     # tickets = list(sorted((root / "TICKETS_USED_FOR_PAPER_PHOTON_FLUX").glob("*.ini")))
