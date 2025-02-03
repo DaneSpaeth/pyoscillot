@@ -200,9 +200,10 @@ if __name__ == "__main__":
     # tickets = [root / "CHECK_PHOTON_FLUX_NGC4349-127_K-1_phase_full_dT2p5_vp03.ini"]
     
     tickets = []
-    tickets += list(sorted(list(grid_folder.rglob("CARM_param_grid_dT_*.ini"))))
-    tickets += list(sorted(grid_folder.rglob("CARM_param_grid_vrot_*.ini")))
-    tickets += list(sorted(list(grid_folder.rglob("CARM_param_grid_K_*.ini"))))
+    # tickets += list(sorted(list(grid_folder.rglob("CARM_param_grid_vp_05.ini"))))
+    # tickets += list(sorted(list(grid_folder.rglob("CARM_param_grid_dT_*.ini"))))
+    # tickets += list(sorted(grid_folder.rglob("CARM_param_grid_vrot_*.ini")))
+    tickets += list(sorted(list(grid_folder.rglob("CARM_random_grid_*.ini"))))
     # print(len(tickets))
     # exit()
     
@@ -212,6 +213,9 @@ if __name__ == "__main__":
     # tickets = 
     
     # tickets = (grid_folder / "base_ngc4349_127_BOTHCARM.ini",)
+    # ticket = grid_folder / "CARM_param_grid_vp" / "CARM_param_grid_vp_04.ini" 
+    # main(ticket, run=False, serval=True, raccoon=False)
+    # exit()
     
     
     for idx, ticket in enumerate(tickets):
@@ -236,7 +240,7 @@ if __name__ == "__main__":
         try:
             main(ticket, run=True, serval=True, raccoon=True, run_laptop=False)
         except Exception as e:
-            raise e
+            # raise e
             print(f"TICKET {ticket.stem} failed!")
             continue
         
