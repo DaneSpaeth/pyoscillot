@@ -720,7 +720,7 @@ def plot_rotation():
     
     
     
-    plt.savefig("PhD_plots/rotation_check.png", dpi=300)   
+    plt.savefig("PhD_plots/rotation_check_NEW.png", dpi=300)   
         
 def plot_temp_map(t=300, l=1, m=1, inclination=90.0):
     from pathlib import Path
@@ -825,6 +825,8 @@ if __name__ == "__main__":
     
     # star = ThreeDimStar(N=1000)
     # star.add_pulsation(l=1,m=1)
+    plot_rotation()
+    exit()
     # exit()
     
     plot_for_phd()
